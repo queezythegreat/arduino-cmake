@@ -1,0 +1,33 @@
+
+Arduino CMake
+=============
+
+Arduino is a great development platform, which is easy to use. It has everything a beginner should need.
+The Arduino IDE simplifies a lot of things for the standard user, but if you are a professional programmer
+the IDE can feel simplistic and restrictive.
+
+One major drawback of the Arduino IDE is that you cannot do anything without it, which for me is a complete
+buzz kill. Thats why I created an alternative build system for the Arduino using the CMake.
+
+CMake is great corss-platform build system that works on practically any operating system. With it you are
+not constrained to a single build system. CMake lets you generated the build system that fits your needs, 
+using the tools you like. It can generate any type of build system, from simple Makefiles, to complete
+projects for Eclipse, Visual Studio, XCode, etc.
+
+The Arduino CMake build system integrates tightly with the Arduino SDK.
+
+Requirements:
+
+    CMake - http://www.cmake.org/cmake/resources/software.html
+    Arduino SDK - http://www.arduino.cc/en/Main/Software
+
+
+Linux Requirements:
+
+    gcc-avr      - AVR GNU GCC compiler
+    binutils-avr - AVR binary tools
+    avr-libc     - AVR C library
+    avrdude      - Firmware uploader
+
+
+
