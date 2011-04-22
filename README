@@ -2,20 +2,13 @@
 Arduino CMake
 =============
 
-Arduino is a great development platform, which is easy to use. It has everything a beginner should need.
-The Arduino IDE simplifies a lot of things for the standard user, but if you are a professional programmer
-the IDE can feel simplistic and restrictive.
+Arduino is a great development platform, which is easy to use. It has everything a beginner should need. The Arduino IDE simplifies a lot of things for the standard user, but if you are a professional programmer the IDE can feel simplistic and restrictive.
 
-One major drawback of the Arduino IDE is that you cannot do anything without it, which for me is a complete
-buzz kill. Thats why I created an alternative build system for the Arduino using CMake.
+One major drawback of the Arduino IDE is that you cannot do anything without it, which for me is a complete buzz kill. Thats why I created an alternative build system for the Arduino using CMake.
 
-CMake is great corss-platform build system that works on practically any operating system. With it you are
-not constrained to a single build system. CMake lets you generated the build system that fits your needs, 
-using the tools you like. It can generate any type of build system, from simple Makefiles, to complete
-projects for Eclipse, Visual Studio, XCode, etc.
+CMake is great corss-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The Arduino CMake build system integrates tightly with the Arduino SDK. I'm currently basing on version 0022
-of the Arduino SDK.
+The Arduino CMake build system integrates tightly with the Arduino SDK. I'm currently basing on version 0022 of the Arduino SDK.
 
 Requirements:
 
@@ -59,9 +52,7 @@ For a more detailed explanation, please read on...
 
 1. Toolchain file
 
-In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There
-are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration
-uses the second approche like so:
+In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration uses the second approche like so:
 
     set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
 
@@ -71,9 +62,7 @@ If you would like to specify it from the command line, heres how:
 
 2. Creating a build directory
 
-The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what
-this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is
-you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
+The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
 
 So lets create that build directory:
 
@@ -94,8 +83,7 @@ Next we will build everything:
 
 5. Uploading
 
-Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for
-uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
+Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
 
     set(${FIRMWARE_NAME}_PORT /path/to/device)
 
@@ -105,8 +93,7 @@ Ok lets do a upload:
 
 6. Serial output
 
-If you have some serial output, you can launch a serial terminal from the build system. The command used for executing
-the serial terminal is user configurable by the following setting:
+If you have some serial output, you can launch a serial terminal from the build system. The command used for executing the serial terminal is user configurable by the following setting:
 
     set(${FIRMWARE_NAME}_SERIAL serial command goes here)
 
@@ -114,8 +101,7 @@ In order to get access to the serial port use the following in your command:
 
     @INPUT_PORT@
 
-That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration
-we can get the serial terminal by executing the following:
+That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following:
 
     make wire_master_reader-serial
 
