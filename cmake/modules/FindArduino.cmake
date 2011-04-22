@@ -97,6 +97,11 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
                                                  _HDRS       # Headers
                                                  _LIBS       # Libraries to linked in
                                                  _BOARD)     # Board name (such as uno, mega2560, ...)
+    set(INPUT_AUTOLIBS True)
+    if(DEFINED ${TARGET_NAME}_NO_AUTOLIBS AND ${TARGET_NAME}_NO_AUTOLIBS)
+        set(INPUT_AUTOLIBS False)
+    endif()
+
     message(STATUS "Generating ${TARGET_NAME}")
 
     set(ALL_LIBS)
@@ -111,7 +116,8 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    #setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}")
+    add_library(${TARGET_NAME} ${ALL_SRCS})
+    target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 endfunction()
 
 function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
