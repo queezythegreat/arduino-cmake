@@ -30,4 +30,11 @@ Linux Requirements:
     avrdude      - Firmware uploader
 
 
+TODO:
 
+    - Sketch conversion (PDE files)
+    - Make work on, mainly dependency detection:
+        - Windows
+        - Mac OS X
+    - Test more complex configurations
+    - More robust error handling

@@ -103,10 +103,10 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
     setup_arduino_compiler(${INPUT_BOARD})
-    #setup_arduino_core(CORE_LIB ${INPUT_BOARD} ${TARGET_NAME})
+    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     if(INPUT_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${TARGET_NAME} ${ALL_SRCS} ${CORE_LIB})
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}")
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -134,12 +134,12 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
     setup_arduino_compiler(${INPUT_BOARD})
-    setup_arduino_core(CORE_LIB ${INPUT_BOARD} ${TARGET_NAME})
+    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     #setup_arduino_sketch(SKETCH_SRCS ${INPUT_SKETCHES})
 
     if(INPUT_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${TARGET_NAME} ${ALL_SRCS} ${CORE_LIB})
+        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}")
     endif()
 
     
@@ -148,8 +148,7 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}")
     
     if(INPUT_PORT)
-        set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
-        setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${TARGET_PATH} ${INPUT_PORT})
+        setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
     endif()
     
     if(INPUT_SERIAL)
@@ -212,18 +211,18 @@ endmacro()
 #
 #        VAR_NAME    - Variable name that will hold the generated library name
 #        BOARD_ID    - Arduino board id
-#        TARGET_NAME - The target name
 #
 # Creates the Arduino Core library for the specified target,
 # each target gets it's own version of the library
 #
-function(setup_arduino_core VAR_NAME BOARD_ID TARGET_NAME)
+function(setup_arduino_core VAR_NAME BOARD_ID)
+    set(CORE_LIB_NAME ${BOARD_ID}_CORE)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
-    if(BOARD_CORE)
+    if(BOARD_CORE AND NOT TARGET ${CORE_LIB_NAME})
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
         find_sources(CORE_SRCS ${BOARD_CORE_PATH})
-        add_library(${TARGET_NAME}_CORE ${CORE_SRCS})
-        set(${VAR_NAME} ${TARGET_NAME}_CORE PARENT_SCOPE)
+        add_library(${CORE_LIB_NAME} ${CORE_SRCS})
+        set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
 endfunction()
 
@@ -255,11 +254,12 @@ function(find_arduino_libraries VAR_NAME SRCS)
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                 get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                if(EXISTS ${ARDUINO_LIBRARIES_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                    list(APPEND ARDUINO_LIBS ${ARDUINO_LIBRARIES_PATH}/${INCLUDE_NAME})
-                elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                    list(APPEND ARDUINO_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_NAME})
-                endif()
+                foreach(LIB_SEARCH_PATH ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
+                    if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
+                        list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
+                        break()
+                    endif()
+                endforeach()
             endif()
         endforeach()
     endforeach()
@@ -269,35 +269,39 @@ function(find_arduino_libraries VAR_NAME SRCS)
     set(${VAR_NAME} ${ARDUINO_LIBS} PARENT_SCOPE)
 endfunction()
 
-# setup_arduino_library(VAR_NAME TARGET_NAME LIB_PATH CORE_LIB)
+# setup_arduino_library(VAR_NAME BOARD_ID LIB_PATH)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
-#        TARGET_NAME - target name
+#        BOARD_ID    - Board name
 #        LIB_PATH    - path of the library
-#        CORE_LIB    - name of Arduino Core library
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
-function(setup_arduino_library VAR_NAME TARGET_NAME LIB_PATH CORE_LIB)
+function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(LIB_TARGETS)
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
-    if(NOT TARGET ${TARGET_NAME}_${LIB_NAME})
+    set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
+    if(NOT TARGET ${TARGET_LIB_NAME})
         find_sources(LIB_SRCS ${LIB_PATH})
         if(LIB_SRCS)
 
-            message(STATUS "   Generating Arduino library: ${LIB_NAME}")
+            message(STATUS "Generating Arduino ${LIB_NAME} library")
             include_directories(${LIB_PATH} ${LIB_PATH}/utility)
-            add_library(${TARGET_NAME}_${LIB_NAME} STATIC ${LIB_SRCS})
+            add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
             foreach(LIB_DEP ${LIB_DEPS})
-                setup_arduino_library(DEP_LIB_SRCS ${TARGET_NAME} ${LIB_DEP} ${CORE_LIB})
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP})
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
             endforeach()
 
-            list(APPEND LIB_TARGETS ${TARGET_NAME}_${LIB_NAME})
-            target_link_libraries(${TARGET_NAME}_${LIB_NAME} ${CORE_LIB} ${LIB_TARGETS})
+            target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
+            list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
         endif()
+    else()
+        # Target already exists, skiping creating
+        include_directories(${LIB_PATH} ${LIB_PATH}/utility)
+        list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
     endif()
     if(LIB_TARGETS)
         list(REMOVE_DUPLICATES LIB_TARGETS)
@@ -305,20 +309,19 @@ function(setup_arduino_library VAR_NAME TARGET_NAME LIB_PATH CORE_LIB)
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
 endfunction()
 
-# setup_arduino_libraries(VAR_NAME TARGET_NAME SRCS CORE_LIB)
+# setup_arduino_libraries(VAR_NAME BOARD_ID SRCS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
-#        TARGET_NAME - target name
+#        BOARD_ID    - Board ID
 #        SRCS        - source files
-#        CORE_LIB    - name of Arduino Core library
 #
 # Finds and creates all dependency libraries based on sources.
 #
-function(setup_arduino_libraries VAR_NAME TARGET_NAME SRCS CORE_LIB)
+function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS)
     set(LIB_TARGETS)
     find_arduino_libraries(TARGET_LIBS ${SRCS})
     foreach(TARGET_LIB ${TARGET_LIBS})
-        setup_arduino_library(LIB_DEPS ${TARGET_NAME} ${TARGET_LIB} ${CORE_LIB}) # Create static library instead of returning sources
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}) # Create static library instead of returning sources
         list(APPEND LIB_TARGETS ${LIB_DEPS})
     endforeach()
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
@@ -362,10 +365,10 @@ endfunction()
 #
 # Create an upload target for the Arduino target (${TARGET_NAME}-uplpad).
 #
-function(setup_arduino_upload BOARD_ID TARGET_NAME TARGET_PATH PORT)
+function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     add_custom_target(${TARGET_NAME}-upload
                      ${ARDUINO_AVRDUDE_PROGRAM} 
-                         -U flash:w:${TARGET_PATH}.hex
+                         -U flash:w:${TARGET_NAME}.hex
                          -V -F
                          -C ${ARDUINO_AVRDUDE_CONFIG_PATH}
                          -p ${${BOARD_ID}.build.mcu}
