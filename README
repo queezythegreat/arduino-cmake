@@ -14,8 +14,8 @@ not constrained to a single build system. CMake lets you generated the build sys
 using the tools you like. It can generate any type of build system, from simple Makefiles, to complete
 projects for Eclipse, Visual Studio, XCode, etc.
 
-The Arduino CMake build system integrates tightly with the Arduino SDK. I'm currently basing Arduino CMake
-of version 0022 of the Arduino SDK.
+The Arduino CMake build system integrates tightly with the Arduino SDK. I'm currently basing on version 0022
+of the Arduino SDK.
 
 Requirements:
 
@@ -39,3 +39,83 @@ TODO:
         - Mac OS X
     - Test more complex configurations
     - More robust error handling
+
+
+Getting Started
+===============
+
+The following inscructions are for *nix type systems, specifically this is a Linux example.
+
+In short you can get up and running using the follwoing commands:
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+    make upload                      # to upload the firmware   [optional]
+    make wiere_master_reader-serial  # to get a serial terminal [optional]
+
+For a more detailed explanation, please read on...
+
+1. Toolchain file
+
+In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There
+are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration
+uses the second approche like so:
+
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+
+If you would like to specify it from the command line, heres how:
+
+    cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
+
+2. Creating a build directory
+
+The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what
+this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is
+you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
+
+So lets create that build directory:
+
+    mkdir build
+    cd build
+
+3. Creating the build system
+
+Now lets create the build system that will create our firmware:
+
+    cmake ..
+
+4. Building
+
+Next we will build everything:
+
+    make
+
+5. Uploading
+
+Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for
+uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
+
+    set(${FIRMWARE_NAME}_PORT /path/to/device)
+
+Ok lets do a upload:
+
+    make upload
+
+6. Serial output
+
+If you have some serial output, you can launch a serial terminal from the build system. The command used for executing
+the serial terminal is user configurable by the following setting:
+
+    set(${FIRMWARE_NAME}_SERIAL serial command goes here)
+
+In order to get access to the serial port use the following in your command:
+
+    @INPUT_PORT@
+
+That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration
+we can get the serial terminal by executing the following:
+
+    make wire_master_reader-serial
+
