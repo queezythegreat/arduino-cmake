@@ -1,17 +1,12 @@
-#
+# - Generate firmware and libraries for Arduino Devices
 # generate_arduino_firmware(TARGET_NAME)
-#
 #        TARGET_NAME - Name of target
-#
 # Creates a Arduino firmware target.
 #
 # The target options can be configured by setting options of
 # the following format:
-#
 #      ${TARGET_NAME}${SUFFIX}
-#
 # The following suffixes are availabe:
-#
 #      _SRCS           # Sources
 #      _HDRS           # Headers
 #      _SKETCHES       # Arduino sketch files
@@ -20,9 +15,7 @@
 #      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
 #      _SERIAL         # Serial command for serial target           [OPTIONAL]
 #      _NO_AUTOLIBS    # Disables Arduino library detection
-#
-#  Here is a short example for a target named test:
-#
+# Here is a short example for a target named test:
 #       set(test_SRCS  test.cpp)
 #       set(test_HDRS  test.h)
 #       set(test_BOARD uno)
@@ -31,16 +24,12 @@
 #
 #
 # generate_arduino_library(TARGET_NAME)
-#
 #        TARGET_NAME - Name of target
-#
 # Creates a Arduino firmware target.
 #
 # The target options can be configured by setting options of
 # the following format:
-#
 #      ${TARGET_NAME}${SUFFIX}
-#
 # The following suffixes are availabe:
 #
 #      _SRCS           # Sources
@@ -48,15 +37,14 @@
 #      _LIBS           # Libraries to linked in
 #      _BOARD          # Board name (such as uno, mega2560, ...)
 #      _NO_AUTOLIBS    # Disables Arduino library detection
-#
-#  Here is a short example for a target named test:
-#
+# 
+# Here is a short example for a target named test:
 #       set(test_SRCS  test.cpp)
 #       set(test_HDRS  test.h)
 #       set(test_BOARD uno)
 #    
 #       generate_arduino_library(test)
-#
+
 
 find_path(ARDUINO_SDK_PATH
           NAMES examples lib libraries reference tools hardware revisions.txt
