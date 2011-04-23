@@ -2,13 +2,13 @@
 Arduino CMake
 =============
 
-Arduino is a great development platform, which is easy to use. It has everything a beginner should need. The Arduino IDE simplifies a lot of things for the standard user, but if you are a professional programmer the IDE can feel simplistic and restrictive.
+Arduino is a great development platform, which is easy to use. It has everything a beginner should need. The *Arduino IDE* simplifies a lot of things for the standard user, but if you are a professional programmer the IDE can feel simplistic and restrictive.
 
-One major drawback of the Arduino IDE is that you cannot do anything without it, which for me is a complete buzz kill. Thats why I created an alternative build system for the Arduino using CMake.
+One major drawback of the *Arduino IDE* is that you cannot do anything without it, which for me is a **complete buzz kill**. Thats why I created an alternative build system for the Arduino using CMake.
 
 CMake is great corss-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The Arduino CMake build system integrates tightly with the Arduino SDK. I'm currently basing on version 0022 of the Arduino SDK.
+The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'm currently basing on version **0022** of the *Arduino SDK*.
 
 Requirements:
 
@@ -37,8 +37,9 @@ Contents
 --------
 
 1. Getting Started
-2. Creating a firmware image
-3. Defining libraries
+2. Setting up Arduino CMake
+3. Creating a firmware image
+4. Defining libraries
 
 Getting Started
 ----------------
@@ -115,18 +116,18 @@ For a more detailed explanation, please read on...
 
 
 
-Setting Arduino CMake
+Setting up Arduino CMake
 ----------------------
 
 The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with:
 
     find_package(Arduino)
 
-To have a specific minimal version of the Arduino SDK, you can specify the version like so:
+To have a specific minimal version of the *Arduino SDK*, you can specify the version like so:
 
     find_package(Arduino 22)
 
-That will require an Arduino SDK version 0022 or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword:
+That will require an *Arduino SDK* version **0022** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword:
 
 
     find_package(Arduino 22 REQUIRED)
