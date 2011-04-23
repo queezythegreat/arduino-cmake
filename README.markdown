@@ -12,36 +12,36 @@ The Arduino CMake build system integrates tightly with the Arduino SDK. I'm curr
 
 Requirements:
 
-    CMake - http://www.cmake.org/cmake/resources/software.html
-    Arduino SDK - http://www.arduino.cc/en/Main/Software
+* CMake - http://www.cmake.org/cmake/resources/software.html
+* Arduino SDK - http://www.arduino.cc/en/Main/Software
 
 
 Linux Requirements:
 
-    gcc-avr      - AVR GNU GCC compiler
-    binutils-avr - AVR binary tools
-    avr-libc     - AVR C library
-    avrdude      - Firmware uploader
+* gcc-avr      - AVR GNU GCC compiler
+* binutils-avr - AVR binary tools
+* avr-libc     - AVR C library
+* avrdude      - Firmware uploader
 
 
 TODO:
 
-    - Sketch conversion (PDE files)
-    - Make work on, mainly dependency detection:
-        - Windows
-        - Mac OS X
-    - Test more complex configurations
-    - More robust error handling
+* Sketch conversion (PDE files)
+* Make work on, mainly dependency detection:
+    * Windows
+    * Mac OS X
+* Test more complex configurations
+* More robust error handling
 
 Contents
-========
-
-    1. Getting Started
-    2. Creating a firmware image
-    3. Defining libraries
+--------
 
 1. Getting Started
-==================
+2. Creating a firmware image
+3. Defining libraries
+
+Getting Started
+----------------
 
 The following inscructions are for *nix type systems, specifically this is a Linux example.
 
@@ -58,67 +58,66 @@ For a more detailed explanation, please read on...
 
 1. Toolchain file
 
-In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration uses the second approche like so:
+    In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration uses the second approche like so:
 
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
 
-If you would like to specify it from the command line, heres how:
+    If you would like to specify it from the command line, heres how:
 
-    cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
-
+        cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
 2. Creating a build directory
 
-The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
+    The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
 
-So lets create that build directory:
+    So lets create that build directory:
 
-    mkdir build
-    cd build
+        mkdir build
+        cd build
 
 3. Creating the build system
 
-Now lets create the build system that will create our firmware:
+    Now lets create the build system that will create our firmware:
 
-    cmake ..
+        cmake ..
 
 4. Building
 
-Next we will build everything:
+    Next we will build everything:
 
-    make
+        make
 
 5. Uploading
 
-Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
+    Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
 
-    set(${FIRMWARE_NAME}_PORT /path/to/device)
+        set(${FIRMWARE_NAME}_PORT /path/to/device)
 
-Ok lets do a upload:
+    Ok lets do a upload:
 
-    make upload
+        make upload
 
 6. Serial output
 
-If you have some serial output, you can launch a serial terminal from the build system. The command used for executing the serial terminal is user configurable by the following setting:
+    If you have some serial output, you can launch a serial terminal from the build system. The command used for executing the serial terminal is user configurable by the following setting:
 
-    set(${FIRMWARE_NAME}_SERIAL serial command goes here)
+        set(${FIRMWARE_NAME}_SERIAL serial command goes here)
 
-In order to get access to the serial port use the following in your command:
+    In order to get access to the serial port use the following in your command:
 
-    @INPUT_PORT@
+        @INPUT_PORT@
 
-That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following:
+    That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following:
 
-    make wire_master_reader-serial
-
-
+        make wire_master_reader-serial
 
 
 
 
 
-2. Creating a firmware image
-============================
+
+
+Creating a firmware image
+-------------------------
 
 
 The first step in generating Arduino firmware is including the Arduino CMake module package. This easily done with:
@@ -173,8 +172,8 @@ To enable serial terminal, add the _SERIAL setting (@INPUT_PORT@ will be replace
 
 
 
-3. Defining libraries
-=====================
+Defining libraries
+------------------
 
 Creating libraries is very similar to defining a firmware image, except we use the generate_arduino_library command. The syntax of the settings is the same except we have a different list of settings:
 
