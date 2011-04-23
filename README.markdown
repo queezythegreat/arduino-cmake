@@ -30,8 +30,7 @@ TODO:
 * Make work on, mainly dependency detection:
     * Windows
     * Mac OS X
-* Test more complex configurations
-* More robust error handling
+* Test more complex configurations and error handling
 
 Contents
 --------
@@ -59,9 +58,11 @@ For a more detailed explanation, please read on...
 
 1. Toolchain file
 
-    In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or through the CMake cache. The bundled example configuration uses the second approche like so:
+    In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or from within the *CMakeLists.txt* configuration files. The bundled example uses the second approche like so:
 
         set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+
+    Please note that this must be before the `project(...)` command.
 
     If you would like to specify it from the command line, heres how:
 
