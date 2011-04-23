@@ -44,7 +44,7 @@ Contents
 Getting Started
 ----------------
 
-The following inscructions are for \*nix type systems, specifically this is a Linux example.
+The following instructions are for **\*nix** type systems, specifically this is a Linux example.
 
 In short you can get up and running using the follwoing commands:
 
@@ -66,9 +66,10 @@ For a more detailed explanation, please read on...
     If you would like to specify it from the command line, heres how:
 
         cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
+
 2. Creating a build directory
 
-    The second order of buissnes is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
+    The second order of business is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
 
     So lets create that build directory:
 
@@ -195,7 +196,7 @@ Lets define a simple library called `blink_lib`, with two sources files for the 
 
     generate_arduino_firmware(blink_lib)
 
-Once that library is defined we can use it in our other firmware images... Lets add `blink_lib` to the blink firmware:
+Once that library is defined we can use it in our other firmware images... Lets add `blink_lib` to the `blink` firmware:
 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
