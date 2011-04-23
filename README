@@ -33,9 +33,15 @@ TODO:
     - Test more complex configurations
     - More robust error handling
 
+Contents
+========
 
-Getting Started
-===============
+    1. Getting Started
+    2. Creating a firmware image
+    3. Defining libraries
+
+1. Getting Started
+==================
 
 The following inscructions are for *nix type systems, specifically this is a Linux example.
 
@@ -104,4 +110,95 @@ In order to get access to the serial port use the following in your command:
 That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following:
 
     make wire_master_reader-serial
+
+
+
+
+
+
+
+2. Creating a firmware image
+============================
+
+
+The first step in generating Arduino firmware is including the Arduino CMake module package. This easily done with:
+
+    find_package(Arduino)
+
+To have a specific minimal version of the Arduino SDK, you can specify the version like so:
+
+    find_package(Arduino 22)
+
+That will require an Arduino SDK version 0022 or newer. To ensure that the SDK is detected you can add the REQUIRED keyword:
+
+
+    find_package(Arduino 22 REQUIRED)
+
+Once you have the Arduino CMake package loaded you can start defining firmware images.
+
+To create Arduino firmware in CMake you use the generate_arduino_firmware command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command:
+
+    ${TARGET_NAME}${OPTION_SUFFIX}
+
+Where ${TARGET_NAME} is the name of you target and ${OPTIONS_SUFFIX} is one of the following option suffixes:
+
+     _SRCS           # Target source files
+     _HDRS           # Target Headers files (for project based build systems)
+     _SKETCHES       # Target sketch files
+     _LIBS           # Libraries to linked against target
+     _BOARD          # Board name (such as uno, mega2560, ...)
+     _PORT           # Serial port, for upload and serial targets [OPTIONAL]
+     _SERIAL         # Serial command for serial target           [OPTIONAL]
+     _NO_AUTOLIBS    # Disables Arduino library detection (default On)
+
+
+So to create a target (firmware image) called blink, composed of blink.h and blink.cpp source files for the Arduino Uno, you write the following:
+
+    set(blink_SRCS  blink.cpp)
+    set(blink_HDRS  blink.h)
+    set(blink_BOARD uno)
+
+    generate_arduino_firmware(blink)
+
+To enable firmware upload functionality, you need to add the _PORT settings:
+
+    set(blink_PORT /dev/ttyUSB0)
+
+To enable serial terminal, add the _SERIAL setting (@INPUT_PORT@ will be replaced with the blink_PORT setting):
+
+    set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
+
+
+
+
+
+
+3. Defining libraries
+=====================
+
+Creating libraries is very similar to defining a firmware image, except we use the generate_arduino_library command. The syntax of the settings is the same except we have a different list of settings:
+
+     _SRCS           # Library Sources
+     _HDRS           # Library Headers
+     _LIBS           # Libraries to linked in
+     _BOARD          # Board name (such as uno, mega2560, ...)
+     _NO_AUTOLIBS    # Disables Arduino library detection
+
+Lets define a simple library called blink_lib, with two sources files for the Arduino Uno:
+
+
+    set(blink_lib_SRCS  blink_lib.cpp)
+    set(blink_lib_HDRS  blink_lib.h)
+    set(blink_lib_BOARD uno)
+
+    generate_arduino_firmware(blink_lib)
+
+Once that library is defined we can use it in our other firmware images... Lets add blink_lib to the blink firmware:
+
+    set(blink_SRCS  blink.cpp)
+    set(blink_HDRS  blink.h)
+    set(blink_LIBS  blink_lib)
+    set(blink_BOARD uno)
+
+    generate_arduino_firmware(blink)
 
