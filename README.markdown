@@ -27,7 +27,7 @@ Linux Requirements:
 TODO:
 
 * Sketch conversion (PDE files)
-* Make work on, mainly dependency detection:
+* Setup dependency detection for:
     * Windows
     * Mac OS X
 * Test more complex configurations and error handling
@@ -37,8 +37,8 @@ Contents
 
 1. Getting Started
 2. Setting up Arduino CMake
-3. Creating a firmware image
-4. Defining libraries
+3. Creating firmware images
+4. Creating libraries
 
 Getting Started
 ----------------
@@ -119,7 +119,7 @@ For a more detailed explanation, please read on...
 
 
 Setting up Arduino CMake
-----------------------
+------------------------
 
 The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with:
 
@@ -135,8 +135,8 @@ That will require an *Arduino SDK* version **0022** or newer. To ensure that the
     find_package(Arduino 22 REQUIRED)
 
 
-Creating a firmware image
--------------------------
+Creating firmware images
+------------------------
 
 Once you have the **Arduino CMake** package loaded you can start defining firmware images.
 
@@ -177,7 +177,7 @@ To enable serial terminal, add the `_SERIAL` setting (`@INPUT_PORT@` will be rep
 
 
 
-Defining libraries
+Creating libraries
 ------------------
 
 Creating libraries is very similar to defining a firmware image, except we use the `generate_arduino_library` command. The syntax of the settings is the same except we have a different list of settings:
