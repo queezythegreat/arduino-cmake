@@ -163,7 +163,7 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     endif()
 
     message(STATUS "Generating ${TARGET_NAME}")
-
+    
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
@@ -175,7 +175,7 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-    
+        
     add_library(${TARGET_NAME} ${ALL_SRCS})
     target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 endfunction()
@@ -276,13 +276,13 @@ macro(setup_arduino_compiler BOARD_ID)
     endif()
 endmacro()
 
-# setup_arduino_core(VAR_NAME BOARD_ID TARGET_NAME)
+# setup_arduino_core(VAR_NAME BOARD_ID)
 #
 #        VAR_NAME    - Variable name that will hold the generated library name
 #        BOARD_ID    - Arduino board id
 #
-# Creates the Arduino Core library for the specified target,
-# each target gets it's own version of the library
+# Creates the Arduino Core library for the specified board,
+# each board gets it's own version of the library.
 #
 function(setup_arduino_core VAR_NAME BOARD_ID)
     set(CORE_LIB_NAME ${BOARD_ID}_CORE)
@@ -306,15 +306,15 @@ endfunction()
 #  are ${ARDUINO_SDK_PATH}/libraries and ${CMAKE_CURRENT_SOURCE_DIR}.
 #
 #  A Arduino library is a folder that has the same name as the include header.
-#  For example, if we have a include "#include <LibraryName.h>" the the following
-#  directory structure is considered as a Arduino library:
+#  For example, if we have a include "#include <LibraryName.h>" then the following
+#  directory structure is considered a Arduino library:
 #
 #     LibraryName/
 #          |- LibraryName.h
 #          `- LibraryName.c
 #
 #  If such a directory is found then all sources within that directory are considred
-#  a Arduino library.
+#  to be part of that Arduino library.
 #
 function(find_arduino_libraries VAR_NAME SRCS)
     set(ARDUINO_LIBS )
@@ -425,14 +425,13 @@ function(setup_arduino_target TARGET_NAME ALL_SRCS ALL_LIBS)
                         VERBATIM)
 endfunction()
 
-# setup_arduino_upload(BOARD_ID TARGET_NAME TARGET_PATH PORT)
+# setup_arduino_upload(BOARD_ID TARGET_NAME PORT)
 #
 #        BOARD_ID    - Arduino board id
 #        TARGET_NAME - Target name
-#        TARGET_PATH - Target path
 #        PORT        - Serial port for upload
 #
-# Create an upload target for the Arduino target (${TARGET_NAME}-uplpad).
+# Create an upload target (${TARGET_NAME}-upload) for the specified Arduino target.
 #
 function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     add_custom_target(${TARGET_NAME}-upload
