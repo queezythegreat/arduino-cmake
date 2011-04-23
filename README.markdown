@@ -115,12 +115,10 @@ For a more detailed explanation, please read on...
 
 
 
+Setting Arduino CMake
+----------------------
 
-Creating a firmware image
--------------------------
-
-
-The first step in generating Arduino firmware is including the Arduino CMake module package. This easily done with:
+The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with:
 
     find_package(Arduino)
 
@@ -128,12 +126,16 @@ To have a specific minimal version of the Arduino SDK, you can specify the versi
 
     find_package(Arduino 22)
 
-That will require an Arduino SDK version 0022 or newer. To ensure that the SDK is detected you can add the REQUIRED keyword:
+That will require an Arduino SDK version 0022 or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword:
 
 
     find_package(Arduino 22 REQUIRED)
 
-Once you have the Arduino CMake package loaded you can start defining firmware images.
+
+Creating a firmware image
+-------------------------
+
+Once you have the **Arduino CMake** package loaded you can start defining firmware images.
 
 To create Arduino firmware in CMake you use the `generate_arduino_firmware` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command:
 
@@ -159,11 +161,11 @@ So to create a target (firmware image) called `blink`, composed of `blink.h` and
 
     generate_arduino_firmware(blink)
 
-To enable firmware upload functionality, you need to add the *_PORT* settings:
+To enable firmware upload functionality, you need to add the `_PORT` settings:
 
     set(blink_PORT /dev/ttyUSB0)
 
-To enable serial terminal, add the *_SERIAL* setting (*@INPUT_PORT@* will be replaced with the blink_PORT setting):
+To enable serial terminal, add the `_SERIAL` setting (`@INPUT_PORT@` will be replaced with the `blink_PORT` setting):
 
     set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
 
@@ -175,7 +177,7 @@ To enable serial terminal, add the *_SERIAL* setting (*@INPUT_PORT@* will be rep
 Defining libraries
 ------------------
 
-Creating libraries is very similar to defining a firmware image, except we use the generate_arduino_library command. The syntax of the settings is the same except we have a different list of settings:
+Creating libraries is very similar to defining a firmware image, except we use the `generate_arduino_library` command. The syntax of the settings is the same except we have a different list of settings:
 
      _SRCS           # Library Sources
      _HDRS           # Library Headers
@@ -183,7 +185,7 @@ Creating libraries is very similar to defining a firmware image, except we use t
      _BOARD          # Board name (such as uno, mega2560, ...)
      _NO_AUTOLIBS    # Disables Arduino library detection
 
-Lets define a simple library called blink_lib, with two sources files for the Arduino Uno:
+Lets define a simple library called `blink_lib`, with two sources files for the *Arduino Uno*:
 
 
     set(blink_lib_SRCS  blink_lib.cpp)
@@ -192,7 +194,7 @@ Lets define a simple library called blink_lib, with two sources files for the Ar
 
     generate_arduino_firmware(blink_lib)
 
-Once that library is defined we can use it in our other firmware images... Lets add blink_lib to the blink firmware:
+Once that library is defined we can use it in our other firmware images... Lets add `blink_lib` to the blink firmware:
 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
