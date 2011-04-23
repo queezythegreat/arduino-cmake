@@ -43,7 +43,7 @@ Contents
 Getting Started
 ----------------
 
-The following inscructions are for *nix type systems, specifically this is a Linux example.
+The following inscructions are for \*nix type systems, specifically this is a Linux example.
 
 In short you can get up and running using the follwoing commands:
 
@@ -88,7 +88,7 @@ For a more detailed explanation, please read on...
 
 5. Uploading
 
-    Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for uploading the firmware. To change the port please edit the following variable in CMakeLists.txt:
+    Once everything built correctly we can upload. Depending on your Arduino you will have to update the serial port used for uploading the firmware. To change the port please edit the following variable in *CMakeLists.txt*:
 
         set(${FIRMWARE_NAME}_PORT /path/to/device)
 
@@ -135,11 +135,11 @@ That will require an Arduino SDK version 0022 or newer. To ensure that the SDK i
 
 Once you have the Arduino CMake package loaded you can start defining firmware images.
 
-To create Arduino firmware in CMake you use the generate_arduino_firmware command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command:
+To create Arduino firmware in CMake you use the `generate_arduino_firmware` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command:
 
     ${TARGET_NAME}${OPTION_SUFFIX}
 
-Where ${TARGET_NAME} is the name of you target and ${OPTIONS_SUFFIX} is one of the following option suffixes:
+Where `${TARGET_NAME}` is the name of you target and `${OPTIONS_SUFFIX}` is one of the following option suffixes:
 
      _SRCS           # Target source files
      _HDRS           # Target Headers files (for project based build systems)
@@ -151,7 +151,7 @@ Where ${TARGET_NAME} is the name of you target and ${OPTIONS_SUFFIX} is one of t
      _NO_AUTOLIBS    # Disables Arduino library detection (default On)
 
 
-So to create a target (firmware image) called blink, composed of blink.h and blink.cpp source files for the Arduino Uno, you write the following:
+So to create a target (firmware image) called `blink`, composed of `blink.h` and `blink.cpp` source files for the *Arduino Uno*, you write the following:
 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
@@ -159,11 +159,11 @@ So to create a target (firmware image) called blink, composed of blink.h and bli
 
     generate_arduino_firmware(blink)
 
-To enable firmware upload functionality, you need to add the _PORT settings:
+To enable firmware upload functionality, you need to add the *_PORT* settings:
 
     set(blink_PORT /dev/ttyUSB0)
 
-To enable serial terminal, add the _SERIAL setting (@INPUT_PORT@ will be replaced with the blink_PORT setting):
+To enable serial terminal, add the *_SERIAL* setting (*@INPUT_PORT@* will be replaced with the blink_PORT setting):
 
     set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
 
