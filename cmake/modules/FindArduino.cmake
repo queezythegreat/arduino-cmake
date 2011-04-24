@@ -47,7 +47,7 @@
 
 
 find_path(ARDUINO_SDK_PATH
-          NAMES examples lib libraries reference tools hardware revisions.txt
+          NAMES lib/version.txt hardware libraries
           PATH_SUFFIXES  share/arduino
           DOC "Arduino Development Kit path.")
 
@@ -57,7 +57,7 @@ find_path(ARDUINO_SDK_PATH
 # Load the Arduino SDK board settings from the boards.txt file.
 #
 function(LOAD_BOARD_SETTINGS)
-    if(NOT ARDUINO_BOARDS)
+    if(NOT ARDUINO_BOARDS AND ARDUINO_BOARDS_PATH)
     file(STRINGS ${ARDUINO_BOARDS_PATH} BOARD_SETTINGS)
     foreach(BOARD_SETTING ${BOARD_SETTINGS})
         if("${BOARD_SETTING}" MATCHES "^.*=.*")
@@ -479,13 +479,12 @@ endfunction()
 # Detects the Arduino SDK Version based on the revisions.txt file.
 #
 function(detect_arduino_version VAR_NAME)
-    file(STRINGS ${ARDUINO_REVISIONS_PATH} REVISIONS_CONTENT)
-    foreach(LINE ${REVISIONS_CONTENT})
-        if("${LINE}" MATCHES " *ARDUINO [0]+([0-9]+) - (.*)")
+    if(ARDUINO_VERSION_PATH)
+        file(READ ${ARDUINO_VERSION_PATH} ARD_VERSION)
+        if("${ARD_VERSION}" MATCHES " *[0]+([0-9]+)")
             set(${VAR_NAME} ${CMAKE_MATCH_1} PARENT_SCOPE)
-            return()
         endif()
-    endforeach()
+    endif()
 endfunction()
 
 
@@ -518,6 +517,10 @@ if(NOT ARDUINO_FOUND)
               NAMES revisions.txt
               PATHS ${ARDUINO_SDK_PATH})
 
+    find_file(ARDUINO_VERSION_PATH
+              NAMES lib/version.txt
+              PATHS ${ARDUINO_SDK_PATH})
+
     find_program(ARDUINO_AVRDUDE_PROGRAM
                  NAMES avrdude
                  PATHS ${ARDUINO_SDK_PATH}
@@ -533,8 +536,16 @@ if(NOT ARDUINO_FOUND)
      set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
          CACHE STRING "")
 
-     detect_arduino_version(ARDUINO_SDK_VERSION)
-     set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+     if(ARDUINO_SDK_PATH)
+         detect_arduino_version(ARDUINO_SDK_VERSION)
+         set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+     endif(ARDUINO_SDK_PATH)
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(Arduino
+                                      REQUIRED_VARS ARDUINO_SDK_PATH
+                                                    ARDUINO_SDK_VERSION
+                                      VERSION_VAR ARDUINO_SDK_VERSION)
 
 
      mark_as_advanced(ARDUINO_CORES_PATH
@@ -549,18 +560,5 @@ if(NOT ARDUINO_FOUND)
                       ARDUINO_OBJCOPY_HEX_FLAGS)
     load_board_settings()
 
-    include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Arduino
-                                      REQUIRED_VARS ARDUINO_SDK_PATH
-                                                    ARDUINO_CORES_PATH
-                                                    ARDUINO_SDK_VERSION
-                                                    ARDUINO_LIBRARIES_PATH
-                                                    ARDUINO_BOARDS_PATH
-                                                    ARDUINO_PROGRAMMERS_PATH
-                                                    ARDUINO_REVISIONS_PATH
-                                                    ARDUINO_AVRDUDE_PROGRAM
-                                                    ARDUINO_AVRDUDE_CONFIG_PATH
-                                                    ARDUINO_SDK_VERSION
-                                      VERSION_VAR ARDUINO_SDK_VERSION)
 endif()
 

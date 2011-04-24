@@ -28,7 +28,6 @@ TODO:
 
 * Sketch conversion (PDE files)
 * Setup dependency detection for:
-    * Windows
     * Mac OS X
 * Test more complex configurations and error handling
 
@@ -39,6 +38,7 @@ Contents
 2. Setting up Arduino CMake
 3. Creating firmware images
 4. Creating libraries
+5. Windows Enviroment Setup
 
 Getting Started
 ----------------
@@ -206,3 +206,12 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
     generate_arduino_firmware(blink)
 
+
+Windows Enviroment Setup
+------------------------
+
+On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **system path** or within the system **Program Files** directory. Also you will need to add the ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin directory path to your system path, just make sure it is the first thing on list.
+
+Once that is done you can start using CMake the usual way, just make sure to chose a **MSYS Makefile** type generator.
+
+NOTE: Don't change the default **Arduino SDK** directory name, otherwise auto detection will no work properly!

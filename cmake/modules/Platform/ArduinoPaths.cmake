@@ -1,0 +1,12 @@
+if(UNIX)
+    INCLUDE(Platform/UnixPaths)
+elseif(WIN32)
+    INCLUDE(Platform/WindowsPaths)
+endif()
+
+if(ARDUINO_SDK_PATH)
+    if(WIN32)
+      LIST(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
+      LIST(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
+    endif()
+endif()
