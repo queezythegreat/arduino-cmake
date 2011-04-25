@@ -217,11 +217,19 @@ When specifying the serial port name on Windows, use the following names:
 
     com1 com2 ... comN
 
+CMake configuration example:
+
+    set(${FIRMWARE_NAME}_PORT com3)
+
 ### Serial Terminal
 
-Putty is a great multi-protocol terminal, which support SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for serial, for example:
+Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for serial, for example:
 
-putty -serial COM3 -sercfg 9600,8,n,1,X
+    putty -serial COM3 -sercfg 9600,8,n,1,X
+
+CMake configuration example (assuming putty in on the system path):
+
+    set(${FIRMWARE_NAME}_SERIAL putty -serial COM3 -sercfg 9600,8,n,1,X)
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
