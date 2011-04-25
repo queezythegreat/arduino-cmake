@@ -203,11 +203,11 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
 ## Windows Enviroment Setup
 
-On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **system path** or within the system **Program Files** directory.
+On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **System Path** or within the system **Program Files** directory.
 
 Also you will need to add the `${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin` directory path to your system path, just make sure it is the first thing on list.
 
-Once that is done you can start using CMake the usual way, just make sure to chose a **MSYS Makefile** type generator.
+Once that is done you can start using CMake the usual way, just make sure to chose a **MSYS Makefiles** type generator.
 
 NOTE: Don't change the default *Arduino SDK* directory name, otherwise auto detection will no work properly!
 
@@ -227,7 +227,7 @@ Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, an
 
     putty -serial COM3 -sercfg 9600,8,n,1,X
 
-CMake configuration example (assuming putty in on the system path):
+CMake configuration example (assuming putty is on the **System Path**):
 
     set(${FIRMWARE_NAME}_SERIAL putty -serial COM3 -sercfg 9600,8,n,1,X)
 
