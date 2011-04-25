@@ -229,7 +229,7 @@ Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, an
 
 CMake configuration example (assuming putty is on the **System Path**):
 
-    set(${FIRMWARE_NAME}_SERIAL putty -serial COM3 -sercfg 9600,8,n,1,X)
+    set(${FIRMWARE_NAME}_SERIAL putty -serial @INPUT_PORT@)
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
