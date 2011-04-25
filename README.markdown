@@ -1,6 +1,5 @@
 
-Arduino CMake
-=============
+# Arduino CMake
 
 Arduino is a great development platform, which is easy to use. It has everything a beginner should need. The *Arduino IDE* simplifies a lot of things for the standard user, but if you are a professional programmer the IDE can feel simplistic and restrictive.
 
@@ -31,8 +30,7 @@ TODO:
     * Mac OS X
 * Test more complex configurations and error handling
 
-Contents
---------
+## Contents
 
 1. Getting Started
 2. Setting up Arduino CMake
@@ -40,8 +38,7 @@ Contents
 4. Creating libraries
 5. Windows Enviroment Setup
 
-Getting Started
-----------------
+## Getting Started
 
 The following instructions are for **\*nix** type systems, specifically this is a Linux example.
 
@@ -118,8 +115,7 @@ For a more detailed explanation, please read on...
 
 
 
-Setting up Arduino CMake
-------------------------
+## Setting up Arduino CMake
 
 The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with:
 
@@ -135,8 +131,7 @@ That will require an *Arduino SDK* version **0022** or newer. To ensure that the
     find_package(Arduino 22 REQUIRED)
 
 
-Creating firmware images
-------------------------
+## Creating firmware images
 
 Once you have the **Arduino CMake** package loaded you can start defining firmware images.
 
@@ -177,8 +172,7 @@ To enable serial terminal, add the `_SERIAL` setting (`@INPUT_PORT@` will be rep
 
 
 
-Creating libraries
-------------------
+## Creating libraries
 
 Creating libraries is very similar to defining a firmware image, except we use the `generate_arduino_library` command. The syntax of the settings is the same except we have a different list of settings:
 
@@ -207,11 +201,29 @@ Once that library is defined we can use it in our other firmware images... Lets 
     generate_arduino_firmware(blink)
 
 
-Windows Enviroment Setup
-------------------------
+## Windows Enviroment Setup
 
-On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **system path** or within the system **Program Files** directory. Also you will need to add the ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin directory path to your system path, just make sure it is the first thing on list.
+On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **system path** or within the system **Program Files** directory.
+
+Also you will need to add the `${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin` directory path to your system path, just make sure it is the first thing on list.
 
 Once that is done you can start using CMake the usual way, just make sure to chose a **MSYS Makefile** type generator.
 
-NOTE: Don't change the default **Arduino SDK** directory name, otherwise auto detection will no work properly!
+NOTE: Don't change the default *Arduino SDK* directory name, otherwise auto detection will no work properly!
+
+### Serial Namming
+
+When specifying the serial port name on Windows, use the following names:
+
+    com1 com2 ... comN
+
+### Serial Terminal
+
+Putty is a great multi-protocol terminal, which support SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for serial, for example:
+
+putty -serial COM3 -sercfg 9600,8,n,1,X
+
+Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
+
+
+
