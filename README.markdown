@@ -37,6 +37,11 @@ TODO:
 3. Creating firmware images
 4. Creating libraries
 5. Windows Enviroment Setup
+    1. CMake Generators
+    2. Serial Namming
+    3. Serial Terminal
+6. Troubleshooting
+    1. undefined reference to `__cxa_pure_virtual'
 
 ## Getting Started
 
@@ -203,13 +208,39 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
 ## Windows Enviroment Setup
 
-On Windows the *Arduino SDK* is self contained and has everything needed for building. The only thing that has to be done is to place the *Arduino SDK* either on the **System Path** or within the system **Program Files** directory.
+On Windows the *Arduino SDK* is self contained and has everything needed for building. To setup the environment do the following:
 
-Also you will need to add the `${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin` directory path to your system path, just make sure it is the first thing on list.
+1. Place the *Arduino SDK* either
+    * into  **Program Files**, or
+    * onto the **System Path**
+    
+    NOTE: Don't change the default *Arduino SDK* directory name, otherwise auto detection will no work properly!
+2. Add to the **System Path**: `${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin`
+3. Install [CMake 2.8](http://www.cmake.org/cmake/resources/software.html "CMake Downloads")
+   
+    NOTE: Make sure you check the option to add CMake to the **System Path**.
 
-Once that is done you can start using CMake the usual way, just make sure to chose a **MSYS Makefiles** type generator.
 
-NOTE: Don't change the default *Arduino SDK* directory name, otherwise auto detection will no work properly!
+### CMake Generators
+
+Once installed, you can start using CMake the usual way, just make sure to chose either a **MSYS Makefiles** or **Unix Makefiles** type generator:
+
+    MSYS Makefiles              = Generates MSYS makefiles.
+    Unix Makefiles              = Generates standard UNIX makefiles.
+    CodeBlocks - Unix Makefiles = Generates CodeBlocks project files.
+    Eclipse CDT4 - Unix Makefiles
+                                = Generates Eclipse CDT 4.0 project files.
+
+If you want to use a **MinGW Makefiles** type generator, you must generate the build system the following way:
+
+1. Remove `${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin` from the **System Path**
+2. Generate the build system using CMake with the following option set (either throug the GUI or from the command line):
+
+    CMAKE_MAKE_PROGRAM=${ARDIUNO_SDK_PATH}/hardware/tools/avr/utils/bin/make.exe
+
+3. Then build the normal way
+
+The reason for doing this is the MinGW generator cannot have the `sh.exe` binary on the **System Path** during generation, otherwise you get an error.
 
 ### Serial Namming
 
@@ -223,7 +254,7 @@ CMake configuration example:
 
 ### Serial Terminal
 
-Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for serial, for example:
+Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for launching a serial terminal, for example:
 
     putty -serial COM3 -sercfg 9600,8,n,1,X
 
@@ -234,4 +265,18 @@ CMake configuration example (assuming putty is on the **System Path**):
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
 
+## Troubleshooting
 
+The following section will outline some solutions to common problems that you may encounter.
+
+###  undefined reference to `__cxa_pure_virtual'
+
+When linking you'r firmware image you may encounter this error on some systems. An easy fix is to add the following to your firmware source code:
+
+    extern "C" void __cxa_pure_virtual(void);
+    void __cxa_pure_virtual(void) { while(1); } 
+
+
+The contents of the `__cxa_pure_virtual` function can be any error handling code; this function will be called whenever a pure virtual function is called. 
+
+* [What is the purpose of `cxa_pure_virtual`](http://stackoverflow.com/questions/920500/what-is-the-purpose-of-cxa-pure-virtual "")
