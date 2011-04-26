@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+
+#==============================================================================#
+#                                                                              #
+#  Author     : QueezyTheGreat                                                 #
+#  Description: Build configuration script                                     #
+#                                                                              #
+#    Makes sure that we don't execute cmake or ccmake in the source            #
+#  directory(we like prestine sources)                                         #
+#                                                                              #
+#    If we execute this script in the sources directory, a build directory     #
+#  will be created from where the actual build configuration will be executed. #
+#                                                                              #
+#    If we aren't in the source directory everything works normally.           #
+#                                                                              #
+#    By default cmake is used to configure the build system, but you can also  #
+#  chose from the ncurses version (ccmake) and the GUI version (cmake-gui).    #
+#                                                                              #
+#==============================================================================#
+
+
+# Find executable path
+function path_locate {
+    local EXECUTABLE_NAME
+    local PATH_OUTPUT_VARIABLE_NAME
+    local EXECUTABLE_PATH
+
+    # Check if we have required arguments
+    if [ "${#}" -lt 2 ]; then
+        echo "Insuficient amount of arguments..."
+        echo "locate_path EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+
+    EXECUTABLE_NAME="$1"
+    PATH_OUTPUT_VAR="$2"
+
+    if [ "${EXECUTABLE_NAME}X" = "X" ]; then
+        echo "Missing executable name"
+        echo "locate_path EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+    if [ "${PATH_OUTPUT_VAR}X" = "X" ]; then
+        echo "Missing path output variable name"
+        echo "locate_path EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+
+    # Try to find full path
+    EXECUTABLE_PATH="$(type -p ${EXECUTABLE_NAME})"
+
+    # Setting executable path
+    eval "${PATH_OUTPUT_VAR}"=${EXECUTABLE_PATH}
+}
+
+# Find executable path, exit if not found
+function require {
+    local EXECUTABLE_NAME
+    local PATH_OUTPUT_VARIABLE_NAME
+    local EXECUTABLE_PATH
+
+    # Check if we have required arguments
+    if [ "${#}" -lt 2 ]; then
+        echo "Insuficient amount of arguments..."
+        echo "require EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+
+    EXECUTABLE_NAME="$1"
+    PATH_OUTPUT_VAR="$2"
+
+    if [ "${EXECUTABLE_NAME}X" = "X" ]; then
+        echo "Missing executable name"
+        echo "require EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+    if [ "${PATH_OUTPUT_VAR}X" = "X" ]; then
+        echo "Missing path output variable name"
+        echo "require EXECUTABLE_NAME PATH_OUTPUT_VARIABLE_NAME"
+        exit 1
+    fi
+
+    # Try to find full path
+    EXECUTABLE_PATH="$(type -p ${EXECUTABLE_NAME})"
+
+    if [ "${EXECUTABLE_PATH}X" = "X" ]; then
+        # No path was found.... failing
+        echo "${EXECUTABLE_NAME} is not available"
+        echo "Aborting..."
+
+        exit -1
+    fi
+
+    if [ ! -x "${EXECUTABLE_PATH}" ]; then
+        echo "${EXECUTABLE_NAME} is not executable"
+        echo "Aborting..."
+
+        exit -1
+    fi
+
+    # Setting executable path
+    eval "${PATH_OUTPUT_VAR}"=${EXECUTABLE_PATH}
+}
+
+
+# Executable names
+CMAKE_NAME="cmake"
+CCMAKE_NAME="ccmake"
+CMAKEGUI_NAME="cmake-gui"
+
+# Find executable paths
+require     ${CMAKE_NAME} CMAKE_PATH
+path_locate ${CCMAKE_NAME} CCMAKE_PATH
+path_locate ${CMAKEGUI_NAME} CMAKEGUI_PATH
+
+# Warning file
+WARNING_PATH="${HOME}/.configure_warning"
+
+# Detect where we are and where the sources are
+CONFIG_BASE_PATH=$(cd "$(dirname "$0")"; pwd)
+CURRENT_PATH=$(pwd)
+
+IN_BASE="$(echo ${CURRENT_PATH}| grep ${CONFIG_BASE_PATH})"
+IN_BUILD="$(echo ${CURRENT_PATH}| grep ${CONFIG_BASE_PATH}/build)"
+
+# Set the default cmake executable
+# to be used
+CMAKE_EXECUTABLE="${CMAKE_PATH}"
+
+# Check for command line arguments
+case $1 in
+    "-h")
+        echo "$0 [-h|-x|-c] [cmake_args...]"
+        echo
+        echo "         -h      Display this help message"
+        echo "         -x      Run GUI version of CMake"
+        echo "         -c      Run Curses version of CMake"
+        echo
+        echo " cmake_args      CMake arguments that will be passed"
+        echo "                 to the chosen CMake binary, by default"
+        echo "                 cmake is used (if -x or -c not used)"
+        echo
+        
+        exit 1
+        ;;
+    "-x")
+        if [ ! -e "${CMAKEGUI_PATH}" ]; then
+            echo "${CMAKEGUI_NAME} is not available"
+            echo "Aborting...'"
+            
+            exit -1
+        fi
+        
+        # Setting executable to cmake-gui
+        CMAKE_EXECUTABLE="${CMAKEGUI_PATH}"
+        
+        # Shift argument list, getting rid of script name
+        # and first command line argument
+        shift
+        ;;
+    "-c")
+        if [ ! -e "${CCMAKE_PATH}" ]; then
+            echo "${CCMAKE_NAME} is not available"
+            echo "Aborting...'"
+            
+            exit -1
+
+        fi
+        
+        # Setting executable to ccmake
+        CMAKE_EXECUTABLE="${CCMAKE_PATH}"
+        
+        # Shift argument list, getting rid of script name
+        # and first command line argument
+        shift
+        ;;
+esac
+
+
+echo
+echo Project Sources: ${CONFIG_BASE_PATH}
+echo CMake Executable: ${CMAKE_EXECUTABLE}
+echo
+
+
+# Check if we are in source directory
+if [ "${IN_BASE}X" != "X" ]; then
+    # We are within the source directory
+    if [ "${IN_BUILD}X" != "X" ]; then
+        # We are in the build directory
+        echo 'Building within build directory'
+        # Running chosen cmake executable
+        ${CMAKE_EXECUTABLE} ${*} ${CONFIG_BASE_PATH}
+    else
+        # We are in the source directory
+        # but not within the build directory
+        if [ ! -f "${WARNING_PATH}" ]; then
+            echo
+            echo
+            echo "Running CMake within the source directory is HIGHLY discouraged."
+            echo "You should either build the project outside the source directory"
+            echo "or create a directory called build within the root of the project"
+            echo
+            echo
+            echo "This warning will only apear once..."
+            echo 
+            echo
+            echo
+            echo -n "Continuing in 15"
+            for COUNT in 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
+                sleep 1
+                echo -n "..${COUNT}"
+            done
+            echo
+
+            # Removing waring
+            touch "${WARNING_PATH}"
+        fi
+
+        if [ ! -d "${CONFIG_BASE_PATH}/build" ]; then
+            echo "Creating build directory: ${CONFIG_BASE_PATH}/build"
+            mkdir "${CONFIG_BASE_PATH}/build"
+        fi
+
+        # Changing to build directory
+        echo "Changing to build directory: ${CONFIG_BASE_PATH}/build"
+        cd "${CONFIG_BASE_PATH}/build"
+
+        # Running chosen cmake executable in new build directory
+        ${CMAKE_EXECUTABLE} ${*} ${CONFIG_BASE_PATH}
+
+    fi
+else
+    # We are outside of the source directory
+    # Running chosen cmake executable
+    ${CMAKE_EXECUTABLE} ${*} ${CONFIG_BASE_PATH}
+fi
+
+if [ "${?}" -eq 0 ]; then
+    echo 
+    echo "To build project:    make"
+    echo "To install project:  make install"
+    echo "Generate packages:   make package"
+    echo
+
+    exit 0
+else
+    exit 1
+fi

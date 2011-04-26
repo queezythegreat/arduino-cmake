@@ -54,7 +54,7 @@ In short you can get up and running using the follwoing commands:
     cmake ..
     make
     make upload                      # to upload the firmware   [optional]
-    make wiere_master_reader-serial  # to get a serial terminal [optional]
+    make wire_master_reader-serial  # to get a serial terminal [optional]
 
 For a more detailed explanation, please read on...
 
