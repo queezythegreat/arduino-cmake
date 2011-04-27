@@ -52,6 +52,7 @@ The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'
     3. Serial Terminal
 4. Troubleshooting
     1. undefined reference to `__cxa_pure_virtual'
+    2. Arduino Mega 2560 image does not work
 
 ## Getting Started
 
@@ -290,3 +291,35 @@ When linking you'r firmware image you may encounter this error on some systems. 
 The contents of the `__cxa_pure_virtual` function can be any error handling code; this function will be called whenever a pure virtual function is called. 
 
 * [What is the purpose of `cxa_pure_virtual`](http://stackoverflow.com/questions/920500/what-is-the-purpose-of-cxa-pure-virtual "")
+
+### Arduino Mega 2560 image does not work
+
+If you are working on Linux, and have `avr-gcc` >= 4.5 you might have a unpatched version gcc which has the C++ constructor bug. This bug affects the **Atmega2560** when using classes which causes the Arduino firmware to crash.
+
+If you encounter this problem either downgrade `avr-gcc` to **4.3** or rebuild gcc with the following patch:
+
+    --- gcc-4.5.1.orig/gcc/config/avr/libgcc.S  2009-05-23 17:16:07 +1000
+    +++ gcc-4.5.1/gcc/config/avr/libgcc.S   2010-08-12 09:38:05 +1000
+    @@ -802,7 +802,9 @@
+        mov_h   r31, r29
+        mov_l   r30, r28
+        out     __RAMPZ__, r20
+    +   push    r20
+        XCALL   __tablejump_elpm__
+    +   pop r20
+     .L__do_global_ctors_start:
+        cpi r28, lo8(__ctors_start)
+        cpc r29, r17
+    @@ -843,7 +845,9 @@
+        mov_h   r31, r29
+        mov_l   r30, r28
+        out     __RAMPZ__, r20
+    +   push    r20
+        XCALL   __tablejump_elpm__
+    +   pop r20
+     .L__do_global_dtors_start:
+        cpi r28, lo8(__dtors_end)
+        cpc r29, r17
+
+* [AVR GCC Bug 45263 Report](http://gcc.gnu.org/bugzilla/show_bug.cgi?id=45263 "")
+* [The global constructor bug in avr-gcc](http://andybrown.me.uk/ws/2010/10/24/the-major-global-constructor-bug-in-avr-gcc/ "")
