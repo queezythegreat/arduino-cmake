@@ -11,7 +11,7 @@ find_package(Arduino 22 REQUIRED)
 #====================================================================#
 #  Settings                                                          #
 #====================================================================#
-set(FIRMWARE_NAME wire_master_reader)
+set(FIRMWARE_NAME wire_reader)
 
 set(${FIRMWARE_NAME}_BOARD mega2560)               # Arduino Target board
 set(${FIRMWARE_NAME}_SRCS wire_master_reader.cpp)  # Firmware sources

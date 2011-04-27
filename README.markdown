@@ -64,8 +64,8 @@ In short you can get up and running using the follwoing commands:
     cd build
     cmake ..
     make
-    make upload                      # to upload the firmware   [optional]
-    make wire_master_reader-serial  # to get a serial terminal [optional]
+    make upload              # to upload all firmware images             [optional]
+    make wire_reader-serial  # to get a serial terminal to wire_serial   [optional]
 
 For a more detailed explanation, please read on...
 
@@ -108,7 +108,7 @@ For a more detailed explanation, please read on...
 
         set(${FIRMWARE_NAME}_PORT /path/to/device)
 
-    Ok lets do a upload:
+    Ok lets do a upload of all firmware images:
 
         make upload
 
@@ -124,7 +124,7 @@ For a more detailed explanation, please read on...
 
     That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following:
 
-        make wire_master_reader-serial
+        make wire_reader-serial
 
 
 
@@ -160,7 +160,7 @@ Where `${TARGET_NAME}` is the name of you target and `${OPTIONS_SUFFIX}` is one 
      _SRCS           # Target source files
      _HDRS           # Target Headers files (for project based build systems)
      _SKETCHES       # Target sketch files
-     _LIBS           # Libraries to linked against target
+     _LIBS           # Libraries to linked against target (sets up dependency tracking)
      _BOARD          # Board name (such as uno, mega2560, ...)
      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
      _SERIAL         # Serial command for serial target           [OPTIONAL]
@@ -175,14 +175,22 @@ So to create a target (firmware image) called `blink`, composed of `blink.h` and
 
     generate_arduino_firmware(blink)
 
+#### Upload Firmware
 To enable firmware upload functionality, you need to add the `_PORT` settings:
 
     set(blink_PORT /dev/ttyUSB0)
 
+Once defined there will be two target availabe for uploading, `${TARGET_NAME}-upload` and a global `upload` target (which will depend on all other upload targets defined in the build):
+
+* `blink-upload` - will upload just the `blink` firmware
+* `upload` - upload all firmware images registered for uploading
+
+#### Serial Termial
 To enable serial terminal, add the `_SERIAL` setting (`@INPUT_PORT@` will be replaced with the `blink_PORT` setting):
 
     set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
 
+This will create a target named `${TARGET_NAME}-serial` (in this example: blink-serial).
 
 
 
@@ -194,7 +202,7 @@ Creating libraries is very similar to defining a firmware image, except we use t
 
      _SRCS           # Library Sources
      _HDRS           # Library Headers
-     _LIBS           # Libraries to linked in
+     _LIBS           # Libraries to linked in (sets up dependency tracking)
      _BOARD          # Board name (such as uno, mega2560, ...)
      _NO_AUTOLIBS    # Disables Arduino library detection
 
@@ -216,6 +224,7 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
     generate_arduino_firmware(blink)
 
+CMake has automatic dependency tracking, so when you build the `blink` target, `blink_lib` will automatically get build in the right order.
 
 ## Windows Enviroment Setup
 
