@@ -9,21 +9,31 @@ CMake is great corss-platform build system that works on practically any operati
 
 The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'm currently basing on version **0022** of the *Arduino SDK*.
 
-Requirements:
+## Features
 
-* CMake - http://www.cmake.org/cmake/resources/software.html
-* Arduino SDK - http://www.arduino.cc/en/Main/Software
+* Integrates with *Arduino SDK*
+* Supports all Arduino boards.
+* Automatic detection of Arduino libraries.
+* Generates firmware images.
+* Generates libraries.
+* Upload support.
+* Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
+* Cross-platform: Windows, Linux, Mac
+* Extensible build system, thanks to CMake
+
+## Requirements
+
+* Base requirements:
+    * CMake - http://www.cmake.org/cmake/resources/software.html
+    * Arduino SDK - http://www.arduino.cc/en/Main/Software
+* Linux requirements:
+    * gcc-avr      - AVR GNU GCC compiler
+    * binutils-avr - AVR binary tools
+    * avr-libc     - AVR C library
+    * avrdude      - Firmware uploader
 
 
-Linux Requirements:
-
-* gcc-avr      - AVR GNU GCC compiler
-* binutils-avr - AVR binary tools
-* avr-libc     - AVR C library
-* avrdude      - Firmware uploader
-
-
-TODO:
+## TODO
 
 * Sketch conversion (PDE files)
 * Setup dependency detection for:
@@ -33,14 +43,14 @@ TODO:
 ## Contents
 
 1. Getting Started
-2. Setting up Arduino CMake
-3. Creating firmware images
-4. Creating libraries
-5. Windows Enviroment Setup
+2. Using Arduino CMake
+    1. Creating firmware images
+    2. Creating libraries
+3. Windows Enviroment Setup
     1. CMake Generators
     2. Serial Namming
     3. Serial Terminal
-6. Troubleshooting
+4. Troubleshooting
     1. undefined reference to `__cxa_pure_virtual'
 
 ## Getting Started
@@ -136,7 +146,7 @@ That will require an *Arduino SDK* version **0022** or newer. To ensure that the
     find_package(Arduino 22 REQUIRED)
 
 
-## Creating firmware images
+### Creating firmware images
 
 Once you have the **Arduino CMake** package loaded you can start defining firmware images.
 
@@ -177,7 +187,7 @@ To enable serial terminal, add the `_SERIAL` setting (`@INPUT_PORT@` will be rep
 
 
 
-## Creating libraries
+### Creating libraries
 
 Creating libraries is very similar to defining a firmware image, except we use the `generate_arduino_library` command. The syntax of the settings is the same except we have a different list of settings:
 
