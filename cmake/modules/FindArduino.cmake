@@ -13,6 +13,7 @@
 #      _LIBS           # Libraries to linked in
 #      _BOARD          # Board name (such as uno, mega2560, ...)
 #      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
+#      _AFLAGS         # Override global Avrdude flags for target
 #      _SERIAL         # Serial command for serial target           [OPTIONAL]
 #      _NO_AUTOLIBS    # Disables Arduino library detection
 # Here is a short example for a target named test:
@@ -177,6 +178,7 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
                                                  _LIBS       # Libraries to linked in
                                                  _BOARD      # Board name (such as uno, mega2560, ...)
                                                  _PORT       # Serial port, for upload and serial targets
+                                                 _AFLAGS     # Override global Avrdude flags for target
                                                  _SKETCHES   # Arduino sketch files
                                                  _SERIAL)    # Serial command for serial target
                             
@@ -422,10 +424,14 @@ endfunction()
 # Create an upload target (${TARGET_NAME}-upload) for the specified Arduino target.
 #
 function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
+    set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
+    if(DEFINED ${TARGET_NAME}_AFLAGS)
+        set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
+    endif()
     add_custom_target(${TARGET_NAME}-upload
                      ${ARDUINO_AVRDUDE_PROGRAM} 
                          -U flash:w:${TARGET_NAME}.hex
-                         -V -F
+                         ${AVRDUDE_FLAGS}
                          -C ${ARDUINO_AVRDUDE_CONFIG_PATH}
                          -p ${${BOARD_ID}.build.mcu}
                          -c ${${BOARD_ID}.upload.protocol}
@@ -536,6 +542,8 @@ if(NOT ARDUINO_FOUND)
          CACHE STRING "")
      set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
          CACHE STRING "")
+     set(ARDUINO_AVRDUDE_FLAGS -V -F
+         CACHE STRING "Arvdude global flag list.")
 
      if(ARDUINO_SDK_PATH)
          detect_arduino_version(ARDUINO_SDK_VERSION)

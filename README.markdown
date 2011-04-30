@@ -166,6 +166,7 @@ Where `${TARGET_NAME}` is the name of you target and `${OPTIONS_SUFFIX}` is one 
      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
      _SERIAL         # Serial command for serial target           [OPTIONAL]
      _NO_AUTOLIBS    # Disables Arduino library detection (default On)
+     _AFLAGS         # Overide global avrdude flags for target
 
 
 So to create a target (firmware image) called `blink`, composed of `blink.h` and `blink.cpp` source files for the *Arduino Uno*, you write the following:
