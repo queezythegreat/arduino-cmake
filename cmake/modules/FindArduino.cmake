@@ -529,7 +529,8 @@ if(NOT ARDUINO_FOUND)
     find_program(ARDUINO_AVRDUDE_CONFIG_PATH
                  NAMES avrdude.conf
                  PATHS ${ARDUINO_SDK_PATH}
-                 PATH_SUFFIXES hardware/tools)
+                 PATH_SUFFIXES hardware/tools
+                               hardware/tools/avr/etc)
 
      set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
          CACHE STRING "")

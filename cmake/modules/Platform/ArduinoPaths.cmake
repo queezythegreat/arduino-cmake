@@ -1,12 +1,21 @@
 if(UNIX)
-    INCLUDE(Platform/UnixPaths)
+    include(Platform/UnixPaths)
+    if(APPLE)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ~/Applications
+                                             /Applications
+                                             /Developer/Applications
+                                             /sw        # Fink
+                                             /opt/local) # MacPorts
+    endif()
 elseif(WIN32)
-    INCLUDE(Platform/WindowsPaths)
+    include(Platform/WindowsPaths)
 endif()
 
 if(ARDUINO_SDK_PATH)
     if(WIN32)
-      LIST(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
-      LIST(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
+    elseif(APPLE)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
     endif()
 endif()

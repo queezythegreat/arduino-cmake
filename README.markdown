@@ -36,8 +36,6 @@ The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'
 ## TODO
 
 * Sketch conversion (PDE files)
-* Setup dependency detection for:
-    * Mac OS X
 * Test more complex configurations and error handling
 
 ## Contents
@@ -46,11 +44,14 @@ The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'
 2. Using Arduino CMake
     1. Creating firmware images
     2. Creating libraries
-3. Windows Enviroment Setup
+3. Mac OS X Enviroment Setup
+    1. Serial Namming
+    2. Serial Terminal
+4. Windows Enviroment Setup
     1. CMake Generators
     2. Serial Namming
     3. Serial Terminal
-4. Troubleshooting
+5. Troubleshooting
     1. undefined reference to `__cxa_pure_virtual'
     2. Arduino Mega 2560 image does not work
 
@@ -226,6 +227,50 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
 CMake has automatic dependency tracking, so when you build the `blink` target, `blink_lib` will automatically get build in the right order.
 
+## Mac OS X Enviroment Setup
+
+The *Arduino SDK*, as on Windows, is self contained and has everything needed for building. To get started do the following:
+
+1. Install the  *Arduino SDK*
+    1. Download [*Arduino SDK*](http://www.arduino.cc/en/Main/Software "")
+    2. Copy `Arduino` into `Applications`
+    3. Install `FTDIUSBSerialDrviver*` (for FTDI USB Serial)
+2. Install CMake
+    1. Download [CMake](http://www.cmake.org/cmake/resources/software.html "")
+    2. Install `cmake-*.pkg`
+        
+        NOTE: Make sure to click on **`Install Command Line Links`**
+
+### Serial Naming
+
+When specifying the serial port name on Mac OS X, use the following names (where XXX is a unique ID):
+
+    /dev/tty.usbmodemXXX
+    /dev/tty.usbserialXXX
+
+Where `tty.usbmodemXXX` is for new **Uno** and **Mega** Arduinos, while `tty.usbserialXXX` are the older ones. 
+
+CMake configuration example:
+
+    set(${FIRMWARE_NAME}_PORT /dev/tty.usbmodem1d11)
+
+### Serial Terminal
+
+On Mac the easiest way to get a Serial Terminal is to use the `screen` terminal emulator. To start a `screen` serial session:
+
+    screen /dev/tty.usbmodemXXX
+
+Where `/dev/tty.usbmodemXXX` is the terminal device. To exit press `C-a C-\`.
+
+CMake configuration example:
+
+    set(${FIRMWARE_NAME}_SERIAL screen @INPUT_PORT@)
+
+
+
+
+
+
 ## Windows Enviroment Setup
 
 On Windows the *Arduino SDK* is self contained and has everything needed for building. To setup the environment do the following:
@@ -283,7 +328,6 @@ CMake configuration example (assuming putty is on the **System Path**):
     set(${FIRMWARE_NAME}_SERIAL putty -serial @INPUT_PORT@)
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
-
 
 ## Troubleshooting
 
