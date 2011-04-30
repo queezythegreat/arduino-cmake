@@ -1,4 +1,3 @@
-
 # Arduino CMake
 
 Arduino is a great development platform, which is easy to use. It has everything a beginner should need. The *Arduino IDE* simplifies a lot of things for the standard user, but if you are a professional programmer the IDE can feel simplistic and restrictive.
@@ -21,16 +20,30 @@ The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'
 * Cross-platform: Windows, Linux, Mac
 * Extensible build system, thanks to CMake
 
+
+## Feedback
+
+**Arduino CMake** is hosted on GitHUB and is availabe at:
+
+[https://github.com/queezythegreat/arduino-cmake]()
+
+Did you find a bug or would like a specific feature, plase report it at:
+
+[https://github.com/queezythegreat/arduino-cmake/issues]()
+
+If you would like to hack on this project, don't hesitate to fork it on GitHub.
+I will be glad to integrate you'r changes if you send me a `Pull Request`.
+
 ## Requirements
 
 * Base requirements:
-    * CMake - http://www.cmake.org/cmake/resources/software.html
-    * Arduino SDK - http://www.arduino.cc/en/Main/Software
+    * `CMake` - http://www.cmake.org/cmake/resources/software.html
+    * `Arduino SDK` - http://www.arduino.cc/en/Main/Software
 * Linux requirements:
-    * gcc-avr      - AVR GNU GCC compiler
-    * binutils-avr - AVR binary tools
-    * avr-libc     - AVR C library
-    * avrdude      - Firmware uploader
+    * `gcc-avr`      - AVR GNU GCC compiler
+    * `binutils-avr` - AVR binary tools
+    * `avr-libc`     - AVR C library
+    * `avrdude`      - Firmware uploader
 
 
 ## TODO
@@ -44,16 +57,26 @@ The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'
 2. Using Arduino CMake
     1. Creating firmware images
     2. Creating libraries
-3. Mac OS X Enviroment Setup
+3. Linux Enviroment Setup
     1. Serial Namming
     2. Serial Terminal
-4. Windows Enviroment Setup
+4. Mac OS X Enviroment Setup
+    1. Serial Namming
+    2. Serial Terminal
+5. Windows Enviroment Setup
     1. CMake Generators
     2. Serial Namming
     3. Serial Terminal
-5. Troubleshooting
+6. Troubleshooting
     1. undefined reference to `__cxa_pure_virtual'
     2. Arduino Mega 2560 image does not work
+
+
+
+
+
+
+
 
 ## Getting Started
 
@@ -132,6 +155,10 @@ For a more detailed explanation, please read on...
 
 
 
+
+
+
+
 ## Setting up Arduino CMake
 
 The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with:
@@ -197,7 +224,6 @@ This will create a target named `${TARGET_NAME}-serial` (in this example: blink-
 
 
 
-
 ### Creating libraries
 
 Creating libraries is very similar to defining a firmware image, except we use the `generate_arduino_library` command. The syntax of the settings is the same except we have a different list of settings:
@@ -227,6 +253,84 @@ Once that library is defined we can use it in our other firmware images... Lets 
     generate_arduino_firmware(blink)
 
 CMake has automatic dependency tracking, so when you build the `blink` target, `blink_lib` will automatically get build in the right order.
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Linux Enviroment Setup
+
+Running the *Arduino SDK* on Linux is a little bit more involved, because not everything is bundled with the SDK. The AVR GCC toolchain is not distributed alongside the Arduino SDK, so it has to be installed seperately.
+
+To get **Arduino CMake** up and running follow these steps:
+
+1. Install the following packages using your package manager:
+    
+    * `gcc-avr`      - AVR GNU GCC compiler
+    * `binutils-avr` - AVR binary tools
+    * `avr-libc`     - AVR C library
+    * `avrdude`      - Firmware uploader
+    
+2. Install the *Arduino SDK*.
+    
+    Depending on your distribution, the *Arduino SDK* may or may not be available.
+    
+    If it is available please install it using your packages manager otherwise do:
+    
+    1. Download the [*Arduino SDK*](http://www.arduino.cc/en/Main/Software "")
+    2. Extract it into `/usr/share`
+    
+    NOTE: Arduino version **0022** or newer is required!
+
+3. Install CMake:
+    
+    * Using the pakcage manager or
+    * Using the [CMake installer](http://www.cmake.org/cmake/resources/software.html "").
+
+    NOTE: CMake version 2.8 or newer is required!
+
+
+
+### Serial Naming
+
+On Linux the Arduino serial device are name as follows (where **X** is the device number):
+
+    /dev/ttyUSBX
+    /dev/ttyACMX
+
+Where `/dev/ttyACMX` is for the new Uno and Mega Arduino's, while `/dev/ttyUSBX` is for the old ones.
+
+CMake configuration example:
+
+    set(${FIRMWARE_NAME}_PORT /dev/ttyUSB0)
+
+
+### Serial Terminal
+
+On Linux a wide range on serial terminal are availabe. Here is a list of a couple:
+
+* `minicom`
+* `picocom`
+* `gtkterm`
+* `screen`
+
+
+
+
+
+
+
+
+
+
 
 ## Mac OS X Enviroment Setup
 
@@ -266,6 +370,11 @@ Where `/dev/tty.usbmodemXXX` is the terminal device. To exit press `C-a C-\`.
 CMake configuration example:
 
     set(${FIRMWARE_NAME}_SERIAL screen @INPUT_PORT@)
+
+
+
+
+
 
 
 
@@ -329,6 +438,17 @@ CMake configuration example (assuming putty is on the **System Path**):
     set(${FIRMWARE_NAME}_SERIAL putty -serial @INPUT_PORT@)
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
+
+
+
+
+
+
+
+
+
+
+
 
 ## Troubleshooting
 
