@@ -301,7 +301,7 @@ To get **Arduino CMake** up and running follow these steps:
 
 ### Serial Naming
 
-On Linux the Arduino serial device are name as follows (where **X** is the device number):
+On Linux the Arduino serial device is named as follows (where **X** is the device number):
 
     /dev/ttyUSBX
     /dev/ttyACMX
