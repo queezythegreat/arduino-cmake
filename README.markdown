@@ -8,6 +8,8 @@ CMake is great corss-platform build system that works on practically any operati
 
 The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'm currently basing on version **0022** of the *Arduino SDK*.
 
+So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
+
 ## Features
 
 * Integrates with *Arduino SDK*
