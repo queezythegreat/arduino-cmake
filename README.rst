@@ -89,7 +89,8 @@ Contents
    2. `Serial Namming`_
    3. `Serial Terminal`_
 
-6. `Troubleshooting`_
+6. `Eclipse Enviroment`_
+7. `Troubleshooting`_
 
    1. `undefined reference to `__cxa_pure_virtual'`_
    2. `Arduino Mega 2560 image does not work`_
@@ -99,7 +100,6 @@ Contents
 
 
 
-.. _Getting Started:
 
 Getting Started
 ---------------
@@ -144,6 +144,14 @@ For a more detailed explanation, please read on...
    Now lets create the build system that will create our firmware::
 
         cmake ..
+
+   To specify the build system type, use the ``-G`` option, for example::
+
+        cmake -G"Eclipse CDT4 - Unix Makefiles" ..
+
+   If you rather use a GUI, use::
+
+        cmake-gui ..
 
 4. Building
 
@@ -485,6 +493,48 @@ CMake configuration example (assuming putty is on the **System Path**)::
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
+
+
+
+
+
+
+
+
+
+Eclipse Enviroment
+------------------
+
+Eclipse is a great IDE which has a lot of functionality and is much more powerfull than the *Arduino IDE*. In order to use Eclipse you will need the following:
+
+1. Eclipse
+2. Eclipse CDT extension (for C/C++ development)
+
+On most Linux distribution you can install Eclipse + CDT using your package manager, otherwise you can download the `Eclipse IDE for C/C++ Developers`_ bundle.
+
+Once you have Eclipse, here is how to generate a project using CMake:
+
+1. Create a build directory that is next to your source directory, like this::
+   
+       build_directory/
+       source_directory/
+
+2. Run CMake with the `Eclipse CDT4 - Unix Makefiles` generator, inside the build directory::
+
+        cd build_directory/
+        cmake -G"Eclipse CDT4 - Unix Makefiles" ../source_directory
+
+3. Open Eclipse and import the project from the build directory.
+
+   1. **File > Import**
+   2. Select `Existing Project into Workspace`, and click **Next**
+   3. Select *Browse*, and select the build directoy.
+   4. Select the project in the **Projects:** list
+   5. Click **Finish**
+
+
+
+.. _Eclipse IDE for C/C++ Developers: http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/heliossr2
 
 
 
