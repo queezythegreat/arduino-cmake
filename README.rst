@@ -95,6 +95,7 @@ Contents
    1. `undefined reference to `__cxa_pure_virtual'`_
    2. `Arduino Mega 2560 image does not work`_
 
+8. `Resources`_
 
 
 
@@ -608,7 +609,45 @@ If you encounter this problem either downgrade ``avr-gcc`` to **4.3** or rebuild
 
 
 
+
+
+
+Resources
+---------
+
+Here are some resources you might find usefull in getting started.
+
+1. CMake:
+
+   * `Offical CMake Tutorial`_
+   * `CMake Tutorial`_
+   * `CMake Reference`_
+
+.. _Offical CMake Tutorial: http://www.cmake.org/cmake/help/cmake_tutorial.html
+.. _CMake Tutorial: http://mathnathan.com/2010/07/11/getting-started-with-cmake/
+.. _CMake Reference: http://www.cmake.org/cmake/help/cmake-2-8-docs.html
+
+2. Arduino:
+   
+   * `Getting Started`_ - Introduction to Arduino
+   * `Playground`_ - User contributed documentations and help
+   * `Arduino Forums`_ - Official forums
+   * `Arduino Reference`_ - Official reference manual
+
+.. _Getting Started: http://www.arduino.cc/en/Guide/HomePage
+.. _Playground: http://www.arduino.cc/playground/
+.. _Arduino Reference: http://www.arduino.cc/en/Reference/HomePage
+.. _Arduino Forums: http://www.arduino.cc/forum/
+
+
+
+
+
+
+
+
 .. _CMake 2.8: http://www.cmake.org/cmake/resources/software.html
 .. _CMake: http://www.cmake.org/cmake/resources/software.html
 .. _CMake Installer: http://www.cmake.org/cmake/resources/software.html
 .. _Arduino SDK: http://www.arduino.cc/en/Main/Software
+
