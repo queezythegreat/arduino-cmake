@@ -534,7 +534,7 @@ if(NOT ARDUINO_FOUND)
 
     find_program(ARDUINO_AVRDUDE_CONFIG_PATH
                  NAMES avrdude.conf
-                 PATHS ${ARDUINO_SDK_PATH}
+                 PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
                  PATH_SUFFIXES hardware/tools
                                hardware/tools/avr/etc)
 
