@@ -57,6 +57,15 @@ Requirements
   - ``avrdude``      - Firmware uploader
 
 
+Contributors
+------------
+
+I would like to thank the follwoing people for contributing to **Arduino CMake**:
+
+* Marc Plano-Lesay (`Kernald`_)
+
+.. Kernald: https://github.com/Kernald
+
 
 TODO
 ----
