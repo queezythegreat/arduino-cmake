@@ -335,8 +335,8 @@ To incorporate a library into your firmaware, you can do one of three things:
    
    For example::
      
-      link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/libraries)
-      link_libraries(/home/username/arduino_libraries)
+      link_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+      link_directorieslibraries(/home/username/arduino_libraries)
 
 
 
