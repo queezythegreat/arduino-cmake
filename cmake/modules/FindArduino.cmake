@@ -313,7 +313,10 @@ function(find_arduino_libraries VAR_NAME SRCS)
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                 get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                foreach(LIB_SEARCH_PATH ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
+                get_property(LIBRARY_SEARCH_PATH
+                             DIRECTORY     # Property Scope
+                             PROPERTY LINK_DIRECTORIES)
+                foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
                     if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                         list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                         break()

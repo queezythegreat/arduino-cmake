@@ -17,6 +17,7 @@ Features
 
 * Integrates with *Arduino SDK*
 * Supports all Arduino boards.
+* Supports Arduino type libraries
 * Automatic detection of Arduino libraries.
 * Generates firmware images.
 * Generates libraries.
@@ -64,7 +65,7 @@ I would like to thank the follwoing people for contributing to **Arduino CMake**
 
 * Marc Plano-Lesay (`Kernald`_)
 
-.. Kernald: https://github.com/Kernald
+.. _Kernald: https://github.com/Kernald
 
 
 TODO
@@ -81,6 +82,7 @@ Contents
 
    1. `Creating firmware images`_
    2. `Creating libraries`_
+   3. `Arduino Libraries`_
 
 3. `Linux Enviroment Setup`_
 
@@ -307,10 +309,34 @@ CMake has automatic dependency tracking, so when you build the ``blink`` target,
 
 
 
+Arduino Libraries
+~~~~~~~~~~~~~~~~~
 
+Libraries are one of the more powerfull features which the Arduino offers to users. Instead of rewriting code, people bundle their code in libraries and share them with others.
+The structure of libraries is very simple, which makes them easy to create.
 
+An Arduino library is any directory which contains a header named after the directory, simple.
+Any source files contained within that directory is part of the library. Here is a example of library a called ExampleLib::
 
+    ExampleLib/
+      |-- ExampleLib.h
+      |-- ExampleLib.cpp
+      `-- OtherLibSource.cpp
 
+Now because the power of Arduino lies within those user created libraries, support for them is built right into **Arduino CMake**. The **Arduino SDK** comes with a large number of default libraries, adding new libraries is simple.
+
+To incorporate a library into your firmaware, you can do one of three things:
+
+1. Place the library next to the default Arduino libraries (located at **${ARDUINO_SDK}/libraries**)
+2. Place the library next to the firmware configuration file (same directory as the **CMakeLists.txt**)
+3. Place the library in a seperate folder and tell **Arduino CMake** the path to that directory.
+   
+   To tell CMake where to search for libraries use the `link_directories` command. The comand has to be used before defining any firmware or libraries requiring those libraries.
+   
+   For example::
+     
+      link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+      link_libraries(/home/username/arduino_libraries)
 
 
 
