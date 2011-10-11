@@ -85,7 +85,7 @@ Contents
    1. `Creating firmware images`_
    2. `Creating libraries`_
    3. `Arduino Libraries`_
-   4. `Comipler and Linker Flags`_
+   4. `Compiler and Linker Flags`_
 
 3. `Linux Enviroment Setup`_
 
