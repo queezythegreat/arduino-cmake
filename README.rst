@@ -85,7 +85,7 @@ Contents
    1. `Creating firmware images`_
    2. `Creating libraries`_
    3. `Arduino Libraries`_
-   4. `Comipler/Linker Flags`_
+   4. `Comipler and Linker Flags`_
 
 3. `Linux Enviroment Setup`_
 
@@ -350,8 +350,8 @@ The option name should be **${LIBRARY_NAME}_RECURSE**, where in this case **LIBR
 
 
 
-Compiler/Linker Flags
-~~~~~~~~~~~~~~~~~~~~~
+Compiler and Linker Flags
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The default compiler and linker flags should be fine for most projects. If you required specific compiler/linker flags, use the following options to change them:
 
