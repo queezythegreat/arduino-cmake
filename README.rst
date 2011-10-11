@@ -64,8 +64,10 @@ Contributors
 I would like to thank the follwoing people for contributing to **Arduino CMake**:
 
 * Marc Plano-Lesay (`Kernald`_)
+* James Goppert (`jgoppert`_)
 
 .. _Kernald: https://github.com/Kernald
+.. _jgoppert: https://github.com/jgoppert
 
 
 TODO
@@ -83,6 +85,7 @@ Contents
    1. `Creating firmware images`_
    2. `Creating libraries`_
    3. `Arduino Libraries`_
+   4. `Comipler/Linker Flags`_
 
 3. `Linux Enviroment Setup`_
 
@@ -337,6 +340,36 @@ To incorporate a library into your firmaware, you can do one of three things:
      
       link_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries)
       link_directories(/home/username/arduino_libraries)
+
+
+If a library contains nested sources, a special option must be defined to enable recursion. For example to enable recusion for the Arduino Wire library use::
+
+    set(Wire_RECURSE True)
+
+The option name should be **${LIBRARY_NAME}_RECURSE**, where in this case **LIBRARY_NAME** is equal to *Wire*.
+
+
+
+Compiler/Linker Flags
+~~~~~~~~~~~~~~~~~~~~~
+
+The default compiler and linker flags should be fine for most projects. If you required specific compiler/linker flags, use the following options to change them:
+
+* **ARDUINO_C_FLAGS** - C compiler flags
+* **ARDUINO_CXX_FLAGS** - C++ compiler flags
+* **ARDUINO_LINKER_FLAGS** - Linker flags
+
+
+Set these option either before the `project()` like so::
+
+    set(ARDUINO_C_FLAGS      "-ffunction-sections -fdata-sections")
+    set(ARDUINO_CXX_FLAGS    "${ARDUINO_C_FLAGS} -fno-exceptions")
+    set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections")
+    project(ArduinoExample C CXX)
+
+or when configuring the project::
+
+    cmake -D"ARDUINO_C_FLAGS=-ffunction-sections -fdata-sections" ../path/to/sources/
 
 
 
