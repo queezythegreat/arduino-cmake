@@ -381,7 +381,7 @@ endfunction()
 #
 function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS)
     set(LIB_TARGETS)
-    find_arduino_libraries(TARGET_LIBS ${SRCS})
+    find_arduino_libraries(TARGET_LIBS "${SRCS}")
     foreach(TARGET_LIB ${TARGET_LIBS})
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}) # Create static library instead of returning sources
         list(APPEND LIB_TARGETS ${LIB_DEPS})
