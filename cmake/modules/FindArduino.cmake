@@ -46,10 +46,12 @@
 #    
 #       generate_arduino_library(test)
 
+file(GLOB SDK_PATHS /usr/share/arduino*)
 
 find_path(ARDUINO_SDK_PATH
           NAMES lib/version.txt hardware libraries
-          PATH_SUFFIXES  share/arduino
+		  PATH_SUFFIXES  share/arduino
+		  HINTS ${SDK_PATHS}
           DOC "Arduino Development Kit path.")
 
 
