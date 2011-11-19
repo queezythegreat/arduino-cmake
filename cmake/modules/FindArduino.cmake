@@ -450,16 +450,19 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     if(DEFINED ${TARGET_NAME}_AFLAGS)
         set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
     endif()
+    if (${${BOARD_ID}.upload.protocol} STREQUAL "stk500") 
+        set(${BOARD_ID}.upload.protocol "stk500v1")
+    endif()
     add_custom_target(${TARGET_NAME}-upload
-                     ${ARDUINO_AVRDUDE_PROGRAM} 
-                         -U flash:w:${TARGET_NAME}.hex
-                         ${AVRDUDE_FLAGS}
-                         -C ${ARDUINO_AVRDUDE_CONFIG_PATH}
-                         -p ${${BOARD_ID}.build.mcu}
-                         -c ${${BOARD_ID}.upload.protocol}
-                         -b ${${BOARD_ID}.upload.speed}
-                         -P ${PORT}
-                     DEPENDS ${TARGET_NAME})
+                     ${ARDUINO_AVRDUDE_PROGRAM}
+                        ${AVRDUDE_FLAGS}
+                         -C${ARDUINO_AVRDUDE_CONFIG_PATH}
+                         -p${${BOARD_ID}.build.mcu} 
+                         -c${${BOARD_ID}.upload.protocol} 
+                         -P${PORT} -b${${BOARD_ID}.upload.speed}
+                         -D
+                         -Uflash:w:${CMAKE_BINARY_DIR}/${TARGET_NAME}.hex:i
+                         DEPENDS ${TARGET_NAME})
     if(NOT TARGET upload)
         add_custom_target(upload)
     endif()
