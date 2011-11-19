@@ -533,75 +533,82 @@ endfunction()
 
 
 # Setting up Arduino enviroment settings
-if(NOT ARDUINO_FOUND)
-    find_file(ARDUINO_CORES_PATH
-              NAMES cores
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_CORES_PATH
+    NAMES cores
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_LIBRARIES_PATH
-              NAMES libraries
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_LIBRARIES_PATH
+    NAMES libraries
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_BOARDS_PATH
-              NAMES boards.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_BOARDS_PATH
+    NAMES boards.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_PROGRAMMERS_PATH
-              NAMES programmers.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_PROGRAMMERS_PATH
+    NAMES programmers.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_REVISIONS_PATH
-              NAMES revisions.txt
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_REVISIONS_PATH
+    NAMES revisions.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_VERSION_PATH
-              NAMES lib/version.txt
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_VERSION_PATH
+    NAMES lib/version.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_program(ARDUINO_AVRDUDE_PROGRAM
-                 NAMES avrdude
-                 PATHS ${ARDUINO_SDK_PATH}
-                 PATH_SUFFIXES hardware/tools)
+find_program(ARDUINO_AVRDUDE_PROGRAM
+    NAMES avrdude
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/tools
+    NO_DEFAULT_PATH) 
 
-    find_program(ARDUINO_AVRDUDE_CONFIG_PATH
-                 NAMES avrdude.conf
-                 PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
-                 PATH_SUFFIXES hardware/tools
-                               hardware/tools/avr/etc)
+find_file(ARDUINO_AVRDUDE_CONFIG_PATH
+    NAMES avrdude.conf
+    PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
+    PATH_SUFFIXES hardware/tools
+                  hardware/tools/avr/etc
+    NO_DEFAULT_PATH)
 
-     set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
-         CACHE STRING "")
-     set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
-         CACHE STRING "")
-     set(ARDUINO_AVRDUDE_FLAGS -V -F
-         CACHE STRING "Arvdude global flag list.")
+set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
+    CACHE STRING "")
+set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
+    CACHE STRING "")
+set(ARDUINO_AVRDUDE_FLAGS -V -F
+    CACHE STRING "Arvdude global flag list.")
 
-     if(ARDUINO_SDK_PATH)
-         detect_arduino_version(ARDUINO_SDK_VERSION)
-         set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
-     endif(ARDUINO_SDK_PATH)
+if(ARDUINO_SDK_PATH)
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+endif(ARDUINO_SDK_PATH)
 
-    include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Arduino
-                                      REQUIRED_VARS ARDUINO_SDK_PATH
-                                                    ARDUINO_SDK_VERSION
-                                      VERSION_VAR ARDUINO_SDK_VERSION)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Arduino
+                                  REQUIRED_VARS ARDUINO_SDK_PATH
+                                                ARDUINO_SDK_VERSION
+                                  VERSION_VAR ARDUINO_SDK_VERSION)
 
 
-     mark_as_advanced(ARDUINO_CORES_PATH
-                      ARDUINO_SDK_VERSION
-                      ARDUINO_LIBRARIES_PATH
-                      ARDUINO_BOARDS_PATH
-                      ARDUINO_PROGRAMMERS_PATH
-                      ARDUINO_REVISIONS_PATH
-                      ARDUINO_AVRDUDE_PROGRAM
-                      ARDUINO_AVRDUDE_CONFIG_PATH
-                      ARDUINO_OBJCOPY_EEP_FLAGS
-                      ARDUINO_OBJCOPY_HEX_FLAGS)
-    load_board_settings()
+mark_as_advanced(ARDUINO_CORES_PATH
+    ARDUINO_SDK_VERSION
+    ARDUINO_LIBRARIES_PATH
+    ARDUINO_BOARDS_PATH
+    ARDUINO_PROGRAMMERS_PATH
+    ARDUINO_REVISIONS_PATH
+    ARDUINO_AVRDUDE_PROGRAM
+    ARDUINO_AVRDUDE_CONFIG_PATH
+    ARDUINO_OBJCOPY_EEP_FLAGS
+    ARDUINO_OBJCOPY_HEX_FLAGS)
+load_board_settings()
 
 endif()
 
