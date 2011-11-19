@@ -184,6 +184,8 @@ For a more detailed explanation, please read on...
 
         make upload
 
+   If you have an upload sync error then try resetting/ power cycling the board before starting the upload process.
+
 6. Serial output
 
    If you have some serial output, you can launch a serial terminal from the build system. The command used for executing the serial terminal is user configurable by the following setting::
