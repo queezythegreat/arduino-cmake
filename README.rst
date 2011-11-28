@@ -22,7 +22,7 @@ Features
 * Generates firmware images.
 * Generates libraries.
 * Upload support.
-# Programmer support (with bootloader upload).
+* Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
 * Cross-platform: Windows, Linux, Mac
 * Extensible build system, thanks to CMake
