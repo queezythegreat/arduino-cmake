@@ -22,6 +22,7 @@ Features
 * Generates firmware images.
 * Generates libraries.
 * Upload support.
+# Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
 * Cross-platform: Windows, Linux, Mac
 * Extensible build system, thanks to CMake
@@ -86,6 +87,7 @@ Contents
    2. `Creating libraries`_
    3. `Arduino Libraries`_
    4. `Compiler and Linker Flags`_
+   5. `Programmers`_
 
 3. `Linux Environment Setup`_
 
@@ -244,6 +246,7 @@ Where ``${TARGET_NAME}`` is the name of you target and ``${OPTIONS_SUFFIX}`` is 
      _SERIAL         # Serial command for serial target           [OPTIONAL]
      _NO_AUTOLIBS    # Disables Arduino library detection (default On)
      _AFLAGS         # Overide global avrdude flags for target
+     _PROGRAMMER     # Programmer name, enables programmer burning (including bootloader).
 
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
@@ -371,6 +374,34 @@ or when configuring the project::
 
     cmake -D"ARDUINO_C_FLAGS=-ffunction-sections -fdata-sections" ../path/to/sources/
 
+
+Programmers
+~~~~~~~~~~~
+
+**Arduino CMake** fully supports programmers, for burning firmware and bootloader images directly onto the Arduino. 
+If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
+As of version 0022 of the *Arduino SDK*, the following programmers are supported:
+
+* **avrisp** - AVR ISP
+* **avrispmkii** - AVRISP mkII
+* **usbtinyisp** - USBtinyISP
+* **parallel** - Parallel Programmer
+* **arduinoisp** - Arduino as ISP
+
+The programmers.txt file located in `${ARDUINO_SDK}/hardware/arduino/` lists all supported programmers by the *Arduino SDK*.
+
+In order to enable programmer support, you have to define the following setting::
+
+    set(${TARGET_NAME}_PROGRAMMER programmer_id)
+
+where `programmer_id` is the name of the programmer supported by the *Arduino SDK*.
+
+Once you have enabled programmer support, two new targets are available in the build system:
+
+* **${TARGET_NAME}-burn** - burns the firmware image via the programmer
+* **${TARGET_NAME}-burn-bootloader** - burns the original **Arduino bootloader** image via the programmer
+
+If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
 
 
 

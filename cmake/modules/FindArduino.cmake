@@ -60,55 +60,41 @@ find_path(ARDUINO_SDK_PATH
 # Load the Arduino SDK board settings from the boards.txt file.
 #
 function(LOAD_BOARD_SETTINGS)
-    if(NOT ARDUINO_BOARDS AND ARDUINO_BOARDS_PATH)
-    file(STRINGS ${ARDUINO_BOARDS_PATH} BOARD_SETTINGS)
-    foreach(BOARD_SETTING ${BOARD_SETTINGS})
-        if("${BOARD_SETTING}" MATCHES "^.*=.*")
-            string(REGEX MATCH "^[^=]+" SETTING_NAME ${BOARD_SETTING})
-            string(REGEX MATCH "[^=]+$" SETTING_VALUE ${BOARD_SETTING})
-            string(REPLACE "." ";" SETTING_NAME_TOKENS ${SETTING_NAME})
+    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
+endfunction()
 
-            list(LENGTH SETTING_NAME_TOKENS SETTING_NAME_TOKENS_LEN)
+function(LOAD_PROGRAMMERS_SETTINGS)
+    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+endfunction()
 
+# print_board_list()
+#
+# Print list of detected Arduino Boards.
+function(PRINT_BOARD_LIST)
+    message(STATUS "Supported Arduino Boards:")
+    print_list(ARDUINO_BOARDS)
+    message(STATUS "")
+endfunction()
 
-            # Add Arduino to main list of arduino boards
-            list(GET SETTING_NAME_TOKENS 0 BOARD_ID)
-            list(FIND ARDUINO_BOARDS ${BOARD_ID} ARDUINO_BOARD_INDEX)
-            if(ARDUINO_BOARD_INDEX LESS 0)
-                list(APPEND ARDUINO_BOARDS ${BOARD_ID})
-            endif()
+# print_programmer_list()
+#
+# Print list of detected Programmers.
+function(PRINT_PROGRAMMER_LIST)
+    message(STATUS "Supported Programmers:")
+    print_list(ARDUINO_PROGRAMMERS)
+    message(STATUS "")
+endfunction()
 
-            # Add setting to board settings list
-            list(GET SETTING_NAME_TOKENS 1 BOARD_SETTING)
-            list(FIND ${BOARD_ID}.SETTINGS ${BOARD_SETTING} BOARD_SETTINGS_LEN)
-            if(BOARD_SETTINGS_LEN LESS 0)
-                list(APPEND ${BOARD_ID}.SETTINGS ${BOARD_SETTING})
-                set(${BOARD_ID}.SETTINGS ${${BOARD_ID}.SETTINGS}
-                    CACHE INTERNAL "Arduino ${BOARD_ID} Board settings list")
-            endif()
-
-            set(ARDUINO_SETTING_NAME ${BOARD_ID}.${BOARD_SETTING})
-
-            # Add sub-setting to board sub-settings list
-            if(SETTING_NAME_TOKENS_LEN GREATER 2)
-                list(GET SETTING_NAME_TOKENS 2 BOARD_SUBSETTING)
-                list(FIND ${BOARD_ID}.${BOARD_SETTING}.SUBSETTINGS ${BOARD_SUBSETTING} BOARD_SUBSETTINGS_LEN)
-                if(BOARD_SUBSETTINGS_LEN LESS 0)
-                    list(APPEND ${BOARD_ID}.${BOARD_SETTING}.SUBSETTINGS ${BOARD_SUBSETTING})
-                    set(${BOARD_ID}.${BOARD_SETTING}.SUBSETTINGS ${${BOARD_ID}.${BOARD_SETTING}.SUBSETTINGS}
-                        CACHE INTERNAL "Arduino ${BOARD_ID} Board sub-settings list")
-                endif()
-                set(ARDUINO_SETTING_NAME ${ARDUINO_SETTING_NAME}.${BOARD_SUBSETTING})
-            endif()
-
-            # Save setting value
-            set(${ARDUINO_SETTING_NAME} ${SETTING_VALUE} CACHE INTERNAL "Arduino ${BOARD_ID} Board setting")
-            
-
-        endif()
-    endforeach()
-    set(ARDUINO_BOARDS ${ARDUINO_BOARDS} CACHE STRING "List of detected Arduino Board configurations")
-    mark_as_advanced(ARDUINO_BOARDS)
+# print_programmer_settings(PROGRAMMER)
+#
+#        PROGRAMMER - programmer id
+#
+# Print the detected Programmer settings.
+#
+function(PRINT_PROGRAMMER_SETTINGS PROGRAMMER)
+    if(${PROGRAMMER}.SETTINGS)
+        message(STATUS "Programmer ${PROGRAMMER} Settings:")
+        print_settings(${PROGRAMMER})
     endif()
 endfunction()
 
@@ -120,21 +106,8 @@ endfunction()
 #
 function(PRINT_BOARD_SETTINGS ARDUINO_BOARD)
     if(${ARDUINO_BOARD}.SETTINGS)
-
         message(STATUS "Arduino ${ARDUINO_BOARD} Board:")
-        foreach(BOARD_SETTING ${${ARDUINO_BOARD}.SETTINGS})
-            if(${ARDUINO_BOARD}.${BOARD_SETTING})
-                message(STATUS "   ${ARDUINO_BOARD}.${BOARD_SETTING}=${${ARDUINO_BOARD}.${BOARD_SETTING}}")
-            endif()
-            if(${ARDUINO_BOARD}.${BOARD_SETTING}.SUBSETTINGS)
-                foreach(BOARD_SUBSETTING ${${ARDUINO_BOARD}.${BOARD_SETTING}.SUBSETTINGS})
-                    if(${ARDUINO_BOARD}.${BOARD_SETTING}.${BOARD_SUBSETTING})
-                        message(STATUS "   ${ARDUINO_BOARD}.${BOARD_SETTING}.${BOARD_SUBSETTING}=${${ARDUINO_BOARD}.${BOARD_SETTING}.${BOARD_SUBSETTING}}")
-                    endif()
-                endforeach()
-            endif()
-            message(STATUS "")
-        endforeach()
+        print_settings(${ARDUINO_BOARD})
     endif()
 endfunction()
 
@@ -448,24 +421,235 @@ endfunction()
 # Create an upload target (${TARGET_NAME}-upload) for the specified Arduino target.
 #
 function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
+# setup_arduino_bootloader_upload()
+    setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT})
+
+    # Add programmer support if defined
+    if(${TARGET_NAME}_PROGRAMMER AND ${${TARGET_NAME}_PROGRAMMER}.protocol)
+        setup_arduino_programmer_burn(${TARGET_NAME} ${BOARD_ID} ${${TARGET_NAME}_PROGRAMMER} ${PORT})
+        setup_arduino_bootloader_burn(${TARGET_NAME} ${BOARD_ID} ${${TARGET_NAME}_PROGRAMMER} ${PORT})
+    endif()
+endfunction()
+
+
+# setup_arduino_bootloader_upload(TARGET_NAME BOARD_ID PORT)
+#
+#      TARGET_NAME - target name
+#      BOARD_ID    - board id
+#      PORT        - serial port
+#
+# Set up target for upload firmware via the bootloader.
+#
+# The target for uploading the firmware is ${TARGET_NAME}-upload .
+#
+function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
+    set(UPLOAD_TARGET ${TARGET_NAME}-upload)
+
+    set(AVRDUDE_ARGS)
+
+    setup_arduino_bootloader_args(${BOARD_ID} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+
+    if(NOT AVRDUDE_ARGS)
+        message("Could not generate default avrdude bootloader args, aborting!")
+        return()
+    endif()
+
+    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_NAME}.hex")
+
+    add_custom_target(${UPLOAD_TARGET}
+                     ${ARDUINO_AVRDUDE_PROGRAM} 
+                        ${AVRDUDE_ARGS}
+                     DEPENDS ${TARGET_NAME})
+endfunction()
+
+# setup_arduino_programmer_burn(TARGET_NAME BOARD_ID PROGRAMMER)
+#
+#      TARGET_NAME - name of target to burn
+#      BOARD_ID    - board id
+#      PROGRAMMER  - programmer id
+# 
+# Sets up target for burning firmware via a programmer.
+#
+# The target for burning the firmware is ${TARGET_NAME}-burn .
+#
+function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER)
+    set(PROGRAMMER_TARGET ${TARGET_NAME}-burn)
+
+    set(AVRDUDE_ARGS)
+
+    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+
+    if(NOT AVRDUDE_ARGS)
+        message("Could not generate default avrdude programmer args, aborting!")
+        return()
+    endif()
+
+    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_NAME}.hex")
+
+    add_custom_target(${PROGRAMMER_TARGET}
+                     ${ARDUINO_AVRDUDE_PROGRAM} 
+                        ${AVRDUDE_ARGS}
+                     DEPENDS ${TARGET_NAME})
+endfunction()
+
+# setup_arduino_bootloader_burn(TARGET_NAME BOARD_ID PROGRAMMER)
+# 
+#      TARGET_NAME - name of target to burn
+#      BOARD_ID    - board id
+#      PROGRAMMER  - programmer id
+#
+# Create a target for burning a bootloader via a programmer.
+#
+# The target for burning the bootloader is ${TARGET_NAME}-burn-bootloader
+#
+function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT)
+    set(BOOTLOADER_TARGET ${TARGET_NAME}-burn-bootloader)
+
+    set(AVRDUDE_ARGS)
+
+    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+
+    if(NOT AVRDUDE_ARGS)
+        message("Could not generate default avrdude programmer args, aborting!")
+        return()
+    endif()
+
+    if(NOT ${BOARD_ID}.bootloader.unlock_bits)
+        message("Missing ${BOARD_ID}.bootloader.unlock_bits, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+    if(NOT ${BOARD_ID}.bootloader.high_fuses)
+        message("Missing ${BOARD_ID}.bootloader.high_fuses, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+    if(NOT ${BOARD_ID}.bootloader.low_fuses)
+        message("Missing ${BOARD_ID}.bootloader.low_fuses, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+    if(NOT ${BOARD_ID}.bootloader.path)
+        message("Missing ${BOARD_ID}.bootloader.path, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+    if(NOT ${BOARD_ID}.bootloader.file)
+        message("Missing ${BOARD_ID}.bootloader.file, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+
+    if(NOT EXISTS "${ARDUINO_BOOTLOADERS_PATH}/${${BOARD_ID}.bootloader.path}/${${BOARD_ID}.bootloader.file}")
+        message("${ARDUINO_BOOTLOADERS_PATH}/${${BOARD_ID}.bootloader.path}/${${BOARD_ID}.bootloader.file}")
+        message("Missing bootloader image, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+        return()
+    endif()
+
+    # Erase the chip
+    list(APPEND AVRDUDE_ARGS "-e")
+
+    # Set unlock bits and fuses (because chip is going to be erased)
+    list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.unlock_bits}:m")
+    if(${BOARD_ID}.bootloader.extended_fuses)
+        list(APPEND AVRDUDE_ARGS "-Uefuse:w:${${BOARD_ID}.bootloader.extended_fuses}:m")
+    endif()
+    list(APPEND AVRDUDE_ARGS "-Uhfuse:w:${${BOARD_ID}.bootloader.high_fuses}:m")
+    list(APPEND AVRDUDE_ARGS "-Ulfuse:w:${${BOARD_ID}.bootloader.low_fuses}:m")
+
+    # Set bootloader image
+    list(APPEND AVRDUDE_ARGS "-Uflash:w:${${BOARD_ID}.bootloader.file}:i")
+
+    # Set lockbits
+    list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.lock_bits}:m")
+
+    # Create burn bootloader target
+    add_custom_target(${BOOTLOADER_TARGET}
+                     ${ARDUINO_AVRDUDE_PROGRAM} 
+                        ${AVRDUDE_ARGS}
+                     WORKING_DIRECTORY ${ARDUINO_BOOTLOADERS_PATH}/${${BOARD_ID}.bootloader.path}
+                     DEPENDS ${TARGET_NAME})
+endfunction()
+
+# setup_arduino_programmer_args(PROGRAMMER OUTPUT_VAR)
+#
+#      PROGRAMMER  - programmer id
+#      TARGET_NAME - target name
+#      OUTPUT_VAR  - name of output variable for result
+#
+# Sets up default avrdude settings for burning firmware via a programmer.
+function(setup_arduino_programmer_args BOARD_ID PROGRAMMER TARGET_NAME PORT OUTPUT_VAR)
+    set(AVRDUDE_ARGS ${OUTPUT_VAR})
+
     set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
     if(DEFINED ${TARGET_NAME}_AFLAGS)
         set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
     endif()
-    add_custom_target(${TARGET_NAME}-upload
-                     ${ARDUINO_AVRDUDE_PROGRAM} 
-                         -U flash:w:${TARGET_NAME}.hex
-                         ${AVRDUDE_FLAGS}
-                         -C ${ARDUINO_AVRDUDE_CONFIG_PATH}
-                         -p ${${BOARD_ID}.build.mcu}
-                         -c ${${BOARD_ID}.upload.protocol}
-                         -b ${${BOARD_ID}.upload.speed}
-                         -P ${PORT}
-                     DEPENDS ${TARGET_NAME})
-    if(NOT TARGET upload)
-        add_custom_target(upload)
+
+    list(APPEND AVRDUDE_ARGS "-C${ARDUINO_AVRDUDE_CONFIG_PATH}")
+
+    #TODO: Check mandatory settings before continuing
+    if(NOT ${PROGRAMMER}.protocol)
+        message(FATAL_ERROR "Missing ${PROGRAMMER}.protocol, aborting!")
     endif()
-    add_dependencies(upload ${TARGET_NAME}-upload)
+
+    list(APPEND AVRDUDE_ARGS "-c${${PROGRAMMER}.protocol}") # Set programmer
+
+    if(${PROGRAMMER}.communication STREQUAL "usb")
+        list(APPEND AVRDUDE_ARGS "-Pusb") # Set USB as port
+    elseif(${PROGRAMMER}.communication STREQUAL "serial")
+        list(APPEND AVRDUDE_ARGS "-P${PORT}") # Set port
+        if(${PROGRAMMER}.speed)
+            list(APPEND AVRDUDE_ARGS "-b${${PROGRAMMER}.speed}") # Set baud rate
+        endif()
+    endif()
+
+    if(${PROGRAMMER}.force)
+        list(APPEND AVRDUDE_ARGS "-F") # Set force
+    endif()
+
+    if(${PROGRAMMER}.delay)
+        list(APPEND AVRDUDE_ARGS "-i${${PROGRAMMER}.delay}") # Set delay
+    endif()
+
+    list(APPEND AVRDUDE_ARGS "-p${${BOARD_ID}.build.mcu}")  # MCU Type
+
+    list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
+
+    set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
+endfunction()
+
+# setup_arduino_bootloader_args(BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
+#
+#      BOARD_ID    - board id
+#      TARGET_NAME - target name
+#      PORT        - serial port
+#      OUTPUT_VAR  - name of output variable for result
+#
+# Sets up default avrdude settings for uploading firmware via the bootloader.
+function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
+    set(AVRDUDE_ARGS ${OUTPUT_VAR})
+
+    set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
+    if(DEFINED ${TARGET_NAME}_AFLAGS)
+        set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
+    endif()
+
+    list(APPEND AVRDUDE_ARGS "-C${ARDUINO_AVRDUDE_CONFIG_PATH}") # avrdude config
+
+    list(APPEND AVRDUDE_ARGS "-p${${BOARD_ID}.build.mcu}")  # MCU Type
+
+    # Programmer
+    if(${BOARD_ID}.upload.protocol STREQUAL "stk500")
+        list(APPEND AVRDUDE_ARGS "-cstk500v1")
+    else()
+        list(APPEND AVRDUDE_ARGS "-c${${BOARD_ID}.upload.protocol}")
+    endif()
+
+    list(APPEND AVRDUDE_ARGS "-b${${BOARD_ID}.upload.speed}") # Baud rate
+
+    list(APPEND AVRDUDE_ARGS "-P${PORT}")  # Serial port
+
+    list(APPEND AVRDUDE_ARGS "-D")  # Dont erase
+
+    list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
+
+    set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
 endfunction()
 
 # find_sources(VAR_NAME LIB_PATH RECURSE)
@@ -530,11 +714,172 @@ endfunction()
 function(convert_arduino_sketch VAR_NAME SRCS)
 endfunction()
 
+# load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
+#
+#      SETTINGS_LIST - Variable name of settings list
+#      SETTINGS_PATH - File path of settings file to load.
+#
+# Load a Arduino style settings file into the cache.
+# 
+#  Examples of this type of settings file is the boards.txt and
+# programmers.txt files located in ${ARDUINO_SDK}/hardware/arduino.
+#
+# Settings have to following format:
+#
+#      entry.setting[.subsetting] = value
+#
+# where [.subsetting] is optional
+#
+# For example, the following settings:
+#
+#      uno.name=Arduino Uno
+#      uno.upload.protocol=stk500
+#      uno.upload.maximum_size=32256
+#      uno.build.mcu=atmega328p
+#      uno.build.core=arduino
+#
+# will generate the follwoing equivalent CMake variables:
+#
+#      set(uno.name "Arduino Uno")
+#      set(uno.upload.protocol     "stk500")
+#      set(uno.upload.maximum_size "32256")
+#      set(uno.build.mcu  "atmega328p")
+#      set(uno.build.core "arduino")
+#
+#      set(uno.SETTINGS  name upload build)              # List of settings for uno
+#      set(uno.upload.SUBSETTINGS protocol maximum_size) # List of sub-settings for uno.upload
+#      set(uno.build.SUBSETTINGS mcu core)               # List of sub-settings for uno.build
+# 
+#  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry, while
+# ${ENTRY_NAME}.SUBSETTINGS variables lists all settings for a sub-setting of
+# a entry setting pair.
+#
+#  These variables are generated in order to be able to  programatically traverse
+# all settings (for a example see print_board_settings() function).
+#
+function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
+
+    if(NOT ${SETTINGS_LIST} AND EXISTS ${SETTINGS_PATH})
+    file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
+
+    foreach(FILE_ENTRY ${FILE_ENTRIES})
+        if("${FILE_ENTRY}" MATCHES "^[^#]+=.*")
+            string(REGEX MATCH "^[^=]+" SETTING_NAME  ${FILE_ENTRY})
+            string(REGEX MATCH "[^=]+$" SETTING_VALUE ${FILE_ENTRY})
+            string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
+            string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
+
+            list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
+
+
+            # Add entry to settings list if it does not exist
+            list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
+            list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
+            if(ENTRY_NAME_INDEX LESS 0)
+                # Add entry to main list
+                list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
+            endif()
+
+            # Add entry setting to entry settings list if it does not exist
+            set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
+            list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
+            list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
+            if(ENTRY_SETTING_INDEX LESS 0)
+                # Add setting to entry
+                list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
+                set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
+                    CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
+            endif()
+
+            set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
+
+            # Add entry sub-setting to entry sub-settings list if it does not exists
+            if(ENTRY_NAME_TOKENS_LEN GREATER 2)
+                set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
+                list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
+                if(ENTRY_SUBSETTING_INDEX LESS 0)
+                    list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
+                    set(${ENTRY_SUBSETTING_LIST}  ${${ENTRY_SUBSETTING_LIST}}
+                        CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
+                endif()
+                set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
+            endif()
+
+            # Save setting value
+            set(${FULL_SETTING_NAME} ${SETTING_VALUE}
+                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
+            
+
+        endif()
+    endforeach()
+    set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
+        CACHE STRING "List of detected Arduino Board configurations")
+    mark_as_advanced(${SETTINGS_LIST})
+    endif()
+endfunction()
+
+# print_settings(ENTRY_NAME)
+#
+#      ENTRY_NAME - name of entry
+#
+# Print the entry settings (see load_arduino_syle_settings()).
+#
+function(PRINT_SETTINGS ENTRY_NAME)
+    if(${ENTRY_NAME}.SETTINGS)
+
+        foreach(ENTRY_SETTING ${${ENTRY_NAME}.SETTINGS})
+            if(${ENTRY_NAME}.${ENTRY_SETTING})
+                message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}}")
+            endif()
+            if(${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
+                foreach(ENTRY_SUBSETTING ${${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS})
+                    if(${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING})
+                        message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}}")
+                    endif()
+                endforeach()
+            endif()
+            message(STATUS "")
+        endforeach()
+    endif()
+endfunction()
+
+# print_list(SETTINGS_LIST)
+#
+#      SETTINGS_LIST - Variables name of settings list
+#
+# Print list settings and names (see load_arduino_syle_settings()).
+function(PRINT_LIST SETTINGS_LIST)
+    if(${SETTINGS_LIST})
+        set(MAX_LENGTH 0)
+        foreach(ENTRY_NAME ${${SETTINGS_LIST}})
+            string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
+            if(CURRENT_LENGTH GREATER MAX_LENGTH)
+                set(MAX_LENGTH ${CURRENT_LENGTH})
+            endif()
+        endforeach()
+        foreach(ENTRY_NAME ${${SETTINGS_LIST}})
+            string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
+            math(EXPR PADDING_LENGTH "${MAX_LENGTH}-${CURRENT_LENGTH}")
+            set(PADDING "")
+            foreach(X RANGE ${PADDING_LENGTH})
+                set(PADDING "${PADDING} ")
+            endforeach()
+            message(STATUS "   ${PADDING}${ENTRY_NAME}: ${${ENTRY_NAME}.name}")
+        endforeach()
+    endif()
+endfunction()
+
 
 # Setting up Arduino enviroment settings
 if(NOT ARDUINO_FOUND)
     find_file(ARDUINO_CORES_PATH
               NAMES cores
+              PATHS ${ARDUINO_SDK_PATH}
+              PATH_SUFFIXES hardware/arduino)
+
+    find_file(ARDUINO_BOOTLOADERS_PATH
+              NAMES bootloaders
               PATHS ${ARDUINO_SDK_PATH}
               PATH_SUFFIXES hardware/arduino)
 
@@ -575,7 +920,7 @@ if(NOT ARDUINO_FOUND)
          CACHE STRING "")
      set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
          CACHE STRING "")
-     set(ARDUINO_AVRDUDE_FLAGS -V -F
+     set(ARDUINO_AVRDUDE_FLAGS -V
          CACHE STRING "Arvdude global flag list.")
 
      if(ARDUINO_SDK_PATH)
@@ -591,16 +936,25 @@ if(NOT ARDUINO_FOUND)
 
 
      mark_as_advanced(ARDUINO_CORES_PATH
+                      ARDUINO_BOOTLOADERS_PATH
                       ARDUINO_SDK_VERSION
                       ARDUINO_LIBRARIES_PATH
                       ARDUINO_BOARDS_PATH
                       ARDUINO_PROGRAMMERS_PATH
                       ARDUINO_REVISIONS_PATH
+                      ARDUINO_VERSION_PATH
+                      ARDUINO_AVRDUDE_FLAGS
                       ARDUINO_AVRDUDE_PROGRAM
                       ARDUINO_AVRDUDE_CONFIG_PATH
                       ARDUINO_OBJCOPY_EEP_FLAGS
                       ARDUINO_OBJCOPY_HEX_FLAGS)
-    load_board_settings()
 
+    load_board_settings()
+    load_programmers_settings()
+
+    print_board_list()
+    print_programmer_list()
+
+    set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
 endif()
 
