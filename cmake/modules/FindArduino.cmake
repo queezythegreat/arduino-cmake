@@ -54,7 +54,6 @@ find_path(ARDUINO_SDK_PATH
 		  HINTS ${SDK_PATHS}
           DOC "Arduino Development Kit path.")
 
-
 # load_board_settings()
 #
 # Load the Arduino SDK board settings from the boards.txt file.
@@ -227,8 +226,10 @@ endfunction()
 #
 macro(setup_arduino_compiler BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
+    set(PIN_HEADER ${${BOARD_ID}.build.variant})
     if(BOARD_CORE)
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
+	include_directories(${ARDUINO_VARIANTS_PATH}/${PIN_HEADER})
         include_directories(${BOARD_CORE_PATH})
         include_directories(${ARDUINO_LIBRARIES_PATH})
         add_definitions(-DF_CPU=${${BOARD_ID}.build.f_cpu}
@@ -255,10 +256,8 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     if(BOARD_CORE AND NOT TARGET ${CORE_LIB_NAME})
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
         find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
-
         # Debian/Ubuntu fix
         list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
-
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
@@ -444,7 +443,6 @@ endfunction()
 #
 function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
     set(UPLOAD_TARGET ${TARGET_NAME}-upload)
-
     set(AVRDUDE_ARGS)
 
     setup_arduino_bootloader_args(${BOARD_ID} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
@@ -455,7 +453,6 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
     endif()
 
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_NAME}.hex")
-
     add_custom_target(${UPLOAD_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
                         ${AVRDUDE_ARGS}
@@ -878,6 +875,11 @@ if(NOT ARDUINO_FOUND)
               PATHS ${ARDUINO_SDK_PATH}
               PATH_SUFFIXES hardware/arduino)
 
+    find_file(ARDUINO_VARIANTS_PATH
+              NAMES variants 
+              PATHS ${ARDUINO_SDK_PATH}
+              PATH_SUFFIXES hardware/arduino)
+
     find_file(ARDUINO_BOOTLOADERS_PATH
               NAMES bootloaders
               PATHS ${ARDUINO_SDK_PATH}
@@ -936,6 +938,7 @@ if(NOT ARDUINO_FOUND)
 
 
      mark_as_advanced(ARDUINO_CORES_PATH
+		      ARDUINO_VARIANTS_PATH
                       ARDUINO_BOOTLOADERS_PATH
                       ARDUINO_SDK_VERSION
                       ARDUINO_LIBRARIES_PATH

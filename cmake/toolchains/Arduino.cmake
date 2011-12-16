@@ -58,9 +58,11 @@ set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STR
 
 
 set(ARDUINO_PATHS)
-foreach(VERSION RANGE 22 1)
-    list(APPEND ARDUINO_PATHS arduino-00${VERSION})
+foreach(VERSION 22 1)
+	list(APPEND ARDUINO_PATHS arduino-00${VERSION})
 endforeach()
+
+#list(APPEND ARDUINO_PATHS arduino)
 
 find_path(ARDUINO_SDK_PATH
           NAMES lib/version.txt
