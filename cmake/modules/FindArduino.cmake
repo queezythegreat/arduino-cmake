@@ -250,6 +250,8 @@ macro(setup_arduino_compiler BOARD_ID)
         set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
         set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
     endif()
 endmacro()
 
