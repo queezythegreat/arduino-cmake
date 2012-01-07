@@ -8,7 +8,7 @@ One major drawback of the *Arduino IDE* is that you cannot do anything without i
 
 CMake is great corss-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'm currently basing on version **0022** of the *Arduino SDK*.
+The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. Version **1.0** of the *Arduino SDK* is required.
 
 So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
 
@@ -222,7 +222,7 @@ To have a specific minimal version of the *Arduino SDK*, you can specify the ver
 
     find_package(Arduino 22)
 
-That will require an *Arduino SDK* version **0022** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
+That will require an *Arduino SDK* version **1.0** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
 
 
     find_package(Arduino 22 REQUIRED)
@@ -382,7 +382,7 @@ Programmers
 
 **Arduino CMake** fully supports programmers, for burning firmware and bootloader images directly onto the Arduino. 
 If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
-As of version 0022 of the *Arduino SDK*, the following programmers are supported:
+As of version 1.0 of the *Arduino SDK*, the following programmers are supported:
 
 * **avrisp** - AVR ISP
 * **avrispmkii** - AVRISP mkII
@@ -430,7 +430,7 @@ To get **Arduino CMake** up and running follow these steps:
    1. Download the `Arduino SDK`_
    2. Extract it into ``/usr/share``
     
-   NOTE: Arduino version **0022** or newer is required!
+   NOTE: Arduino version **1.0** or newer is required!
 
 3. Install CMake:
     
