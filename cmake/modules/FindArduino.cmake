@@ -584,7 +584,7 @@ endfunction()
 #
 # Sets up default avrdude settings for burning firmware via a programmer.
 function(setup_arduino_programmer_args BOARD_ID PROGRAMMER TARGET_NAME PORT OUTPUT_VAR)
-    set(AVRDUDE_ARGS ${OUTPUT_VAR})
+    set(AVRDUDE_ARGS ${${OUTPUT_VAR}})
 
     set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
     if(DEFINED ${TARGET_NAME}_AFLAGS)
