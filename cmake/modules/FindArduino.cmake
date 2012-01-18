@@ -633,7 +633,7 @@ endfunction()
 #
 # Sets up default avrdude settings for uploading firmware via the bootloader.
 function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
-    set(AVRDUDE_ARGS ${OUTPUT_VAR})
+    set(AVRDUDE_ARGS ${${OUTPUT_VAR}})
 
     set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
     if(DEFINED ${TARGET_NAME}_AFLAGS)
