@@ -712,7 +712,7 @@ Library not detected automatically
 
 When a Arduino library does not get detected automatically, it usually means CMake cannot find it (obvious).
 
-One common reason why the library is not detected, is because the directory name of the library does not match the header being included.
+One common reason why the library is not detected, is because the directory name of the library does not match the header.
 If I'm including a library header like so::
 
     #include "my_library.h"
@@ -722,7 +722,7 @@ If the directory name does not match the header, it won't be consider a Arduino 
 
 
 When a library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must be registered.
-To register non-standard directory containing Arduino libraries, use the following::
+To register a non-standard directory containing Arduino libraries, use the following::
 
     link_directories(path_to_directory_containing_libraries)
 
