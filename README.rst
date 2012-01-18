@@ -112,6 +112,7 @@ Contents
 
    1. `undefined reference to `__cxa_pure_virtual'`_
    2. `Arduino Mega 2560 image does not work`_
+   3. `Library not detected automatically`_
 
 8. `Resources`_
 
@@ -706,8 +707,8 @@ If you encounter this problem either downgrade ``avr-gcc`` to **4.3** or rebuild
 
 
 
-My Arduino library is not detected automatically
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Library not detected automatically
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a Arduino library does not get detected automatically, it usually means CMake cannot find it (obvious).
 
@@ -717,15 +718,15 @@ If I'm including a library header like so::
     #include "my_library.h"
 
 Based on this include, **Arduino CMake** is expecting to find a library that has a directory name **my_libray** (and within that directory the header **my_library.h**).
-If the directory name does not match the header **Arduino CMake** won't consider that directory as a Arduino Library (see `Arduino Libraries`_).
+If the directory name does not match the header, it won't be consider Arduino Library (see `Arduino Libraries`_).
 
 
-If the library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must registered with **Arduino CMake**.
+When a library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must registered.
 To tell **Arduino CMake** to search for libraries in a non-standard directory, use the following::
 
     link_directories(path_to_directory_containing_libraries)
 
-Remember to use this command before defining any firmware, which requires any of the libraries located in that directory.
+Remember to **use this command before defining any firmware**, depending on libraries located in that directory.
 
 
 
