@@ -220,12 +220,12 @@ The first step in generating Arduino firmware is including the **Arduino CMake**
 
 To have a specific minimal version of the *Arduino SDK*, you can specify the version like so::
 
-    find_package(Arduino 22)
+    find_package(Arduino 1.0)
 
 That will require an *Arduino SDK* version **1.0** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
 
 
-    find_package(Arduino 22 REQUIRED)
+    find_package(Arduino 1.0 REQUIRED)
 
 
 Creating firmware images
@@ -266,7 +266,7 @@ To enable firmware upload functionality, you need to add the ``_PORT`` settings:
 
     set(blink_PORT /dev/ttyUSB0)
 
-Once defined there will be two target available for uploading, ``${TARGET_NAME}-upload`` and a global ``upload`` target (which will depend on all other upload targets defined in the build):
+Once defined there will be two targets available for uploading, ``${TARGET_NAME}-upload`` and a global ``upload`` target (which will depend on all other upload targets defined in the build):
 
 * ``blink-upload`` - will upload just the ``blink`` firmware
 * ``upload`` - upload all firmware images registered for uploading
@@ -311,7 +311,7 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
     generate_arduino_firmware(blink)
 
-CMake has automatic dependency tracking, so when you build the ``blink`` target, ``blink_lib`` will automatically get build in the right order.
+CMake has automatic dependency tracking, so when you build the ``blink`` target, ``blink_lib`` will automatically get built, in the right order.
 
 
 
@@ -321,9 +321,9 @@ Arduino Libraries
 ~~~~~~~~~~~~~~~~~
 
 Libraries are one of the more powerful features which the Arduino offers to users. Instead of rewriting code, people bundle their code in libraries and share them with others.
-The structure of libraries is very simple, which makes them easy to create.
+The structure of these libraries is very simple, which makes them easy to create.
 
-An Arduino library is any directory which contains a header named after the directory, simple.
+An Arduino library is **any directory which contains a header named after the directory**, simple.
 Any source files contained within that directory is part of the library. Here is a example of library a called ExampleLib::
 
     ExampleLib/
@@ -706,9 +706,28 @@ If you encounter this problem either downgrade ``avr-gcc`` to **4.3** or rebuild
 
 
 
+My Arduino library is not detected automatically
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a Arduino library does not get detected automatically, it usually means CMake cannot find it (obvious).
+
+One common reason why the library is not detected, is because the directory name of the library does not match the header being included.
+
+If I'm including a library header like so::
+
+    #include "my_library.h"
+
+Based on this include, **Arduino CMake** is expecting to find a library that has a directory name **my_libray** (and within that directory the header **my_library.h**).
+If the directory name does not match the header **Arduino CMake** won't consider that directory as a Arduino Library (see `Arduino Libraries`_).
 
 
+If the library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must registered with **Arduino CMake**.
 
+To tell **Arduino CMake** to search for libraries in a non-standard directory, use the following::
+
+    link_directories(path_to_directory_containing_libraries)
+
+Remember to use this command before defining any firmware, which requires any of the libraries located in that directory.
 
 
 
