@@ -717,12 +717,12 @@ If I'm including a library header like so::
 
     #include "my_library.h"
 
-Based on this include, **Arduino CMake** is expecting to find a library that has a directory name **my_libray** (and within that directory the header **my_library.h**).
-If the directory name does not match the header, it won't be consider Arduino Library (see `Arduino Libraries`_).
+Based on this include, **Arduino CMake** is expecting to find a library that has a directory name **my_libray**.
+If the directory name does not match the header, it won't be consider a Arduino Library (see `Arduino Libraries`_).
 
 
-When a library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must registered.
-To tell **Arduino CMake** to search for libraries in a non-standard directory, use the following::
+When a library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must be registered.
+To register non-standard directory containing Arduino libraries, use the following::
 
     link_directories(path_to_directory_containing_libraries)
 
