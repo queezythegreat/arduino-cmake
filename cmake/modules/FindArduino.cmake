@@ -337,6 +337,7 @@ endfunction()
 # For known libraries can list recurse here
 set(Wire_RECURSE True)
 set(Ethernet_RECURSE True)
+set(SD_RECURSE True)
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(LIB_TARGETS)
 
