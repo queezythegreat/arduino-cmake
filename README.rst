@@ -6,7 +6,7 @@ Arduino is a great development platform, which is easy to use. It has everything
 
 One major drawback of the *Arduino IDE* is that you cannot do anything without it, which for me is a **complete buzz kill**. Thats why I created an alternative build system for the Arduino using CMake.
 
-CMake is great corss-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
+CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
 The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. Version **1.0** of the *Arduino SDK* is required.
 
@@ -301,7 +301,7 @@ Lets define a simple library called ``blink_lib``, with two sources files for th
     set(blink_lib_HDRS  blink_lib.h)
     set(blink_lib_BOARD uno)
 
-    generate_arduino_firmware(blink_lib)
+    generate_arduino_library(blink_lib)
 
 Once that library is defined we can use it in our other firmware images... Lets add ``blink_lib`` to the ``blink`` firmware::
 
