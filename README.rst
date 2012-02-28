@@ -67,10 +67,14 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Marc Plano-Lesay (`Kernald`_)
 * James Goppert (`jgoppert`_)
 * Matt Tyler (`matt-tyler`_)
+* Andrew Stromme (`astromme`_)
+* `johnyb`_
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
 .. _matt-tyler: https://github.com/matt-tyler
+.. _astromme: https://github.com/astromme
+.. _johnyb: https://github.com/johnyb
 
 
 TODO
