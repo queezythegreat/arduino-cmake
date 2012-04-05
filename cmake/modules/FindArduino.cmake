@@ -926,7 +926,10 @@ if(NOT ARDUINO_FOUND)
     find_program(ARDUINO_AVRDUDE_PROGRAM
                  NAMES avrdude
                  PATHS ${ARDUINO_SDK_PATH}
-                 PATH_SUFFIXES hardware/tools)
+                 PATH_SUFFIXES hardware/tools
+                 NO_DEFAULT_PATH)
+    find_program(ARDUINO_AVRDUDE_PROGRAM
+                 NAMES avrdude)
 
     find_program(ARDUINO_AVRDUDE_CONFIG_PATH
                  NAMES avrdude.conf
