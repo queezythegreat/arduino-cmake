@@ -80,7 +80,6 @@ I would like to thank the following people for contributing to **Arduino CMake**
 TODO
 ----
 
-* Sketch conversion (PDE files)
 * Test more complex configurations and error handling
 
 Contents
@@ -246,7 +245,7 @@ Where ``${TARGET_NAME}`` is the name of you target and ``${OPTIONS_SUFFIX}`` is 
 
      _SRCS           # Target source files
      _HDRS           # Target Headers files (for project based build systems)
-     _SKETCHES       # Target sketch files
+     _SKETCH         # Target sketch (directory)
      _LIBS           # Libraries to linked against target (sets up dependency tracking)
      _BOARD          # Board name (such as uno, mega2560, ...)
      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
