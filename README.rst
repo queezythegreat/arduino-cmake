@@ -21,6 +21,7 @@ Features
 * Automatic detection of Arduino libraries.
 * Generates firmware images.
 * Generates libraries.
+* Sketch support.
 * Upload support.
 * Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
