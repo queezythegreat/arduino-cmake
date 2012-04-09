@@ -325,14 +325,14 @@ CMake has automatic dependency tracking, so when you build the ``blink`` target,
 Arduino Sketches
 ~~~~~~~~~~~~~~~~
 
-To build a Arduino sketch use the  ${TARGET_NAME}_SKETCH option. Specify the directory of the sketch. For example::
+To build a Arduino sketch use the **${TARGET_NAME}_SKETCH** option (directory of the sketch). For example::
 
     set(blink_SKETCH  /PATH_TO_ARDUINO_SDK/examples/1.Basics/Blink) # Path to sketch directory
     set(blink_BOARD   uno)
 
     generate_arduino_firmware(blink)
 
-This will build the `blink` example from the **Arduino SDK**.
+This will build the **blink** example from the **Arduino SDK**.
 
 Arduino Libraries
 ~~~~~~~~~~~~~~~~~
@@ -378,13 +378,13 @@ Most Arduino libraries have examples bundled with them. If you would like to gen
 
     generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
 
-will generate a target for the `master_writer` example from the `Wire` library for the `Uno`.
+will generate a target for the **master_writer** example from the **Wire** library for the **Uno**.
 
 The syntax of the command is::
 
     generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID SERIAL_PORT SERIAL_COMMAND)
 
-where `SERIAL_PORT` and `SERIAL_COMMAND` are optional.
+where **SERIAL_PORT** and **SERIAL_COMMAND** are optional.
 
 The previous example will generate the following two target::
 
