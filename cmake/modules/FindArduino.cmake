@@ -45,6 +45,17 @@
 #       set(test_BOARD uno)
 #    
 #       generate_arduino_library(test)
+#
+#
+#
+# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
+#
+#        BOARD_ID     - Board ID
+#        LIBRARY_NAME - Library name
+#        EXAMPLE_NAME - Example name
+#        PORT         - Serial port [optional]
+#        SERIAL       - Serial command [optional]
+# Creates a example from the specified library.
 
 file(GLOB SDK_PATHS /usr/share/arduino*)
 
@@ -170,10 +181,12 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     if(INPUT_SKETCH)
-        convert_pde_to_cpp(${INPUT_SKETCH} SKETCH_CPP)
-        list(APPEND ALL_SRCS ${SKETCH_CPP})
+        setup_arduino_sketch(${INPUT_SKETCH} ALL_SRCS)
     endif()
-    #setup_arduino_sketch(SKETCH_SRCS ${INPUT_SKETCHES})
+
+    if(NOT ALL_SRCS)
+        message(FATAL_ERROR "Missing sources (${TARGET_NAME}_SRCS or ${TARGET_NAME}_SKETCH), aborting!")
+    endif()
 
     if(INPUT_AUTOLIBS)
         setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}")
@@ -186,6 +199,45 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
+    endif()
+    
+    if(INPUT_SERIAL)
+        setup_serial_target(${TARGET_NAME} "${INPUT_SERIAL}")
+    endif()
+endfunction()
+
+# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
+#
+# see documentation at top
+function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
+
+    set(TARGET_NAME "example-${LIBRARY_NAME}-${EXAMPLE_NAME}")
+
+    message(STATUS "Generating example ${LIBRARY_NAME}-${EXAMPLE_NAME}")
+
+    set(ALL_LIBS)
+    set(ALL_SRCS)
+
+    set(INPUT_PORT  ${ARGV3})
+    set(INPUT_SERIAL ${ARGV4})
+
+    setup_arduino_compiler(${BOARD_ID})
+    setup_arduino_core(CORE_LIB ${BOARD_ID})
+
+    setup_arduino_example("${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
+
+    if(NOT ALL_SRCS)
+        message(FATAL_ERROR "Missing sources for example, aborting!")
+    endif()
+
+    setup_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}")
+
+    list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
+    
+    setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}")
+
+    if(INPUT_PORT)
+        setup_arduino_upload(${BOARD_ID} ${TARGET_NAME} ${INPUT_PORT})
     endif()
     
     if(INPUT_SERIAL)
@@ -887,67 +939,124 @@ function(PRINT_LIST SETTINGS_LIST)
     endif()
 endfunction()
 
+function(SETUP_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+    set(EXAMPLE_SKETCH_PATH )
 
-function(CONVERT_PDE_TO_CPP SKETCH_NAME SKETCH_CPP_PATH)
-	set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}/${SKETCH_NAME}.cpp)
-	set(SKETCH_PDE ${CMAKE_CURRENT_SOURCE_DIR}/${SKETCH_NAME}/${SKETCH_NAME}.pde)
+    get_property(LIBRARY_SEARCH_PATH
+                 DIRECTORY     # Property Scope
+                 PROPERTY LINK_DIRECTORIES)
+    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+        if(EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
+            set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
+            break()
+        endif()
+    endforeach()
 
-	file(GLOB PDE_SOURCES ${SKETCH_NAME}/*.pde)
+    if(EXAMPLE_SKETCH_PATH)
+        setup_arduino_sketch(${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
+        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME} from library ${LIBRARY_NAME}")
+    endif()
+endfunction()
 
-	# find the head of the main pde
+# setup_arduino_sketch(SKETCH_PATH OUTPUT_VAR)
+#
+#      SKETCH_PATH - Path to sketch directory
+#      OUTPUT_VAR  - Variable name where to save generated sketch source
+#
+# Generates C++ sources from Arduino Sketch.
+function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
+    if(EXISTS "${SKETCH_PATH}")
+        get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
+        get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
+
+        set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.cpp)
+        set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
+
+        if(EXISTS "${MAIN_SKETCH}.pde")
+            set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
+        elseif(EXISTS "${MAIN_SKETCH}.ino")
+            set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
+        else()
+            message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}!")
+        endif()
+        #message("${MAIN_SKETCH}")
+
+        # Find all sketch files
+        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
+        list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
+        list(SORT SKETCH_SOURCES)
+        
+        generate_cpp_from_sketch("${MAIN_SKETCH}" "${SKETCH_SOURCES}" "${SKETCH_CPP}")
+
+        # Regenerate build system if sketch changes
+        add_custom_command(OUTPUT ${SKETCH_CPP}
+                           COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
+                           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                           DEPENDS ${MAIN_SKETCH} ${SKETCH_SOURCES}
+                           COMMENT "Regnerating ${SKETCH_NAME} Sketch")
+        set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED TRUE)
+
+        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "Sketch does not exist: ${SKETCH_PDE}")
+    endif()
+endfunction()
+
+# generate_cpp_from_sketch(MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
+#
+#         MAIN_SKETCH_PATH - Main sketch file path
+#         SKETCH_SOURCES   - Setch source paths
+#         SKETCH_CPP       - Name of file to generate
+#
+# Generate C++ source file from Arduino sketch files.
+function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 	file(WRITE ${SKETCH_CPP} "// automatically generated by arduino-cmake\n")
-	file(READ ${SKETCH_PDE} FILE)
+    file(READ  ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
-	string(FIND "${FILE}" "#include" POS1 REVERSE)
-	string(LENGTH "${FILE}" FILE_LENGTH)
-	math(EXPR LENGTH_STR1 "${FILE_LENGTH}-${POS1}")
-	string(SUBSTRING "${FILE}" ${POS1} ${LENGTH_STR1} STR1)
+    string(FIND "${MAIN_SKETCH}" "#include" FIRST_INCLUDE_OFFSET REVERSE)
+    string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
+    math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-${FIRST_INCLUDE_OFFSET}")
+    string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_INCLUDE_OFFSET} ${LENGTH_STR1} STR1)
+    #message("STR1:\n${STR1}")
+
 	string(FIND "${STR1}" "\n" POS2)
-	math(EXPR POS3 "${POS1}+${POS2}")
-	string(SUBSTRING "${FILE}" 0 ${POS3} FILE_HEAD)
-    #message(STATUS "FILE_HEAD:\n${FILE_HEAD}")
+    math(EXPR POS3 "${FIRST_INCLUDE_OFFSET}+${POS2}")
+    string(SUBSTRING "${MAIN_SKETCH}" 0 ${POS3} SKETCH_HEAD)
+    #message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
-	math(EXPR BODY_LENGTH "${FILE_LENGTH}-${POS3}-1")
-	string(SUBSTRING "${FILE}" "${POS3}+1" "${BODY_LENGTH}" FILE_BODY)
-    #message(STATUS "BODY:\n${FILE_BODY}")
+    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${POS3}-1")
+    string(SUBSTRING "${MAIN_SKETCH}" "${POS3}+1" "${BODY_LENGTH}" SKETCH_BODY)
+    #message(STATUS "BODY:\n${SKETCH_BODY}")
 
 	# write the file head
-    #file(APPEND ${SKETCH_CPP} "\n#include \"WProgram.h\"\n")
-    file(APPEND ${SKETCH_CPP} "\n#include \"Arduino.h\"\n")
-	file(APPEND ${SKETCH_CPP} "${FILE_HEAD}")
+    file(APPEND ${SKETCH_CPP} "\n")
+    file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
+    file(APPEND ${SKETCH_CPP} "\n")
+    file(APPEND ${SKETCH_CPP} "${SKETCH_HEAD}")
 
-	# write prototypes
-	foreach(PDE ${PDE_SOURCES})
-        #message(STATUS "pde: ${PDE}")
-		file(READ ${PDE} FILE)
-        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*[)]" PROTOTYPES ${FILE})
-		foreach(PROTOTYPE ${PROTOTYPES})	
+    # Find function prototypes
+    foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
+        #message(STATUS "Sketch: ${SKETCH_SOURCE_PATH}")
+        file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*[)]" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
+
+        # Write function prototypes
+        foreach(SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})	
             #message(STATUS "\tprototype: ${PROTOTYPE};")
-			file(APPEND ${SKETCH_CPP} "${PROTOTYPE};")
+            file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};")
 		endforeach()
 	endforeach()
 
 	
-	# write source
-	file(APPEND ${SKETCH_CPP} "\n${FILE_BODY}")
-	list(REMOVE_ITEM PDE_SOURCES ${SKETCH_PDE})
-	list(SORT PDE_SOURCES)
-	foreach (PDE ${PDE_SOURCES})
-		file(READ ${PDE} FILE)
-		file(APPEND ${SKETCH_CPP} "${FILE}")
+    # Write Sketch CPP source
+    file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
+    foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
+        file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+        file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
 	endforeach()
-
-    # Regenerate build system if sketche changes
-    add_custom_command(OUTPUT ${SKETCH_CPP}
-                        COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                       DEPENDS ${PDE_SOURCES} ${SKETCH_PDE}
-                       COMMENT "Regnerating ${SKETCH_NAME} Sketch")
-
-    set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED TRUE)
-
-    set("${SKETCH_CPP_PATH}" ${SKETCH_CPP} PARENT_SCOPE)
 endfunction()
 
 
