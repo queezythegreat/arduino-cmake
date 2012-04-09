@@ -90,9 +90,11 @@ Contents
 
    1. `Creating firmware images`_
    2. `Creating libraries`_
-   3. `Arduino Libraries`_
-   4. `Compiler and Linker Flags`_
-   5. `Programmers`_
+   3. `Arduino Sketches`_
+   4. `Arduino Libraries`_
+   5. `Arduino Library Examples`_
+   6. `Compiler and Linker Flags`_
+   7. `Programmers`_
 
 3. `Linux Environment Setup`_
 
@@ -320,6 +322,17 @@ CMake has automatic dependency tracking, so when you build the ``blink`` target,
 
 
 
+Arduino Sketches
+~~~~~~~~~~~~~~~~
+
+To build a Arduino sketch use the  ${TARGET_NAME}_SKETCH option. Specify the directory of the sketch. For example::
+
+    set(blink_SKETCH  /PATH_TO_ARDUINO_SDK/examples/1.Basics/Blink) # Path to sketch directory
+    set(blink_BOARD   uno)
+
+    generate_arduino_firmware(blink)
+
+This will build the `blink` example from the **Arduino SDK**.
 
 Arduino Libraries
 ~~~~~~~~~~~~~~~~~
@@ -358,6 +371,25 @@ If a library contains nested sources, a special option must be defined to enable
 The option name should be **${LIBRARY_NAME}_RECURSE**, where in this case **LIBRARY_NAME** is equal to *Wire*.
 
 
+Arduino Library Examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. For example::
+
+    generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
+
+will generate a target for the `master_writer` example from the `Wire` library for the `Uno`.
+
+The syntax of the command is::
+
+    generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID SERIAL_PORT SERIAL_COMMAND)
+
+where `SERIAL_PORT` and `SERIAL_COMMAND` are optional.
+
+The previous example will generate the following two target::
+
+    example-Wire-master_writer
+    example-Wire-master_writer-upload
 
 Compiler and Linker Flags
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -408,7 +440,6 @@ Once you have enabled programmer support, two new targets are available in the b
 * **${TARGET_NAME}-burn-bootloader** - burns the original **Arduino bootloader** image via the programmer
 
 If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
-
 
 
 Linux Environment Setup
