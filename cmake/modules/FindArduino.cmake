@@ -57,13 +57,30 @@
 #        SERIAL       - Serial command [optional]
 # Creates a example from the specified library.
 
-file(GLOB SDK_PATHS /usr/share/arduino*)
+# paths to look for arduino
+set(ARDUINO_PATHS
+    /usr/local
+    /opt/local
+    /usr
+    /opt
+    )
 
+# find hints
+set(ARDUINO_HINTS)
+foreach(PREFIX ${ARDUINO_PATHS})
+    file(GLOB PREFIX_SDK_PATHS ${PREFIX}/share/arduino*)
+    set(ARDUINO_HINTS "${ARDUINO_HINTS} ${PREFIX_SDK_PATHS}")
+endforeach()
+message(STATUS "hints: ${ARDUINO_HINTS}")
+
+# find sdk path
 find_path(ARDUINO_SDK_PATH
-          NAMES lib/version.txt hardware libraries
-		  PATH_SUFFIXES  share/arduino
-		  HINTS ${SDK_PATHS}
-          DOC "Arduino Development Kit path.")
+    NAMES lib/version.txt hardware libraries
+    PATH ${ARDUINO_PATHS}
+    PATH_SUFFIXES  share/arduino-1.0 share/arduino
+    HINTS ${ARDUINO_HINTS}
+    DOC "Arduino Development Kit path.")
+message(STATUS "sdk path: ${ARDUINO_SDK_PATH}")
 
 # load_board_settings()
 #
