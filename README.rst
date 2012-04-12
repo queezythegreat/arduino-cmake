@@ -140,7 +140,7 @@ In short you can get up and running using the following commands::
     cmake ..
     make
     make upload              # to upload all firmware images             [optional]
-    make wire_reader-serial  # to get a serial terminal to wire_serial   [optional]
+    make blink-serial  # to get a serial terminal to wire_serial   [optional]
 
 For a more detailed explanation, please read on...
 
@@ -148,7 +148,7 @@ For a more detailed explanation, please read on...
    
    In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or from within the *CMakeLists.txt* configuration files. The bundled example uses the second approach like so::
 
-        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/ArduinoToolchain.cmake)
 
    Please note that this must be before the ``project(...)`` command.
    
@@ -207,7 +207,7 @@ For a more detailed explanation, please read on...
 
    That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following::
 
-        make wire_reader-serial
+        make blink-serial
 
 
 
@@ -221,24 +221,22 @@ For a more detailed explanation, please read on...
 Using Arduino CMake
 -------------------
 
-The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with::
+In order to use **Arduino CMake** just include the toolchain file, everything will get set up for building. You can set the toolchain
+in `CMakeList.txt` like so::
 
-    find_package(Arduino)
+        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/ArduinoToolchain.cmake)
 
-To have a specific minimal version of the *Arduino SDK*, you can specify the version like so::
+Please note that this must be before the ``project(...)`` command.
 
-    find_package(Arduino 1.0)
+You can also specify it at build configuration time::
 
-That will require an *Arduino SDK* version **1.0** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
-
-
-    find_package(Arduino 1.0 REQUIRED)
+        cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
 
 
 Creating firmware images
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once you have the **Arduino CMake** package loaded you can start defining firmware images.
+Once you have the **Arduino CMake** loaded you can start defining firmware images.
 
 To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command::
 
