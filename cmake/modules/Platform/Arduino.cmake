@@ -997,6 +997,7 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
     endif()
 endfunction()
 
+
 # generate_cpp_from_sketch(MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 #
 #         MAIN_SKETCH_PATH - Main sketch file path
@@ -1059,9 +1060,9 @@ endfunction()
 if (NOT DEFINED ARDUINO_C_FLAGS)
     set(ARDUINO_C_FLAGS "-ffunction-sections -fdata-sections")
 endif()
-set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}" CACHE STRING "")
-set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}" CACHE STRING "")
-set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}"    CACHE STRING "")
+set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}"    CACHE STRING "")
+set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}"    CACHE STRING "")
 set(CMAKE_C_FLAGS_RELEASE        "-Os -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
 
@@ -1092,17 +1093,17 @@ set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING
 #=============================================================================#
 #                       Shared Lbrary Linker Flags                            #
 #=============================================================================#
-set(CMAKE_SHARED_LINKER_FLAGS                ""                        CACHE STRING "")
-set(CMAKE_SHARED_LINKER_FLAGS_DEBUG          ""                        CACHE STRING "")
-set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL     ""                        CACHE STRING "")
-set(CMAKE_SHARED_LINKER_FLAGS_RELEASE        ""                        CACHE STRING "")
-set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS                ""                     CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG          ""                     CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL     ""                     CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE        ""                     CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ""                     CACHE STRING "")
 
-set(CMAKE_MODULE_LINKER_FLAGS                ""                        CACHE STRING "")
-set(CMAKE_MODULE_LINKER_FLAGS_DEBUG          ""                        CACHE STRING "")
-set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL     ""                        CACHE STRING "")
-set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        ""                        CACHE STRING "")
-set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS                ""                     CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_DEBUG          ""                     CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL     ""                     CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        ""                     CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                     CACHE STRING "")
 
 
 #=============================================================================#
