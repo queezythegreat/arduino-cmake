@@ -14,6 +14,6 @@ cmake_minimum_required(VERSION 2.8)
 #  Setup Project                                                     #
 #====================================================================#
 project(ArduinoExample C CXX)
-find_package(Arduino 1.0 REQUIRED)
+#find_package(Arduino 1.0 REQUIRED)
 
 add_subdirectory(example)  # Add example directory to build

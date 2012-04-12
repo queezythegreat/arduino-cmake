@@ -55,20 +55,15 @@ set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        ""                        CACHE STR
 set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STRING "")
 
 
-
-
-set(ARDUINO_PATHS)
-foreach(VERSION 22 1)
-	list(APPEND ARDUINO_PATHS arduino-00${VERSION})
-endforeach()
-
-#list(APPEND ARDUINO_PATHS arduino)
-
-find_path(ARDUINO_SDK_PATH
-          NAMES lib/version.txt
-          PATH_SUFFIXES share/arduino
-                        Arduino.app/Contents/Resources/Java/
-                        ${ARDUINO_PATHS}
-          DOC "Arduino Development Kit path.")
-
-include(Platform/ArduinoPaths)
+if(UNIX)
+    include(Platform/UnixPaths)
+    if(APPLE)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ~/Applications
+                                             /Applications
+                                             /Developer/Applications
+                                             /sw        # Fink
+                                             /opt/local) # MacPorts
+    endif()
+elseif(WIN32)
+    include(Platform/WindowsPaths)
+endif()
