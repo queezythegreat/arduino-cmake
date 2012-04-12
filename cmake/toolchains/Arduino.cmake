@@ -12,8 +12,8 @@ endif()
 set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}" CACHE STRING "")
-set(CMAKE_C_FLAGS_RELEASE        "-0s -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-0s -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELEASE        "-Os -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
 
 #=============================================================================#
 #                             C++ Flags                                       #
@@ -24,8 +24,8 @@ endif()
 set(CMAKE_CXX_FLAGS                "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_DEBUG          "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-set(CMAKE_CXX_FLAGS_RELEASE        "-0s -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-0s -g       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELEASE        "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 
 #=============================================================================#
 #                       Executable Linker Flags                               #
@@ -58,9 +58,11 @@ set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STR
 
 
 set(ARDUINO_PATHS)
-foreach(VERSION RANGE 22 1)
-    list(APPEND ARDUINO_PATHS arduino-00${VERSION})
+foreach(VERSION 22 1)
+	list(APPEND ARDUINO_PATHS arduino-00${VERSION})
 endforeach()
+
+#list(APPEND ARDUINO_PATHS arduino)
 
 find_path(ARDUINO_SDK_PATH
           NAMES lib/version.txt

@@ -6,9 +6,9 @@ Arduino is a great development platform, which is easy to use. It has everything
 
 One major drawback of the *Arduino IDE* is that you cannot do anything without it, which for me is a **complete buzz kill**. Thats why I created an alternative build system for the Arduino using CMake.
 
-CMake is great corss-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
+CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. I'm currently basing on version **0022** of the *Arduino SDK*.
+The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. Version **1.0** of the *Arduino SDK* is required.
 
 So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
 
@@ -21,7 +21,9 @@ Features
 * Automatic detection of Arduino libraries.
 * Generates firmware images.
 * Generates libraries.
+* Sketch support.
 * Upload support.
+* Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
 * Cross-platform: Windows, Linux, Mac
 * Extensible build system, thanks to CMake
@@ -30,11 +32,11 @@ Features
 Feedback
 --------
 
-**Arduino CMake** is hosted on GitHUB and is availabe at:
+**Arduino CMake** is hosted on GitHUB and is available at:
 
 https://github.com/queezythegreat/arduino-cmake
 
-Did you find a bug or would like a specific feature, plase report it at:
+Did you find a bug or would like a specific feature, please report it at:
 
 https://github.com/queezythegreat/arduino-cmake/issues
 
@@ -61,19 +63,24 @@ Requirements
 Contributors
 ------------
 
-I would like to thank the follwoing people for contributing to **Arduino CMake**:
+I would like to thank the following people for contributing to **Arduino CMake**:
 
 * Marc Plano-Lesay (`Kernald`_)
 * James Goppert (`jgoppert`_)
+* Matt Tyler (`matt-tyler`_)
+* Andrew Stromme (`astromme`_)
+* `johnyb`_
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
+.. _matt-tyler: https://github.com/matt-tyler
+.. _astromme: https://github.com/astromme
+.. _johnyb: https://github.com/johnyb
 
 
 TODO
 ----
 
-* Sketch conversion (PDE files)
 * Test more complex configurations and error handling
 
 Contents
@@ -84,30 +91,34 @@ Contents
 
    1. `Creating firmware images`_
    2. `Creating libraries`_
-   3. `Arduino Libraries`_
-   4. `Compiler and Linker Flags`_
+   3. `Arduino Sketches`_
+   4. `Arduino Libraries`_
+   5. `Arduino Library Examples`_
+   6. `Compiler and Linker Flags`_
+   7. `Programmers`_
 
-3. `Linux Enviroment Setup`_
-
-   1. `Serial Namming`_
-   2. `Serial Terminal`_
-
-4. `Mac OS X Enviroment Setup`_
+3. `Linux Environment Setup`_
 
    1. `Serial Namming`_
    2. `Serial Terminal`_
 
-5. `Windows Enviroment Setup`_
+4. `Mac OS X Environment Setup`_
+
+   1. `Serial Namming`_
+   2. `Serial Terminal`_
+
+5. `Windows Environment Setup`_
 
    1. `CMake Generators`_
    2. `Serial Namming`_
    3. `Serial Terminal`_
 
-6. `Eclipse Enviroment`_
+6. `Eclipse Environment`_
 7. `Troubleshooting`_
 
    1. `undefined reference to `__cxa_pure_virtual'`_
    2. `Arduino Mega 2560 image does not work`_
+   3. `Library not detected automatically`_
 
 8. `Resources`_
 
@@ -122,7 +133,7 @@ Getting Started
 
 The following instructions are for **\*nix** type systems, specifically this is a Linux example.
 
-In short you can get up and running using the follwoing commands::
+In short you can get up and running using the following commands::
 
     mkdir build
     cd build
@@ -135,7 +146,7 @@ For a more detailed explanation, please read on...
 
 1. Toolchain file
    
-   In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or from within the *CMakeLists.txt* configuration files. The bundled example uses the second approche like so::
+   In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or from within the *CMakeLists.txt* configuration files. The bundled example uses the second approach like so::
 
         set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
 
@@ -218,12 +229,12 @@ The first step in generating Arduino firmware is including the **Arduino CMake**
 
 To have a specific minimal version of the *Arduino SDK*, you can specify the version like so::
 
-    find_package(Arduino 22)
+    find_package(Arduino 1.0)
 
-That will require an *Arduino SDK* version **0022** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
+That will require an *Arduino SDK* version **1.0** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
 
 
-    find_package(Arduino 22 REQUIRED)
+    find_package(Arduino 1.0 REQUIRED)
 
 
 Creating firmware images
@@ -239,13 +250,14 @@ Where ``${TARGET_NAME}`` is the name of you target and ``${OPTIONS_SUFFIX}`` is 
 
      _SRCS           # Target source files
      _HDRS           # Target Headers files (for project based build systems)
-     _SKETCHES       # Target sketch files
+     _SKETCH         # Target sketch (directory)
      _LIBS           # Libraries to linked against target (sets up dependency tracking)
      _BOARD          # Board name (such as uno, mega2560, ...)
      _PORT           # Serial port, for upload and serial targets [OPTIONAL]
      _SERIAL         # Serial command for serial target           [OPTIONAL]
      _NO_AUTOLIBS    # Disables Arduino library detection (default On)
      _AFLAGS         # Overide global avrdude flags for target
+     _PROGRAMMER     # Programmer name, enables programmer burning (including bootloader).
 
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
@@ -263,13 +275,13 @@ To enable firmware upload functionality, you need to add the ``_PORT`` settings:
 
     set(blink_PORT /dev/ttyUSB0)
 
-Once defined there will be two target availabe for uploading, ``${TARGET_NAME}-upload`` and a global ``upload`` target (which will depend on all other upload targets defined in the build):
+Once defined there will be two targets available for uploading, ``${TARGET_NAME}-upload`` and a global ``upload`` target (which will depend on all other upload targets defined in the build):
 
 * ``blink-upload`` - will upload just the ``blink`` firmware
 * ``upload`` - upload all firmware images registered for uploading
 
-Serial Termial
-______________
+Serial Terminal
+_______________
 To enable serial terminal, add the ``_SERIAL`` setting (``@INPUT_PORT@`` will be replaced with the ``blink_PORT`` setting)::
 
     set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
@@ -297,7 +309,7 @@ Lets define a simple library called ``blink_lib``, with two sources files for th
     set(blink_lib_HDRS  blink_lib.h)
     set(blink_lib_BOARD uno)
 
-    generate_arduino_firmware(blink_lib)
+    generate_arduino_library(blink_lib)
 
 Once that library is defined we can use it in our other firmware images... Lets add ``blink_lib`` to the ``blink`` firmware::
 
@@ -308,19 +320,30 @@ Once that library is defined we can use it in our other firmware images... Lets 
 
     generate_arduino_firmware(blink)
 
-CMake has automatic dependency tracking, so when you build the ``blink`` target, ``blink_lib`` will automatically get build in the right order.
+CMake has automatic dependency tracking, so when you build the ``blink`` target, ``blink_lib`` will automatically get built, in the right order.
 
 
 
 
+Arduino Sketches
+~~~~~~~~~~~~~~~~
+
+To build a Arduino sketch use the **${TARGET_NAME}_SKETCH** option (directory of the sketch). For example::
+
+    set(blink_SKETCH  /PATH_TO_ARDUINO_SDK/examples/1.Basics/Blink) # Path to sketch directory
+    set(blink_BOARD   uno)
+
+    generate_arduino_firmware(blink)
+
+This will build the **blink** example from the **Arduino SDK**.
 
 Arduino Libraries
 ~~~~~~~~~~~~~~~~~
 
-Libraries are one of the more powerfull features which the Arduino offers to users. Instead of rewriting code, people bundle their code in libraries and share them with others.
-The structure of libraries is very simple, which makes them easy to create.
+Libraries are one of the more powerful features which the Arduino offers to users. Instead of rewriting code, people bundle their code in libraries and share them with others.
+The structure of these libraries is very simple, which makes them easy to create.
 
-An Arduino library is any directory which contains a header named after the directory, simple.
+An Arduino library is **any directory which contains a header named after the directory**, simple.
 Any source files contained within that directory is part of the library. Here is a example of library a called ExampleLib::
 
     ExampleLib/
@@ -330,13 +353,13 @@ Any source files contained within that directory is part of the library. Here is
 
 Now because the power of Arduino lies within those user created libraries, support for them is built right into **Arduino CMake**. The **Arduino SDK** comes with a large number of default libraries, adding new libraries is simple.
 
-To incorporate a library into your firmaware, you can do one of three things:
+To incorporate a library into your firmware, you can do one of three things:
 
 1. Place the library next to the default Arduino libraries (located at **${ARDUINO_SDK}/libraries**)
 2. Place the library next to the firmware configuration file (same directory as the **CMakeLists.txt**)
-3. Place the library in a seperate folder and tell **Arduino CMake** the path to that directory.
+3. Place the library in a separate folder and tell **Arduino CMake** the path to that directory.
    
-   To tell CMake where to search for libraries use the `link_directories` command. The comand has to be used before defining any firmware or libraries requiring those libraries.
+   To tell CMake where to search for libraries use the `link_directories` command. The command has to be used before defining any firmware or libraries requiring those libraries.
    
    For example::
      
@@ -344,13 +367,32 @@ To incorporate a library into your firmaware, you can do one of three things:
       link_directories(/home/username/arduino_libraries)
 
 
-If a library contains nested sources, a special option must be defined to enable recursion. For example to enable recusion for the Arduino Wire library use::
+If a library contains nested sources, a special option must be defined to enable recursion. For example to enable recursion for the Arduino Wire library use::
 
     set(Wire_RECURSE True)
 
 The option name should be **${LIBRARY_NAME}_RECURSE**, where in this case **LIBRARY_NAME** is equal to *Wire*.
 
 
+Arduino Library Examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. For example::
+
+    generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
+
+will generate a target for the **master_writer** example from the **Wire** library for the **Uno**.
+
+The syntax of the command is::
+
+    generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID SERIAL_PORT SERIAL_COMMAND)
+
+where **SERIAL_PORT** and **SERIAL_COMMAND** are optional.
+
+The previous example will generate the following two target::
+
+    example-Wire-master_writer
+    example-Wire-master_writer-upload
 
 Compiler and Linker Flags
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -374,10 +416,37 @@ or when configuring the project::
     cmake -D"ARDUINO_C_FLAGS=-ffunction-sections -fdata-sections" ../path/to/sources/
 
 
+Programmers
+~~~~~~~~~~~
+
+**Arduino CMake** fully supports programmers, for burning firmware and bootloader images directly onto the Arduino. 
+If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
+As of version 1.0 of the *Arduino SDK*, the following programmers are supported:
+
+* **avrisp** - AVR ISP
+* **avrispmkii** - AVRISP mkII
+* **usbtinyisp** - USBtinyISP
+* **parallel** - Parallel Programmer
+* **arduinoisp** - Arduino as ISP
+
+The programmers.txt file located in `${ARDUINO_SDK}/hardware/arduino/` lists all supported programmers by the *Arduino SDK*.
+
+In order to enable programmer support, you have to define the following setting::
+
+    set(${TARGET_NAME}_PROGRAMMER programmer_id)
+
+where `programmer_id` is the name of the programmer supported by the *Arduino SDK*.
+
+Once you have enabled programmer support, two new targets are available in the build system:
+
+* **${TARGET_NAME}-burn** - burns the firmware image via the programmer
+* **${TARGET_NAME}-burn-bootloader** - burns the original **Arduino bootloader** image via the programmer
+
+If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
 
 
-Linux Enviroment Setup
-----------------------
+Linux Environment Setup
+-----------------------
 
 Running the *Arduino SDK* on Linux is a little bit more involved, because not everything is bundled with the SDK. The AVR GCC toolchain is not distributed alongside the Arduino SDK, so it has to be installed seperately.
 
@@ -399,11 +468,11 @@ To get **Arduino CMake** up and running follow these steps:
    1. Download the `Arduino SDK`_
    2. Extract it into ``/usr/share``
     
-   NOTE: Arduino version **0022** or newer is required!
+   NOTE: Arduino version **1.0** or newer is required!
 
 3. Install CMake:
     
-   * Using the pakcage manager or
+   * Using the package manager or
    * Using the `CMake installer`_
 
    NOTE: CMake version 2.8 or newer is required!
@@ -445,7 +514,7 @@ On Linux a wide range on serial terminal are availabe. Here is a list of a coupl
 
 
 
-Mac OS X Enviroment Setup
+Mac OS X Environment Setup
 -------------------------
 
 The *Arduino SDK*, as on Windows, is self contained and has everything needed for building. To get started do the following:
@@ -471,7 +540,7 @@ When specifying the serial port name on Mac OS X, use the following names (where
     /dev/tty.usbmodemXXX
     /dev/tty.usbserialXXX
 
-Where ``tty.usbmodemXXX`` is for new **Uno** and **Mega** Arduinos, while ``tty.usbserialXXX`` are the older ones. 
+Where ``tty.usbmodemXXX`` is for new **Uno** and **Mega** Arduino's, while ``tty.usbserialXXX`` are the older ones. 
 
 CMake configuration example::
 
@@ -500,8 +569,8 @@ CMake configuration example::
 
 
 
-Windows Enviroment Setup
-------------------------
+Windows Environment Setup
+-------------------------
 
 On Windows the *Arduino SDK* is self contained and has everything needed for building. To setup the environment do the following:
 
@@ -532,7 +601,7 @@ Once installed, you can start using CMake the usual way, just make sure to chose
 If you want to use a **MinGW Makefiles** type generator, you must generate the build system the following way:
 
 1. Remove ``${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin`` from the **System Path**
-2. Generate the build system using CMake with the following option set (either throug the GUI or from the command line)::
+2. Generate the build system using CMake with the following option set (either through the GUI or from the command line)::
 
     CMAKE_MAKE_PROGRAM=${ARDIUNO_SDK_PATH}/hardware/tools/avr/utils/bin/make.exe
 
@@ -540,8 +609,8 @@ If you want to use a **MinGW Makefiles** type generator, you must generate the b
 
 The reason for doing this is the MinGW generator cannot have the ``sh.exe`` binary on the **System Path** during generation, otherwise you get an error.
 
-Serial Namming
-~~~~~~~~~~~~~~
+Serial Naming
+~~~~~~~~~~~~~
 
 When specifying the serial port name on Windows, use the following names::
 
@@ -573,10 +642,10 @@ Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
 
 
-Eclipse Enviroment
-------------------
+Eclipse Environment
+-------------------
 
-Eclipse is a great IDE which has a lot of functionality and is much more powerfull than the *Arduino IDE*. In order to use Eclipse you will need the following:
+Eclipse is a great IDE which has a lot of functionality and is much more powerful than the *Arduino IDE*. In order to use Eclipse you will need the following:
 
 1. Eclipse
 2. Eclipse CDT extension (for C/C++ development)
@@ -675,9 +744,26 @@ If you encounter this problem either downgrade ``avr-gcc`` to **4.3** or rebuild
 
 
 
+Library not detected automatically
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a Arduino library does not get detected automatically, it usually means CMake cannot find it (obvious).
+
+One common reason why the library is not detected, is because the directory name of the library does not match the header.
+If I'm including a library header like so::
+
+    #include "my_library.h"
+
+Based on this include, **Arduino CMake** is expecting to find a library that has a directory name **my_libray**.
+If the directory name does not match the header, it won't be consider a Arduino Library (see `Arduino Libraries`_).
 
 
+When a library being used is located in a non-standard location (not in the **Arduino SDK** or next to the firmware), then that directory must be registered.
+To register a non-standard directory containing Arduino libraries, use the following::
 
+    link_directories(path_to_directory_containing_libraries)
+
+Remember to **use this command before defining any firmware**, depending on libraries located in that directory.
 
 
 
@@ -685,7 +771,7 @@ If you encounter this problem either downgrade ``avr-gcc`` to **4.3** or rebuild
 Resources
 ---------
 
-Here are some resources you might find usefull in getting started.
+Here are some resources you might find useful in getting started.
 
 1. CMake:
 
@@ -700,7 +786,7 @@ Here are some resources you might find usefull in getting started.
 2. Arduino:
    
    * `Getting Started`_ - Introduction to Arduino
-   * `Playground`_ - User contributed documentations and help
+   * `Playground`_ - User contributed documentation and help
    * `Arduino Forums`_ - Official forums
    * `Arduino Reference`_ - Official reference manual
 
