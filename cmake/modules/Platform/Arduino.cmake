@@ -1053,7 +1053,85 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 endfunction()
 
 
-# Setting up Arduino enviroment settings
+#=============================================================================#
+#                              C Flags                                        #
+#=============================================================================#
+if (NOT DEFINED ARDUINO_C_FLAGS)
+    set(ARDUINO_C_FLAGS "-ffunction-sections -fdata-sections")
+endif()
+set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELEASE        "-Os -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+
+#=============================================================================#
+#                             C++ Flags                                       #
+#=============================================================================#
+if (NOT DEFINED ARDUINO_CXX_FLAGS)
+    set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
+endif()
+set(CMAKE_CXX_FLAGS                "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_DEBUG          "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELEASE        "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+
+#=============================================================================#
+#                       Executable Linker Flags                               #
+#=============================================================================#
+if (NOT DEFINED ARDUINO_LINKER_FLAGS)
+    set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections")
+endif()
+set(CMAKE_EXE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+
+#=============================================================================#
+#                       Shared Lbrary Linker Flags                            #
+#=============================================================================#
+set(CMAKE_SHARED_LINKER_FLAGS                ""                        CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG          ""                        CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL     ""                        CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE        ""                        CACHE STRING "")
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STRING "")
+
+set(CMAKE_MODULE_LINKER_FLAGS                ""                        CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_DEBUG          ""                        CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL     ""                        CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        ""                        CACHE STRING "")
+set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO ""                        CACHE STRING "")
+
+
+#=============================================================================#
+#                         System Paths                                        #
+#=============================================================================#
+if(UNIX)
+    include(Platform/UnixPaths)
+    if(APPLE)
+        list(APPEND CMAKE_SYSTEM_PREFIX_PATH ~/Applications
+                                             /Applications
+                                             /Developer/Applications
+                                             /sw        # Fink
+                                             /opt/local) # MacPorts
+    endif()
+elseif(WIN32)
+    include(Platform/WindowsPaths)
+endif()
+
+
+
+
+#=============================================================================#
+#                         Arduino Settings                                    #
+#=============================================================================#
+set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load
+    --no-change-warnings --change-section-lma .eeprom=0   CACHE STRING "")
+set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom          CACHE STRING "")
+set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "Arvdude global flag list.")
+
 if(NOT ARDUINO_FOUND)
     set(ARDUINO_PATHS)
     foreach(VERSION 22 1)
@@ -1070,7 +1148,6 @@ if(NOT ARDUINO_FOUND)
               HINTS ${SDK_PATH_HINTS}
               DOC "Arduino Development Kit path.")
 
-
     if(ARDUINO_SDK_PATH)
         if(WIN32)
             list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
@@ -1079,7 +1156,7 @@ if(NOT ARDUINO_FOUND)
             list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
         endif()
     else()
-        message(FATAL_ERROR "Could not find Arduino SKD (ARDUINO_SDK_PATH)!")
+        message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
     endif()
 
     find_file(ARDUINO_CORES_PATH
@@ -1124,6 +1201,7 @@ if(NOT ARDUINO_FOUND)
                  PATHS ${ARDUINO_SDK_PATH}
                  PATH_SUFFIXES hardware/tools
                  NO_DEFAULT_PATH)
+
     find_program(ARDUINO_AVRDUDE_PROGRAM
                  NAMES avrdude)
 
@@ -1133,17 +1211,8 @@ if(NOT ARDUINO_FOUND)
                  PATH_SUFFIXES hardware/tools
                                hardware/tools/avr/etc)
 
-     set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
-         CACHE STRING "")
-     set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
-         CACHE STRING "")
-     set(ARDUINO_AVRDUDE_FLAGS -V
-         CACHE STRING "Arvdude global flag list.")
-
-     if(ARDUINO_SDK_PATH)
-         detect_arduino_version(ARDUINO_SDK_VERSION)
-         set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
-     endif(ARDUINO_SDK_PATH)
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
 
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(Arduino
@@ -1153,7 +1222,7 @@ if(NOT ARDUINO_FOUND)
 
 
      mark_as_advanced(ARDUINO_CORES_PATH
-		      ARDUINO_VARIANTS_PATH
+		              ARDUINO_VARIANTS_PATH
                       ARDUINO_BOOTLOADERS_PATH
                       ARDUINO_SDK_VERSION
                       ARDUINO_LIBRARIES_PATH
