@@ -5,8 +5,7 @@
 # Description: Arduino CMake example                                          #
 #                                                                             #
 #=============================================================================#
-set(CMAKE_MODULE_PATH    ${CMAKE_SOURCE_DIR}/cmake/modules)  # CMake module search path
-set(CMAKE_TOOLCHAIN_FILE ArduinoToolchain) # Arduino Toolchain
+set(CMAKE_TOOLCHAIN_FILE cmake/modules/ArduinoToolchain.cmake) # Arduino Toolchain
 
 
 cmake_minimum_required(VERSION 2.8)
