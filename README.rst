@@ -8,7 +8,9 @@ One major drawback of the *Arduino IDE* is that you cannot do anything without i
 
 CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. Version **1.0** of the *Arduino SDK* is required.
+The **Arduino CMake** build system integrates tightly with the *Arduino SDK*.
+
+*Arduino SDK* version **0.19** or higher is required.
 
 So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
 
