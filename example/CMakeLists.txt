@@ -12,7 +12,7 @@
 #====================================================================#
 set(FIRMWARE_NAME blink)
 
-set(${FIRMWARE_NAME}_BOARD uno)               # Arduino Target board
+set(${FIRMWARE_NAME}_BOARD diecimila)               # Arduino Target board
 set(${FIRMWARE_NAME}_SRCS  blink.cpp)  # Firmware sources
 
 set(${FIRMWARE_NAME}_PORT /dev/ttyACM0)            # Serial upload port

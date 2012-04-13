@@ -74,7 +74,7 @@ endfunction()
 #
 # Print list of detected Arduino Boards.
 function(PRINT_BOARD_LIST)
-    message(STATUS "Supported Arduino Boards:")
+    message(STATUS "Arduino Boards:")
     print_list(ARDUINO_BOARDS)
     message(STATUS "")
 endfunction()
@@ -83,7 +83,7 @@ endfunction()
 #
 # Print list of detected Programmers.
 function(PRINT_PROGRAMMER_LIST)
-    message(STATUS "Supported Programmers:")
+    message(STATUS "Arduino Programmers:")
     print_list(ARDUINO_PROGRAMMERS)
     message(STATUS "")
 endfunction()
@@ -273,14 +273,16 @@ endfunction()
 #
 # Configures the the build settings for the specified Arduino Board.
 #
-macro(setup_arduino_compiler BOARD_ID)
+function(setup_arduino_compiler BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
-    set(PIN_HEADER ${${BOARD_ID}.build.variant})
     if(BOARD_CORE)
         if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)")
             string(REPLACE "." "" ARDUINO_VERSION_DEFINE "${ARDUINO_SDK_VERSION}") # Normalize version (remove all periods)
-            set(ARDUINO_VERSION_DEFINE "${CMAKE_MATCH_1}")
-            if(CMAKE_MATCH_1 GREATER 10)
+            set(ARDUINO_VERSION_DEFINE "")
+            if(CMAKE_MATCH_1 GREATER 0)
+                set(ARDUINO_VERSION_DEFINE "${CMAKE_MATCH_1}")
+            endif()
+            if(CMAKE_MATCH_2 GREATER 10)
                 set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}${CMAKE_MATCH_2}")
             else()
                 set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}0${CMAKE_MATCH_2}")
@@ -288,8 +290,12 @@ macro(setup_arduino_compiler BOARD_ID)
         else()
             message("Invalid Arduino SDK Version (${ARDUINO_SDK_VERSION})")
         endif()
+
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
-        include_directories(${ARDUINO_VARIANTS_PATH}/${PIN_HEADER})
+        if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
+            set(PIN_HEADER ${${BOARD_ID}.build.variant})
+            include_directories(${ARDUINO_VARIANTS_PATH}/${PIN_HEADER})
+        endif()
         include_directories(${BOARD_CORE_PATH})
         include_directories(${ARDUINO_LIBRARIES_PATH})
         add_definitions(-DF_CPU=${${BOARD_ID}.build.f_cpu}
@@ -302,7 +308,7 @@ macro(setup_arduino_compiler BOARD_ID)
     else()
         message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
     endif()
-endmacro()
+endfunction()
 
 # setup_arduino_core(VAR_NAME BOARD_ID)
 #
@@ -773,9 +779,6 @@ function(detect_arduino_version VAR_NAME)
 endfunction()
 
 
-function(convert_arduino_sketch VAR_NAME SRCS)
-endfunction()
-
 # load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
 #
 #      SETTINGS_LIST - Variable name of settings list
@@ -1189,10 +1192,6 @@ if(NOT ARDUINO_FOUND)
               PATHS ${ARDUINO_SDK_PATH}
               PATH_SUFFIXES hardware/arduino)
 
-    find_file(ARDUINO_REVISIONS_PATH
-              NAMES revisions.txt
-              PATHS ${ARDUINO_SDK_PATH})
-
     find_file(ARDUINO_VERSION_PATH
               NAMES lib/version.txt
               PATHS ${ARDUINO_SDK_PATH})
@@ -1212,33 +1211,33 @@ if(NOT ARDUINO_FOUND)
                  PATH_SUFFIXES hardware/tools
                                hardware/tools/avr/etc)
 
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
-
-    include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Arduino
-                                      REQUIRED_VARS ARDUINO_SDK_PATH
-                                                    ARDUINO_SDK_VERSION
-                                      VERSION_VAR ARDUINO_SDK_VERSION)
-
-     if(ARDUINO_SDK_VERSION LESS 1.0)
-         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 1.0 or higher)")
-     endif()
-
-     mark_as_advanced(ARDUINO_CORES_PATH
-		              ARDUINO_VARIANTS_PATH
+    # Ensure that all required paths are found
+    foreach(VAR_NAME  ARDUINO_CORES_PATH
                       ARDUINO_BOOTLOADERS_PATH
-                      ARDUINO_SDK_VERSION
                       ARDUINO_LIBRARIES_PATH
                       ARDUINO_BOARDS_PATH
                       ARDUINO_PROGRAMMERS_PATH
-                      ARDUINO_REVISIONS_PATH
                       ARDUINO_VERSION_PATH
                       ARDUINO_AVRDUDE_FLAGS
                       ARDUINO_AVRDUDE_PROGRAM
-                      ARDUINO_AVRDUDE_CONFIG_PATH
-                      ARDUINO_OBJCOPY_EEP_FLAGS
-                      ARDUINO_OBJCOPY_HEX_FLAGS)
+                      ARDUINO_AVRDUDE_CONFIG_PATH)
+         if(NOT ${VAR_NAME})
+             message(FATAL_ERROR "\nMissing ${VAR_NAME}!\nInvalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
+         endif()
+    endforeach()
+
+
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+
+
+    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
+         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
+    endif()
+
+    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+
+
 
     load_board_settings()
     load_programmers_settings()
@@ -1246,5 +1245,21 @@ if(NOT ARDUINO_FOUND)
     print_board_list()
     print_programmer_list()
 
+
+
     set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
+    mark_as_advanced(ARDUINO_CORES_PATH
+	                 ARDUINO_VARIANTS_PATH
+                     ARDUINO_BOOTLOADERS_PATH
+                     ARDUINO_SDK_VERSION
+                     ARDUINO_LIBRARIES_PATH
+                     ARDUINO_BOARDS_PATH
+                     ARDUINO_PROGRAMMERS_PATH
+                     ARDUINO_VERSION_PATH
+                     ARDUINO_AVRDUDE_FLAGS
+                     ARDUINO_AVRDUDE_PROGRAM
+                     ARDUINO_AVRDUDE_CONFIG_PATH
+                     ARDUINO_OBJCOPY_EEP_FLAGS
+                     ARDUINO_OBJCOPY_HEX_FLAGS)
+
 endif()
