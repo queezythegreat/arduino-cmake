@@ -471,13 +471,33 @@ function(setup_arduino_target TARGET_NAME ALL_SRCS ALL_LIBS)
                         ARGS     ${ARDUINO_OBJCOPY_EEP_FLAGS}
                                  ${TARGET_PATH}.elf
                                  ${TARGET_PATH}.eep
+                        COMMENT "Generating EEP image"
                         VERBATIM)
+
+    # Convert firmware image to ASCII HEX format
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${CMAKE_OBJCOPY}
                         ARGS    ${ARDUINO_OBJCOPY_HEX_FLAGS}
                                 ${TARGET_PATH}.elf
                                 ${TARGET_PATH}.hex
+                        COMMENT "Generating HEX image"
                         VERBATIM)
+
+    # Display target size
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND}
+                        ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
+                                -P ${ARDUINO_SIZE_SCRIPT}
+                        COMMENT "Calculating image size"
+                        VERBATIM)
+
+    # Create ${TARGET_NAME}-size target
+    add_custom_target(${TARGET_NAME}-size
+                        COMMAND ${CMAKE_COMMAND}
+                                -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
+                                -P ${ARDUINO_SIZE_SCRIPT}
+                        DEPENDS ${TARGET_NAME}
+                        COMMENT "Calculating ${TARGET_NAME} image size")
 endfunction()
 
 # setup_arduino_upload(BOARD_ID TARGET_NAME PORT)
@@ -1056,6 +1076,34 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 	endforeach()
 endfunction()
 
+# setup_arduino_size_script(OUTPUT_VAR)
+#
+#        OUTPUT_VAR - Output variable that will contain the script path
+#
+# Generates script used to display the firmware size.
+function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
+    set(ARDUINO_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSize.cmake)
+
+    file(WRITE ${ARDUINO_SIZE_SCRIPT_PATH} "
+    set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
+    set(AVRSIZE_FLAGS --target=ihex -d)
+
+    execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
+                    OUTPUT_VARIABLE SIZE_OUTPUT)
+
+    string(STRIP \"\${SIZE_OUTPUT}\" SIZE_OUTPUT)
+
+    # Convert lines into a list
+    string(REPLACE \"\\n\" \";\" SIZE_OUTPUT \"\${SIZE_OUTPUT}\")
+
+    list(GET SIZE_OUTPUT 1 SIZE_ROW)
+
+    if(SIZE_ROW MATCHES \"[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*([0-9]+)[ \\t]*([0-9a-fA-F]+).*\")
+        message(\"Total size \${CMAKE_MATCH_1} bytes\")
+    endif()")
+
+    set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
+endfunction()
 
 #=============================================================================#
 #                              C Flags                                        #
@@ -1205,11 +1253,14 @@ if(NOT ARDUINO_FOUND)
     find_program(ARDUINO_AVRDUDE_PROGRAM
                  NAMES avrdude)
 
-    find_program(ARDUINO_AVRDUDE_CONFIG_PATH
-                 NAMES avrdude.conf
-                 PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
-                 PATH_SUFFIXES hardware/tools
-                               hardware/tools/avr/etc)
+    find_program(AVRSIZE_PROGRAM
+                 NAMES avr-size)
+
+    find_file(ARDUINO_AVRDUDE_CONFIG_PATH
+              NAMES avrdude.conf
+              PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
+              PATH_SUFFIXES hardware/tools
+                            hardware/tools/avr/etc)
 
     # Ensure that all required paths are found
     foreach(VAR_NAME  ARDUINO_CORES_PATH
@@ -1238,6 +1289,8 @@ if(NOT ARDUINO_FOUND)
     message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
 
 
+    setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
+    set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
 
     load_board_settings()
     load_programmers_settings()
