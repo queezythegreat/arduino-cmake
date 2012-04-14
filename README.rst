@@ -100,21 +100,21 @@ Contents
    7. `Programmers`_
    8. `Advanced Options`_
 
-3. `Linux Environment Setup`_
+3. `Linux Environment`_
 
-   1. `Serial Namming`_
-   2. `Serial Terminal`_
+   1. `Linux Serial Namming`_
+   2. `Linux Serial Terminals`_
 
-4. `Mac OS X Environment Setup`_
+4. `Mac OS X Environment`_
 
-   1. `Serial Namming`_
-   2. `Serial Terminal`_
+   1. `Mac Serial Namming`_
+   2. `Mac Serial Terminals`_
 
-5. `Windows Environment Setup`_
+5. `Windows Environment`_
 
    1. `CMake Generators`_
-   2. `Serial Namming`_
-   3. `Serial Terminal`_
+   2. `Windows Serial Namming`_
+   3. `Windows Serial Terminals`_
 
 6. `Eclipse Environment`_
 7. `Troubleshooting`_
@@ -468,8 +468,8 @@ When **Arduino CMake** is configured properly, these options are defined:
 
 
 
-Linux Environment Setup
------------------------
+Linux Environment
+-----------------
 
 Running the *Arduino SDK* on Linux is a little bit more involved, because not everything is bundled with the SDK. The AVR GCC toolchain is not distributed alongside the Arduino SDK, so it has to be installed seperately.
 
@@ -502,8 +502,8 @@ To get **Arduino CMake** up and running follow these steps:
 
 
 
-Serial Naming
-~~~~~~~~~~~~~
+Linux Serial Naming
+~~~~~~~~~~~~~~~~~~~
 
 On Linux the Arduino serial device is named as follows (where **X** is the device number)::
 
@@ -517,8 +517,8 @@ CMake configuration example::
     set(${FIRMWARE_NAME}_PORT /dev/ttyUSB0)
 
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Linux Serial Terminals
+~~~~~~~~~~~~~~~~~~~~~~
 
 On Linux a wide range on serial terminal are availabe. Here is a list of a couple:
 
@@ -537,8 +537,8 @@ On Linux a wide range on serial terminal are availabe. Here is a list of a coupl
 
 
 
-Mac OS X Environment Setup
--------------------------
+Mac OS X Environment
+--------------------
 
 The *Arduino SDK*, as on Windows, is self contained and has everything needed for building. To get started do the following:
 
@@ -555,8 +555,8 @@ The *Arduino SDK*, as on Windows, is self contained and has everything needed fo
         
       NOTE: Make sure to click on **`Install Command Line Links`**
 
-Serial Naming
-~~~~~~~~~~~~~
+Mac Serial Naming
+~~~~~~~~~~~~~~~~~
 
 When specifying the serial port name on Mac OS X, use the following names (where XXX is a unique ID)::
 
@@ -569,8 +569,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT /dev/tty.usbmodem1d11)
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Serial Terminals
+~~~~~~~~~~~~~~~~
 
 On Mac the easiest way to get a Serial Terminal is to use the ``screen`` terminal emulator. To start a ``screen`` serial session::
 
@@ -592,8 +592,8 @@ CMake configuration example::
 
 
 
-Windows Environment Setup
--------------------------
+Windows Environment
+-------------------
 
 On Windows the *Arduino SDK* is self contained and has everything needed for building. To setup the environment do the following:
 
@@ -632,8 +632,8 @@ If you want to use a **MinGW Makefiles** type generator, you must generate the b
 
 The reason for doing this is the MinGW generator cannot have the ``sh.exe`` binary on the **System Path** during generation, otherwise you get an error.
 
-Serial Naming
-~~~~~~~~~~~~~
+Windows Serial Naming
+~~~~~~~~~~~~~~~~~~~~~
 
 When specifying the serial port name on Windows, use the following names::
 
@@ -643,8 +643,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT com3)
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Serial Terminals
+~~~~~~~~~~~~~~~~
 
 Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for launching a serial terminal, for example::
 
