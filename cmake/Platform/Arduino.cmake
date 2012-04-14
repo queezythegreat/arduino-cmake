@@ -56,44 +56,71 @@
 #        PORT         - Serial port [optional]
 #        SERIAL       - Serial command [optional]
 # Creates a example from the specified library.
-
-
-# load_board_settings()
 #
-# Load the Arduino SDK board settings from the boards.txt file.
 #
-function(LOAD_BOARD_SETTINGS)
-    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
-endfunction()
-
-function(LOAD_PROGRAMMERS_SETTINGS)
-    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
-endfunction()
-
 # print_board_list()
 #
 # Print list of detected Arduino Boards.
-function(PRINT_BOARD_LIST)
-    message(STATUS "Arduino Boards:")
-    print_list(ARDUINO_BOARDS)
-    message(STATUS "")
-endfunction()
-
+#
+#
+#
 # print_programmer_list()
 #
 # Print list of detected Programmers.
-function(PRINT_PROGRAMMER_LIST)
-    message(STATUS "Arduino Programmers:")
-    print_list(ARDUINO_PROGRAMMERS)
-    message(STATUS "")
-endfunction()
-
+#
+#
+#
 # print_programmer_settings(PROGRAMMER)
 #
 #        PROGRAMMER - programmer id
 #
 # Print the detected Programmer settings.
 #
+#
+#
+# print_board_settings(ARDUINO_BOARD)
+#
+#        ARDUINO_BOARD - Board id
+#
+# Print the detected Arduino board settings.
+
+
+
+
+
+
+
+#=============================================================================#
+#                           User Functions                                    #
+#=============================================================================#
+
+# [PUBLIC/USER]
+#
+# print_board_list()
+#
+# see documentation at top
+function(PRINT_BOARD_LIST)
+    message(STATUS "Arduino Boards:")
+    print_list(ARDUINO_BOARDS)
+    message(STATUS "")
+endfunction()
+
+# [PUBLIC/USER]
+#
+# print_programmer_list()
+#
+# see documentation at top
+function(PRINT_PROGRAMMER_LIST)
+    message(STATUS "Arduino Programmers:")
+    print_list(ARDUINO_PROGRAMMERS)
+    message(STATUS "")
+endfunction()
+
+# [PUBLIC/USER]
+#
+# print_programmer_settings(PROGRAMMER)
+#
+# see documentation at top
 function(PRINT_PROGRAMMER_SETTINGS PROGRAMMER)
     if(${PROGRAMMER}.SETTINGS)
         message(STATUS "Programmer ${PROGRAMMER} Settings:")
@@ -101,12 +128,11 @@ function(PRINT_PROGRAMMER_SETTINGS PROGRAMMER)
     endif()
 endfunction()
 
+# [PUBLIC/USER]
+#
 # print_board_settings(ARDUINO_BOARD)
 #
-#        ARDUINO_BOARD - Board id
-#
-# Print the detected Arduino board settings.
-#
+# see documentation at top
 function(PRINT_BOARD_SETTINGS ARDUINO_BOARD)
     if(${ARDUINO_BOARD}.SETTINGS)
         message(STATUS "Arduino ${ARDUINO_BOARD} Board:")
@@ -116,6 +142,8 @@ endfunction()
 
 
 
+# [PUBLIC/USER]
+#
 # generate_arduino_library(TARGET_NAME)
 #
 # see documentation at top
@@ -147,6 +175,8 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 endfunction()
 
+# [PUBLIC/USER]
+#
 # generate_arduino_firmware(TARGET_NAME)
 #
 # see documentation at top
@@ -199,6 +229,8 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     endif()
 endfunction()
 
+# [PUBLIC/USER]
+#
 # generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
 #
 # see documentation at top
@@ -239,6 +271,36 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
 endfunction()
 
 
+
+
+
+
+
+
+
+
+#=============================================================================#
+#                        Internal Functions                                   #
+#=============================================================================#
+
+# [PRIVATE/INTERNAL]
+#
+# load_board_settings()
+#
+# Load the Arduino SDK board settings from the boards.txt file.
+#
+function(LOAD_BOARD_SETTINGS)
+    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
+endfunction()
+
+# [PRIVATE/INTERNAL]
+#
+function(LOAD_PROGRAMMERS_SETTINGS)
+    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+endfunction()
+
+# [PRIVATE/INTERNAL]
+#
 # load_generator_settings(TARGET_NAME PREFIX [SUFFIX_1 SUFFIX_2 .. SUFFIX_N])
 #
 #         TARGET_NAME - The base name of the user settings
@@ -267,6 +329,8 @@ function(LOAD_GENERATOR_SETTINGS TARGET_NAME PREFIX)
     endforeach()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_compiler(BOARD_ID)
 #
 #       BOARD_ID - The board id name
@@ -310,6 +374,8 @@ function(setup_arduino_compiler BOARD_ID)
     endif()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_core(VAR_NAME BOARD_ID)
 #
 #        VAR_NAME    - Variable name that will hold the generated library name
@@ -331,6 +397,8 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     endif()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # find_arduino_libraries(VAR_NAME SRCS)
 #
 #      VAR_NAME - Variable name which will hold the results
@@ -377,6 +445,8 @@ function(find_arduino_libraries VAR_NAME SRCS)
     set(${VAR_NAME} ${ARDUINO_LIBS} PARENT_SCOPE)
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_library(VAR_NAME BOARD_ID LIB_PATH)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
@@ -433,6 +503,8 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_libraries(VAR_NAME BOARD_ID SRCS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
@@ -452,6 +524,8 @@ function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS)
 #
 #        TARGET_NAME - Target name
@@ -500,6 +574,8 @@ function(setup_arduino_target TARGET_NAME ALL_SRCS ALL_LIBS)
                         COMMENT "Calculating ${TARGET_NAME} image size")
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_upload(BOARD_ID TARGET_NAME PORT)
 #
 #        BOARD_ID    - Arduino board id
@@ -520,6 +596,8 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_bootloader_upload(TARGET_NAME BOARD_ID PORT)
 #
 #      TARGET_NAME - target name
@@ -548,6 +626,8 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
                      DEPENDS ${TARGET_NAME})
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_programmer_burn(TARGET_NAME BOARD_ID PROGRAMMER)
 #
 #      TARGET_NAME - name of target to burn
@@ -578,6 +658,8 @@ function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER)
                      DEPENDS ${TARGET_NAME})
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_bootloader_burn(TARGET_NAME BOARD_ID PROGRAMMER)
 # 
 #      TARGET_NAME - name of target to burn
@@ -652,6 +734,8 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT)
                      DEPENDS ${TARGET_NAME})
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_programmer_args(PROGRAMMER OUTPUT_VAR)
 #
 #      PROGRAMMER  - programmer id
@@ -700,6 +784,8 @@ function(setup_arduino_programmer_args BOARD_ID PROGRAMMER TARGET_NAME PORT OUTP
     set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_bootloader_args(BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
 #
 #      BOARD_ID    - board id
@@ -738,6 +824,8 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
     set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # find_sources(VAR_NAME LIB_PATH RECURSE)
 #
 #        VAR_NAME - Variable name that will hold the detected sources
@@ -767,6 +855,8 @@ function(find_sources VAR_NAME LIB_PATH RECURSE)
     endif()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_serial_target(TARGET_NAME CMD)
 #
 #         TARGET_NAME - Target name
@@ -781,6 +871,8 @@ function(setup_serial_target TARGET_NAME CMD)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
 # detect_arduino_version(VAR_NAME)
 #
 #       VAR_NAME - Variable name where the detected version will be saved
@@ -799,6 +891,8 @@ function(detect_arduino_version VAR_NAME)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
 # load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
 #
 #      SETTINGS_LIST - Variable name of settings list
@@ -929,6 +1023,8 @@ function(PRINT_SETTINGS ENTRY_NAME)
     endif()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # print_list(SETTINGS_LIST)
 #
 #      SETTINGS_LIST - Variables name of settings list
@@ -976,6 +1072,8 @@ function(SETUP_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     endif()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_sketch(SKETCH_PATH OUTPUT_VAR)
 #
 #      SKETCH_PATH - Path to sketch directory
@@ -1021,6 +1119,8 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
 # generate_cpp_from_sketch(MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 #
 #         MAIN_SKETCH_PATH - Main sketch file path
@@ -1076,6 +1176,8 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 	endforeach()
 endfunction()
 
+# [PRIVATE/INTERNAL]
+#
 # setup_arduino_size_script(OUTPUT_VAR)
 #
 #        OUTPUT_VAR - Output variable that will contain the script path
@@ -1104,6 +1206,12 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
 
     set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
 endfunction()
+
+
+
+
+
+
 
 #=============================================================================#
 #                              C Flags                                        #
@@ -1184,6 +1292,15 @@ set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=all
 set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom          CACHE STRING "")
 set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "Arvdude global flag list.")
 
+
+
+
+
+
+
+#=============================================================================#
+#                          Initialization                                     #
+#=============================================================================#
 if(NOT ARDUINO_FOUND)
     set(ARDUINO_PATHS)
     foreach(VERSION 22 1)
@@ -1191,6 +1308,8 @@ if(NOT ARDUINO_FOUND)
     endforeach()
 
     file(GLOB SDK_PATH_HINTS /usr/share/arduino*)
+    list(SORT SDK_PATH_HINTS)
+    list(REVERSE SDK_PATH_HINTS)
 
     find_path(ARDUINO_SDK_PATH
               NAMES lib/version.txt
@@ -1198,7 +1317,7 @@ if(NOT ARDUINO_FOUND)
                             Arduino.app/Contents/Resources/Java/
                             ${ARDUINO_PATHS}
               HINTS ${SDK_PATH_HINTS}
-              DOC "Arduino Development Kit path.")
+              DOC "Arduino SDK path.")
 
     if(ARDUINO_SDK_PATH)
         if(WIN32)
