@@ -491,7 +491,7 @@ To get **Arduino CMake** up and running follow these steps:
    1. Download the `Arduino SDK`_
    2. Extract it into ``/usr/share``
     
-   NOTE: Arduino version **1.0** or newer is required!
+   NOTE: Arduino version **0.19** or newer is required!
 
 3. Install CMake:
     
