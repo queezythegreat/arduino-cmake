@@ -98,6 +98,7 @@ Contents
    5. `Arduino Library Examples`_
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
+   8. `Advanced Options`_
 
 3. `Linux Environment Setup`_
 
@@ -441,6 +442,30 @@ Once you have enabled programmer support, two new targets are available in the b
 * **${TARGET_NAME}-burn-bootloader** - burns the original **Arduino bootloader** image via the programmer
 
 If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
+
+
+Advanced Options
+~~~~~~~~~~~~~~~~
+
+The following options control how **Arduino CMake** is configured:
+
+* **ARDUINO_SDK_PATH** - Full path to the **Arduino SDK**
+* **ARDUINO_AVRDUDE_PROGRAM** - Full path to `avrdude` programmer
+* **ARDUINO_AVRDUDE_CONFIG_PATH** - Full path to `avrdude` configuration file
+
+To force a specific version of **Arduino SDK**, configure the project like so::
+
+    cmake -DARDUINO_SDK_PATH=/path/to/arduino_sdk ../path/to/sources
+
+Note: You must create a new build system if you change **ARDUINO_SDK_PATH**.
+
+
+When **Arduino CMake** is configured properly, these options are defined:
+
+* **ARDUINO_FOUND** - Set to True when the **Arduino SDK** is detected and configured.
+* **ARDUINO_SDK_VERSION** - Version of the detected **Arduino SDK** (ex: 1.0)
+
+
 
 
 Linux Environment Setup

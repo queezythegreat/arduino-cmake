@@ -1214,35 +1214,42 @@ if(NOT ARDUINO_FOUND)
     find_file(ARDUINO_CORES_PATH
               NAMES cores
               PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+              PATH_SUFFIXES hardware/arduino
+              DOC "Path to directory containing the Arduino core sources.")
 
     find_file(ARDUINO_VARIANTS_PATH
               NAMES variants 
               PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+              PATH_SUFFIXES hardware/arduino
+              DOC "Path to directory containing the Arduino variant sources.")
 
     find_file(ARDUINO_BOOTLOADERS_PATH
               NAMES bootloaders
               PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+              PATH_SUFFIXES hardware/arduino
+              DOC "Path to directory containing the Ardiuno bootloader images and sources.")
 
     find_file(ARDUINO_LIBRARIES_PATH
               NAMES libraries
-              PATHS ${ARDUINO_SDK_PATH})
+              PATHS ${ARDUINO_SDK_PATH}
+              DOC "Path to directory containing the Arduino libraries.")
 
     find_file(ARDUINO_BOARDS_PATH
               NAMES boards.txt
               PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+              PATH_SUFFIXES hardware/arduino
+              DOC "Path to Arduino boards definition file.")
 
     find_file(ARDUINO_PROGRAMMERS_PATH
               NAMES programmers.txt
               PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+              PATH_SUFFIXES hardware/arduino
+              DOC "Path to Arduino programmers definition file.")
 
     find_file(ARDUINO_VERSION_PATH
               NAMES lib/version.txt
-              PATHS ${ARDUINO_SDK_PATH})
+              PATHS ${ARDUINO_SDK_PATH}
+              DOC "Path to Arduino version file.")
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
                  NAMES avrdude
@@ -1251,7 +1258,8 @@ if(NOT ARDUINO_FOUND)
                  NO_DEFAULT_PATH)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
-                 NAMES avrdude)
+                 NAMES avrdude
+                 DOC "Path to avrdude programmer binary.")
 
     find_program(AVRSIZE_PROGRAM
                  NAMES avr-size)
@@ -1260,7 +1268,8 @@ if(NOT ARDUINO_FOUND)
               NAMES avrdude.conf
               PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
               PATH_SUFFIXES hardware/tools
-                            hardware/tools/avr/etc)
+                            hardware/tools/avr/etc
+              DOC "Path to avrdude programmer configuration file.")
 
     # Ensure that all required paths are found
     foreach(VAR_NAME  ARDUINO_CORES_PATH
@@ -1271,7 +1280,8 @@ if(NOT ARDUINO_FOUND)
                       ARDUINO_VERSION_PATH
                       ARDUINO_AVRDUDE_FLAGS
                       ARDUINO_AVRDUDE_PROGRAM
-                      ARDUINO_AVRDUDE_CONFIG_PATH)
+                      ARDUINO_AVRDUDE_CONFIG_PATH
+                      AVRSIZE_PROGRAM)
          if(NOT ${VAR_NAME})
              message(FATAL_ERROR "\nMissing ${VAR_NAME}!\nInvalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
          endif()
@@ -1304,7 +1314,6 @@ if(NOT ARDUINO_FOUND)
     mark_as_advanced(ARDUINO_CORES_PATH
 	                 ARDUINO_VARIANTS_PATH
                      ARDUINO_BOOTLOADERS_PATH
-                     ARDUINO_SDK_VERSION
                      ARDUINO_LIBRARIES_PATH
                      ARDUINO_BOARDS_PATH
                      ARDUINO_PROGRAMMERS_PATH
@@ -1313,6 +1322,7 @@ if(NOT ARDUINO_FOUND)
                      ARDUINO_AVRDUDE_PROGRAM
                      ARDUINO_AVRDUDE_CONFIG_PATH
                      ARDUINO_OBJCOPY_EEP_FLAGS
-                     ARDUINO_OBJCOPY_HEX_FLAGS)
+                     ARDUINO_OBJCOPY_HEX_FLAGS
+                     AVRSIZE_PROGRAM)
 
 endif()
