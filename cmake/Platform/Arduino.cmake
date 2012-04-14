@@ -195,10 +195,15 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
         set(INPUT_AUTOLIBS False)
     endif()
 
+    if(NOT INPUT_BOARD)
+        message(FATAL_ERROR "Missing board ID (set ${TARGET_NAME}_BOARD)!")
+    endif()
+
     message(STATUS "Generating ${TARGET_NAME}")
 
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
+
 
     setup_arduino_compiler(${INPUT_BOARD})
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
@@ -1081,10 +1086,10 @@ endfunction()
 #
 # Generates C++ sources from Arduino Sketch.
 function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
-    if(EXISTS "${SKETCH_PATH}")
-        get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
-        get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
+    get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
+    get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
 
+    if(EXISTS "${SKETCH_PATH}")
         set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.cpp)
         set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
@@ -1133,6 +1138,9 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(READ  ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
     string(FIND "${MAIN_SKETCH}" "#include" FIRST_INCLUDE_OFFSET REVERSE)
+    if ("${FIRST_INCLUDE_OFFSET}" STREQUAL "-1")
+        set(FIRST_INCLUDE_OFFSET 0)
+    endif()
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
     math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-${FIRST_INCLUDE_OFFSET}")
     string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_INCLUDE_OFFSET} ${LENGTH_STR1} STR1)
@@ -1150,7 +1158,11 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n")
-    file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
+    if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
+        file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
+    else()
+        file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
+    endif()
     file(APPEND ${SKETCH_CPP} "\n")
     file(APPEND ${SKETCH_CPP} "${SKETCH_HEAD}")
 
@@ -1158,13 +1170,17 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
         #message(STATUS "Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*[)]" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
+        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]){" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
 
         # Write function prototypes
+        file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
         foreach(SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})	
-            #message(STATUS "\tprototype: ${PROTOTYPE};")
-            file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};")
+            string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+            string(REPLACE "{" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+            message(STATUS "\tprototype: ${SKETCH_PROTOTYPE};")
+            file(APPEND ${SKETCH_CPP} "\n${SKETCH_PROTOTYPE};")
 		endforeach()
+        file(APPEND ${SKETCH_CPP} "\n//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
 	endforeach()
 
 	
