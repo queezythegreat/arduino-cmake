@@ -102,18 +102,18 @@ Contents
 
 3. `Linux Environment`_
 
-   1. `Linux Serial Namming`_
+   1. `Linux Serial Naming`_
    2. `Linux Serial Terminals`_
 
 4. `Mac OS X Environment`_
 
-   1. `Mac Serial Namming`_
+   1. `Mac Serial Naming`_
    2. `Mac Serial Terminals`_
 
 5. `Windows Environment`_
 
    1. `CMake Generators`_
-   2. `Windows Serial Namming`_
+   2. `Windows Serial Naming`_
    3. `Windows Serial Terminals`_
 
 6. `Eclipse Environment`_
@@ -569,8 +569,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT /dev/tty.usbmodem1d11)
 
-Serial Terminals
-~~~~~~~~~~~~~~~~
+Mac Serial Terminals
+~~~~~~~~~~~~~~~~~~~~
 
 On Mac the easiest way to get a Serial Terminal is to use the ``screen`` terminal emulator. To start a ``screen`` serial session::
 
@@ -643,8 +643,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT com3)
 
-Serial Terminals
-~~~~~~~~~~~~~~~~
+Windows Serial Terminals
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for launching a serial terminal, for example::
 
