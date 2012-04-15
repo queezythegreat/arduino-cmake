@@ -1159,13 +1159,13 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n")
+    file(APPEND ${SKETCH_CPP} "${SKETCH_HEAD}")
     if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
     else()
         file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
     endif()
     file(APPEND ${SKETCH_CPP} "\n")
-    file(APPEND ${SKETCH_CPP} "${SKETCH_HEAD}")
 
     # Find function prototypes
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
