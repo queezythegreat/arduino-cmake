@@ -1103,7 +1103,9 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
         #message("${MAIN_SKETCH}")
 
         # Find all sketch files
-        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
+        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.h
+                                 ${SKETCH_PATH}/*.pde
+                                 ${SKETCH_PATH}/*.ino)
         list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
         list(SORT SKETCH_SOURCES)
         
@@ -1143,19 +1145,18 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         set(FIRST_INCLUDE_OFFSET 0)
     endif()
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
-    math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-${FIRST_INCLUDE_OFFSET}")
+    math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-(${FIRST_INCLUDE_OFFSET})")
     string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_INCLUDE_OFFSET} ${LENGTH_STR1} STR1)
     #message("STR1:\n${STR1}")
 
-	string(FIND "${STR1}" "\n" POS2)
-    math(EXPR POS3 "${FIRST_INCLUDE_OFFSET}+${POS2}")
-    string(SUBSTRING "${MAIN_SKETCH}" 0 ${POS3} SKETCH_HEAD)
-    #message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
+    math(EXPR POS3 "${FIRST_INCLUDE_OFFSET}")
+    string(SUBSTRING "${MAIN_SKETCH}" 0 ${FIRST_INCLUDE_OFFSET} SKETCH_HEAD)
+#    message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
-    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${POS3}-1")
-    string(SUBSTRING "${MAIN_SKETCH}" "${POS3}+1" "${BODY_LENGTH}" SKETCH_BODY)
-    #message(STATUS "BODY:\n${SKETCH_BODY}")
+    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${FIRST_INCLUDE_OFFSET}-1")
+    string(SUBSTRING "${MAIN_SKETCH}" "${FIRST_INCLUDE_OFFSET}+1" "${BODY_LENGTH}" SKETCH_BODY)
+#    #message(STATUS "BODY:\n${SKETCH_BODY}")
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n")
@@ -1171,17 +1172,17 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
         #message(STATUS "Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
+        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
 
         # Write function prototypes
         file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
         foreach(SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})	
             string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             string(REPLACE "{" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            message(STATUS "\tprototype: ${SKETCH_PROTOTYPE};")
-            file(APPEND ${SKETCH_CPP} "\n${SKETCH_PROTOTYPE};")
+#            message(STATUS "\tprototype: ${SKETCH_PROTOTYPE};")
+            file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
 		endforeach()
-        file(APPEND ${SKETCH_CPP} "\n//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
+        file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
 	endforeach()
 
 	
@@ -1324,7 +1325,9 @@ if(NOT ARDUINO_FOUND)
         list(APPEND ARDUINO_PATHS arduino-00${VERSION})
     endforeach()
 
-    file(GLOB SDK_PATH_HINTS /usr/share/arduino*)
+    file(GLOB SDK_PATH_HINTS /usr/share/arduino*
+                             /opt/local/ardiuno*
+                             /usr/local/share/arduino*)
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
 
