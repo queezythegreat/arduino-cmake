@@ -484,7 +484,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
         find_sources(LIB_SRCS ${LIB_PATH} ${${LIB_SHORT_NAME}_RECURSE})
         if(LIB_SRCS)
 
-            message(STATUS "Generating Arduino ${LIB_NAME} library")
+            message(STATUS "Generating Arduino Library ${LIB_NAME}")
             include_directories(${LIB_PATH} ${LIB_PATH}/utility)
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
@@ -1100,7 +1100,7 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
         else()
             message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}!")
         endif()
-        #message("${MAIN_SKETCH}")
+        arduino_debug("${MAIN_SKETCH}")
 
         # Find all sketch files
         file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.h
@@ -1149,15 +1149,15 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
     math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-(${FIRST_STATEMENT_POSITION})")
     string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_STATEMENT_POSITION} ${LENGTH_STR1} STR1)
-    #message(STATUS "STR1:\n${STR1}")
+    arduino_debug(STATUS "STR1:\n${STR1}")
 
     string(SUBSTRING "${MAIN_SKETCH}" 0 ${FIRST_STATEMENT_POSITION} SKETCH_HEAD)
-    #message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
+    arduino_debug(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
     math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${FIRST_STATEMENT_POSITION}-1")
     string(SUBSTRING "${MAIN_SKETCH}" "${FIRST_STATEMENT_POSITION}+1" "${BODY_LENGTH}" SKETCH_BODY)
-    #message(STATUS "BODY:\n${SKETCH_BODY}")
+    arduino_debug(STATUS "BODY:\n${SKETCH_BODY}")
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_HEAD}\n")
@@ -1170,7 +1170,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 
     # Find function prototypes
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
-        #message(STATUS "Sketch: ${SKETCH_SOURCE_PATH}")
+        arduino_debug(STATUS "Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
         string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
 
@@ -1179,7 +1179,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         foreach(SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})	
             string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             string(REPLACE "{" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-#            message(STATUS "\tprototype: ${SKETCH_PROTOTYPE};")
+            arduino_debug(STATUS "\tprototype: ${SKETCH_PROTOTYPE};")
             file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
 		endforeach()
         file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
@@ -1226,7 +1226,39 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
 endfunction()
 
 
+# [PRIVATE/INTERNAL]
+#
+#  arduino_debug_on()
+#
+# Enables Arduino module debugging.
+function(ARDUINO_DEBUG_ON)
+    set(ARDUINO_DEBUG_ON True PARENT_SCOPE)
+endfunction()
 
+
+# [PRIVATE/INTERNAL]
+#
+#  arduino_debug_off()
+#
+# Disables Arduino module debugging.
+function(ARDUINO_DEBUG_OFF)
+    set(ARDUINO_DEBUG_ON False PARENT_SCOPE)
+endfunction()
+
+
+# [PRIVATE/INTERNAL]
+#
+# arduino_debug(MSG)
+#
+#        MSG - Message to print
+#
+# Print Arduino debugging information. In order to enable printing
+# use arduino_debug_on() and to disable use arduino_debug_off().
+function(ARDUINO_DEBUG MSG)
+    if(ARDUINO_DEBUG_ON)
+        message("## ${MSG}")
+    endif()
+endfunction()
 
 
 
