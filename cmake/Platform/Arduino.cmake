@@ -1160,8 +1160,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     #message(STATUS "BODY:\n${SKETCH_BODY}")
 
 	# write the file head
-    file(APPEND ${SKETCH_CPP} "\n")
-    file(APPEND ${SKETCH_CPP} "${SKETCH_HEAD}")
+    file(APPEND ${SKETCH_CPP} "\n${SKETCH_HEAD}\n")
     if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
     else()
