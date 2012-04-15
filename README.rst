@@ -8,7 +8,9 @@ One major drawback of the *Arduino IDE* is that you cannot do anything without i
 
 CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
-The **Arduino CMake** build system integrates tightly with the *Arduino SDK*. Version **1.0** of the *Arduino SDK* is required.
+The **Arduino CMake** build system integrates tightly with the *Arduino SDK*.
+
+*Arduino SDK* version **0.19** or higher is required.
 
 So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
 
@@ -96,22 +98,23 @@ Contents
    5. `Arduino Library Examples`_
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
+   8. `Advanced Options`_
 
-3. `Linux Environment Setup`_
+3. `Linux Environment`_
 
-   1. `Serial Namming`_
-   2. `Serial Terminal`_
+   1. `Linux Serial Naming`_
+   2. `Linux Serial Terminals`_
 
-4. `Mac OS X Environment Setup`_
+4. `Mac OS X Environment`_
 
-   1. `Serial Namming`_
-   2. `Serial Terminal`_
+   1. `Mac Serial Naming`_
+   2. `Mac Serial Terminals`_
 
-5. `Windows Environment Setup`_
+5. `Windows Environment`_
 
    1. `CMake Generators`_
-   2. `Serial Namming`_
-   3. `Serial Terminal`_
+   2. `Windows Serial Naming`_
+   3. `Windows Serial Terminals`_
 
 6. `Eclipse Environment`_
 7. `Troubleshooting`_
@@ -140,7 +143,7 @@ In short you can get up and running using the following commands::
     cmake ..
     make
     make upload              # to upload all firmware images             [optional]
-    make wire_reader-serial  # to get a serial terminal to wire_serial   [optional]
+    make blink-serial  # to get a serial terminal to wire_serial   [optional]
 
 For a more detailed explanation, please read on...
 
@@ -148,7 +151,7 @@ For a more detailed explanation, please read on...
    
    In order to build firmware for the Arduino you have to specify a toolchain file to enable cross-compilation. There are two ways of specifying the file, either at the command line or from within the *CMakeLists.txt* configuration files. The bundled example uses the second approach like so::
 
-        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/ArduinoToolchain.cmake)
 
    Please note that this must be before the ``project(...)`` command.
    
@@ -209,7 +212,7 @@ For a more detailed explanation, please read on...
 
    That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following::
 
-        make wire_reader-serial
+        make blink-serial
 
 
 
@@ -223,24 +226,22 @@ For a more detailed explanation, please read on...
 Using Arduino CMake
 -------------------
 
-The first step in generating Arduino firmware is including the **Arduino CMake** module package. This easily done with::
+In order to use **Arduino CMake** just include the toolchain file, everything will get set up for building. You can set the toolchain
+in `CMakeList.txt` like so::
 
-    find_package(Arduino)
+        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/ArduinoToolchain.cmake)
 
-To have a specific minimal version of the *Arduino SDK*, you can specify the version like so::
+Please note that this must be before the ``project(...)`` command.
 
-    find_package(Arduino 1.0)
+You can also specify it at build configuration time::
 
-That will require an *Arduino SDK* version **1.0** or newer. To ensure that the SDK is detected you can add the **REQUIRED** keyword::
-
-
-    find_package(Arduino 1.0 REQUIRED)
+        cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
 
 
 Creating firmware images
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once you have the **Arduino CMake** package loaded you can start defining firmware images.
+Once you have the **Arduino CMake** loaded you can start defining firmware images.
 
 To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command::
 
@@ -445,8 +446,32 @@ Once you have enabled programmer support, two new targets are available in the b
 If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
 
 
-Linux Environment Setup
------------------------
+Advanced Options
+~~~~~~~~~~~~~~~~
+
+The following options control how **Arduino CMake** is configured:
+
+* **ARDUINO_SDK_PATH** - Full path to the **Arduino SDK**
+* **ARDUINO_AVRDUDE_PROGRAM** - Full path to `avrdude` programmer
+* **ARDUINO_AVRDUDE_CONFIG_PATH** - Full path to `avrdude` configuration file
+
+To force a specific version of **Arduino SDK**, configure the project like so::
+
+    cmake -DARDUINO_SDK_PATH=/path/to/arduino_sdk ../path/to/sources
+
+Note: You must create a new build system if you change **ARDUINO_SDK_PATH**.
+
+
+When **Arduino CMake** is configured properly, these options are defined:
+
+* **ARDUINO_FOUND** - Set to True when the **Arduino SDK** is detected and configured.
+* **ARDUINO_SDK_VERSION** - Version of the detected **Arduino SDK** (ex: 1.0)
+
+
+
+
+Linux Environment
+-----------------
 
 Running the *Arduino SDK* on Linux is a little bit more involved, because not everything is bundled with the SDK. The AVR GCC toolchain is not distributed alongside the Arduino SDK, so it has to be installed seperately.
 
@@ -468,7 +493,7 @@ To get **Arduino CMake** up and running follow these steps:
    1. Download the `Arduino SDK`_
    2. Extract it into ``/usr/share``
     
-   NOTE: Arduino version **1.0** or newer is required!
+   NOTE: Arduino version **0.19** or newer is required!
 
 3. Install CMake:
     
@@ -479,8 +504,8 @@ To get **Arduino CMake** up and running follow these steps:
 
 
 
-Serial Naming
-~~~~~~~~~~~~~
+Linux Serial Naming
+~~~~~~~~~~~~~~~~~~~
 
 On Linux the Arduino serial device is named as follows (where **X** is the device number)::
 
@@ -494,8 +519,8 @@ CMake configuration example::
     set(${FIRMWARE_NAME}_PORT /dev/ttyUSB0)
 
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Linux Serial Terminals
+~~~~~~~~~~~~~~~~~~~~~~
 
 On Linux a wide range on serial terminal are availabe. Here is a list of a couple:
 
@@ -514,8 +539,8 @@ On Linux a wide range on serial terminal are availabe. Here is a list of a coupl
 
 
 
-Mac OS X Environment Setup
--------------------------
+Mac OS X Environment
+--------------------
 
 The *Arduino SDK*, as on Windows, is self contained and has everything needed for building. To get started do the following:
 
@@ -532,8 +557,8 @@ The *Arduino SDK*, as on Windows, is self contained and has everything needed fo
         
       NOTE: Make sure to click on **`Install Command Line Links`**
 
-Serial Naming
-~~~~~~~~~~~~~
+Mac Serial Naming
+~~~~~~~~~~~~~~~~~
 
 When specifying the serial port name on Mac OS X, use the following names (where XXX is a unique ID)::
 
@@ -546,8 +571,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT /dev/tty.usbmodem1d11)
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Mac Serial Terminals
+~~~~~~~~~~~~~~~~~~~~
 
 On Mac the easiest way to get a Serial Terminal is to use the ``screen`` terminal emulator. To start a ``screen`` serial session::
 
@@ -569,8 +594,8 @@ CMake configuration example::
 
 
 
-Windows Environment Setup
--------------------------
+Windows Environment
+-------------------
 
 On Windows the *Arduino SDK* is self contained and has everything needed for building. To setup the environment do the following:
 
@@ -609,8 +634,8 @@ If you want to use a **MinGW Makefiles** type generator, you must generate the b
 
 The reason for doing this is the MinGW generator cannot have the ``sh.exe`` binary on the **System Path** during generation, otherwise you get an error.
 
-Serial Naming
-~~~~~~~~~~~~~
+Windows Serial Naming
+~~~~~~~~~~~~~~~~~~~~~
 
 When specifying the serial port name on Windows, use the following names::
 
@@ -620,8 +645,8 @@ CMake configuration example::
 
     set(${FIRMWARE_NAME}_PORT com3)
 
-Serial Terminal
-~~~~~~~~~~~~~~~
+Windows Serial Terminals
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, and many more... The latest development snapshot supports command line options for launching a serial terminal, for example::
 
