@@ -1145,19 +1145,15 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
     math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-(${FIRST_INCLUDE_OFFSET})")
     string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_INCLUDE_OFFSET} ${LENGTH_STR1} STR1)
-    message("STR1:\n${STR1}")
-    message(STATUS "main sketch length: ${MAIN_SKETCH_LENGTH}")
-    message(STATUS "first include offset: ${FIRST_INCLUDE_OFFSET}")
-    message(STATUS "length str 1: ${LENGTH_STR1}")
+    #message(STATUS "STR1:\n${STR1}")
 
-    math(EXPR POS3 "${FIRST_INCLUDE_OFFSET}")
     string(SUBSTRING "${MAIN_SKETCH}" 0 ${FIRST_INCLUDE_OFFSET} SKETCH_HEAD)
-    message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
+    #message(STATUS "SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
     math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${FIRST_INCLUDE_OFFSET}-1")
     string(SUBSTRING "${MAIN_SKETCH}" "${FIRST_INCLUDE_OFFSET}+1" "${BODY_LENGTH}" SKETCH_BODY)
-    message(STATUS "BODY:\n${SKETCH_BODY}")
+    #message(STATUS "BODY:\n${SKETCH_BODY}")
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n")
