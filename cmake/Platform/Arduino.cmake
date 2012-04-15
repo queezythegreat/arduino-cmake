@@ -1090,6 +1090,7 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
     get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
 
     if(EXISTS "${SKETCH_PATH}")
+        include_directories(${SKETCH_PATH})
         set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.cpp)
         set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
@@ -1103,7 +1104,7 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
         #message("${MAIN_SKETCH}")
 
         # Find all sketch files
-        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
+        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.h ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
         list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
         list(SORT SKETCH_SOURCES)
         
@@ -1323,7 +1324,7 @@ if(NOT ARDUINO_FOUND)
         list(APPEND ARDUINO_PATHS arduino-00${VERSION})
     endforeach()
 
-    file(GLOB SDK_PATH_HINTS /usr/share/arduino* /usr/local/share/arduino*)
+    file(GLOB SDK_PATH_HINTS /usr/share/arduino* /opt/local/ardiuno* /usr/local/share/arduino*)
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
 
