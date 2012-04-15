@@ -23,15 +23,15 @@ set(CMAKE_EXE_LINKER_FLAGS "-lc -lm ${APM_OPT_FLAGS} -Wl,--gc-sections,--relax")
 #add_subdirectory(example)  # Add example directory to build
 
 # projects
-set(ARDUPLANE_SKETCH ${CMAKE_SOURCE_DIR}/ArduPlane)
-set(ARDUPLANE_BOARD mega2560)
-set(ARDUPLANE_PORT /dev/ttyUSB0)
-generate_arduino_firmware(ARDUPLANE)
+#set(ARDUPLANE_SKETCH ${CMAKE_SOURCE_DIR}/ArduPlane)
+#set(ARDUPLANE_BOARD mega2560)
+#set(ARDUPLANE_PORT /dev/ttyUSB0)
+#generate_arduino_firmware(ARDUPLANE)
 
-#set(BLINK_SKETCH ${CMAKE_SOURCE_DIR}/Blink)
-#set(BLINK_BOARD mega)
-#set(BLINK_PORT /dev/ttyUSB0)
-#generate_arduino_firmware(BLINK)
+set(BLINK_SKETCH ${CMAKE_SOURCE_DIR}/Blink)
+set(BLINK_BOARD mega2560)
+set(BLINK_PORT /dev/ttyUSB0)
+generate_arduino_firmware(BLINK)
 
 #set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/ArduCopter)
 #set(ARDUCOPTER_BOARD mega2560)
