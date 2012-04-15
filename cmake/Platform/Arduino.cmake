@@ -342,7 +342,7 @@ endfunction()
 #
 # Configures the the build settings for the specified Arduino Board.
 #
-function(setup_arduino_compiler BOARD_ID)
+macro(setup_arduino_compiler BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)")
@@ -377,7 +377,7 @@ function(setup_arduino_compiler BOARD_ID)
     else()
         message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
     endif()
-endfunction()
+endmacro()
 
 # [PRIVATE/INTERNAL]
 #
