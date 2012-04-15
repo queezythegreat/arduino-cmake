@@ -1323,7 +1323,7 @@ if(NOT ARDUINO_FOUND)
         list(APPEND ARDUINO_PATHS arduino-00${VERSION})
     endforeach()
 
-    file(GLOB SDK_PATH_HINTS /usr/share/arduino*)
+    file(GLOB SDK_PATH_HINTS /usr/share/arduino* /usr/local/share/arduino*)
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
 
