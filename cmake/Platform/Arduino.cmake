@@ -490,18 +490,23 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
 
             get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
 
-            set_target_properties(${TARGET_LIB_NAME} PROPERTIES
-                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility"
-                LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
-
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
+
+            set(LIB_DEP_INCLUDES)
+
             foreach(LIB_DEP ${LIB_DEPS})
+                set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP})
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
             endforeach()
 
+            set_target_properties(${TARGET_LIB_NAME} PROPERTIES
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility ${LIB_DEP_INCLUDES}"
+                LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
+
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
+
         endif()
     else()
         # Target already exists, skiping creating
