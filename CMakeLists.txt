@@ -16,17 +16,17 @@ project(ArduinoExample C CXX)
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions -Wno-reorder")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions -Wno-reorder")
 set(CMAKE_EXE_LINKER_FLAGS "-lc -lm ${APM_OPT_FLAGS} -Wl,--gc-sections,--relax")
 
 #add_subdirectory(example)  # Add example directory to build
 
 # projects
-#set(ARDUPLANE_SKETCH ${CMAKE_SOURCE_DIR}/ArduPlane)
-#set(ARDUPLANE_BOARD mega2560)
-#set(ARDUPLANE_PORT /dev/ttyUSB0)
-#generate_arduino_firmware(ARDUPLANE)
+set(ARDUPLANE_SKETCH ${CMAKE_SOURCE_DIR}/ArduPlane)
+set(ARDUPLANE_BOARD mega2560)
+set(ARDUPLANE_PORT /dev/ttyUSB0)
+generate_arduino_firmware(ARDUPLANE)
 
 set(BLINK_SKETCH ${CMAKE_SOURCE_DIR}/Blink)
 set(BLINK_BOARD mega2560)

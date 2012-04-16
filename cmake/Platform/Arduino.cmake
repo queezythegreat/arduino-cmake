@@ -221,7 +221,7 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "-I${INPUT_SKETCH}")
+    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "" "-I${INPUT_SKETCH}")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
@@ -396,8 +396,9 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
         list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
         get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
-        target_link_libraries(${CORE_LIB_NAME} "${ARDUINO_LINKER_FLAGS}")
-        set_target_properties(${CORE_LIB_NAME} PROPERTIES COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS}")
+        set_target_properties(${CORE_LIB_NAME} PROPERTIES
+            COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS}"
+            LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
 endfunction()
@@ -489,9 +490,9 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
 
             get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
 
-            target_link_libraries(${TARGET_LIB_NAME} "${ARDUINO_LINKER_FLAGS}")
-            set_target_properties(${TARGET_LIB_NAME} PROPERTIES COMPILE_FLAGS 
-                "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility")
+            set_target_properties(${TARGET_LIB_NAME} PROPERTIES
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility"
+                LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
             foreach(LIB_DEP ${LIB_DEPS})
@@ -536,26 +537,27 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_target(TARGET_NAME ALL_SRCS LINKER_FLAGS COMPILE_FLAGS)
+# setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS LINKER_FLAGS COMPILE_FLAGS)
 #
 #        TARGET_NAME - Target name
 #        BOARD_ID - The arduino board
 #        ALL_SRCS    - All sources
+#        ALL_LIBS    - All libraries
 #        LINKER_FLAGS    - Linker flags
 #        COMPILE_FLAGS    - Compile flags
 #
 # Creates an Arduino firmware target.
 #
-function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS LINKER_FLAGS COMPILE_FLAGS)
-    message(STATUS "compile flags: ${COMPILE_FLAGS}")
-
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS LINKER_FLAGS COMPILE_FLAGS)
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
     get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
 
-    target_link_libraries(${TARGET_NAME} "${ARDUINO_LINKER_FLAGS} ${LINKER_FLAGS}")
-    set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}")
+    set_target_properties(${TARGET_NAME} PROPERTIES
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
+                LINK_FLAGS "${ARDUINO_LINKER_FLAGS} ${LINKER_FLAGS}")
+    target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 
     set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
