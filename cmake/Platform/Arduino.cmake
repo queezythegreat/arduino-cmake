@@ -1182,7 +1182,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(READ  ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
     # remove comments
-    remove_comments(MAIN_SKETCH)
+    remove_comments(MAIN_SKETCH "${MAIN_SKETCH_PATH}")
 
     # find first statement
     string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH}")
@@ -1218,8 +1218,8 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
         arduino_debug("Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        #remove_comments(SKETCH_SOURCE)
-        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
+        remove_comments(SKETCH_SOURCE "${SKETCH_SOURCE_PATH}")
+        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
 
         # Write function prototypes
         file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
@@ -1236,7 +1236,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
     foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        #remove_comments(SKETCH_SOURCE)
+        remove_comments(SKETCH_SOURCE "${SKETCH_SOURCE_PATH}")
         file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
 	endforeach()
 endfunction()
@@ -1309,21 +1309,30 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# remove_comments(SRC_VAR)
+# remove_comments(SRC_VAR NAME)
 #
 #        SRC_VAR - variable holding sources
+#        NAME - variable for labelling output debug files
 #
-function(REMOVE_COMMENTS SRC_VAR)
-	#file(WRITE "${SRC_VAR)_pre_remove_comments.txt" ${${SRC_VAR}})
+function(REMOVE_COMMENTS SRC_VAR NAME)
+    string(REGEX REPLACE "[\\./\\\\]" "_" FILE "${NAME}")
+
+    set(SRC "${${SRC_VAR}}")
+
+    #message(STATUS "removing comments from: ${FILE}")
+	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_pre_remove_comments.txt" ${SRC})
+    #message(STATUS "\n${SRC}")
 
     # get all c-style commnets
-    string(REGEX REPLACE "[/][\\*](([^\\*])|([\\*]+[^/]))*[\\*]+[/]" "" SRC "${${SRC_VAR}}")
+    string(REGEX REPLACE "(^|[^/])[/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/]" "" SRC "${SRC}")
 
-    # get all c++ style comments
+    # get all c++-style commnets
     string(REGEX REPLACE "[/][/][^\n]*" "" SRC "${SRC}")
 
-	#file(WRITE "${SRC_VAR)_post_remove_comments.txt" ${SRC})
-    set(${SRC_VAR} ${SRC} PARENT_SCOPE)
+	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
+    #message(STATUS "\n${SRC}")
+
+    set(${SRC_VAR} "${SRC}" PARENT_SCOPE)
 endfunction()
 
 
