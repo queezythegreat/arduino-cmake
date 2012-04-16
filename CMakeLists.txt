@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ArduinoExample C CXX)
 
 option(TEST "Enable testing" ON)
-option(DEBUG "Enable debug" ON)
+option(DEBUG "Enable debug" OFF)
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
@@ -47,8 +47,8 @@ if (TEST)
     set(ARDUPLANE_PORT /dev/ttyUSB0)
     generate_arduino_firmware(ARDUPLANE)
 
-    #set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter)
-    #set(ARDUCOPTER_BOARD mega2560)
-    #set(ARDUCOPTER_PORT /dev/ttyUSB0)
-    #generate_arduino_firmware(ARDUCOPTER)
+    set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter)
+    set(ARDUCOPTER_BOARD mega2560)
+    set(ARDUCOPTER_PORT /dev/ttyUSB0)
+    generate_arduino_firmware(ARDUCOPTER)
 endif()

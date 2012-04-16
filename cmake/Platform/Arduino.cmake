@@ -1219,7 +1219,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         arduino_debug("Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
         remove_comments(SKETCH_SOURCE "${SKETCH_SOURCE_PATH}")
-        string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
+        string(REGEX MATCHALL "(^|[\n])([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
 
         # Write function prototypes
         file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
@@ -1323,11 +1323,8 @@ function(REMOVE_COMMENTS SRC_VAR NAME)
 	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_pre_remove_comments.txt" ${SRC})
     #message(STATUS "\n${SRC}")
 
-    # get all c-style commnets
-    string(REGEX REPLACE "(^|[^/])[/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/]" "" SRC "${SRC}")
-
-    # get all c++-style commnets
-    string(REGEX REPLACE "[/][/][^\n]*" "" SRC "${SRC}")
+    # remove all comments
+    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" SRC "${SRC}")
 
 	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
     #message(STATUS "\n${SRC}")

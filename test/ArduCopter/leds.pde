@@ -1,4 +1,3 @@
-
 static void update_lights()
 {
 	switch(led_mode){
