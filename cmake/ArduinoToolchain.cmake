@@ -31,7 +31,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g       ${ARDUINO_CXX_FLAGS}" )
 #=============================================================================#
 #                       Executable Linker Flags                               #
 #=============================================================================#
-set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections")
+set(ARDUINO_LINKER_FLAGS "-lm -Wl,--gc-sections")
 set(CMAKE_EXE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" )
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" )
 set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" )

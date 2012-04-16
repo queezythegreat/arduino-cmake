@@ -178,7 +178,7 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
         
     add_library(${TARGET_NAME} ${ALL_SRCS})
-    target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
+    target_link_libraries(${TARGET_NAME} ${ALL_LIBS} "-lc -lm")
 endfunction()
 
 # [PUBLIC/USER]
@@ -586,7 +586,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     set_target_properties(${TARGET_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
-    target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
+    target_link_libraries(${TARGET_NAME} ${ALL_LIBS} "-lc -lm")
 
     set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
