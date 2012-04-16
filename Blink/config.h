@@ -1,5 +1,5 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-class Test2 {
+class Test1 {
 };
 #endif
