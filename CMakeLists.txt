@@ -22,6 +22,8 @@ set(CMAKE_EXE_LINKER_FLAGS "-lc -lm ${APM_OPT_FLAGS} -Wl,--gc-sections,--relax")
 
 #add_subdirectory(example)  # Add example directory to build
 
+arduino_debug_on()
+
 # projects
 set(BLINK_SKETCH ${CMAKE_SOURCE_DIR}/Blink)
 set(BLINK_BOARD mega2560)
