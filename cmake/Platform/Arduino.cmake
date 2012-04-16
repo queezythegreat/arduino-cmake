@@ -164,8 +164,15 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
 
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    set(LIB_DEP_INCLUDES)
+    foreach(LIB_DEP ${TARGET_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
+    endforeach()
+    message(STATUS "includes: ${LIB_DEP_INCLUDES}")
+
     if(INPUT_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -203,9 +210,8 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
-
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
-
+    
     if(INPUT_SKETCH)
         setup_arduino_sketch(${INPUT_SKETCH} ALL_SRCS)
     endif()
@@ -214,14 +220,19 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
         message(FATAL_ERROR "Missing sources (${TARGET_NAME}_SRCS or ${TARGET_NAME}_SKETCH), aborting!")
     endif()
 
-    if(INPUT_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}")
-    endif()
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    set(LIB_DEP_INCLUDES)
+    foreach(LIB_DEP ${TARGET_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
+    endforeach()
 
+    if(INPUT_AUTOLIBS)
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+    endif()
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "" "-I${INPUT_SKETCH}")
+    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "-I${INPUT_SKETCH} ${LIB_DEP_INCLUDES}" "")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
@@ -257,11 +268,18 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
         message(FATAL_ERROR "Missing sources for example, aborting!")
     endif()
 
-    setup_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    set(LIB_DEP_INCLUDES)
+    foreach(LIB_DEP ${TARGET_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
+    endforeach()
+
+    message(STATUS "includes: ${LIB_DEP_INCLUDES}")
+    setup_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}" "" "")
+    setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
 
     if(INPUT_PORT)
         setup_arduino_upload(${BOARD_ID} ${TARGET_NAME} ${INPUT_PORT})
@@ -333,15 +351,15 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# get_arduino_flags(LINKER_FLAGS COMPILE_FLAGS BOARD_ID)
+# get_arduino_flags(COMPILE_FLAGS LINK_FLAGS BOARD_ID)
 #
-#       LINKER_FLAGS_VAR - Variable holding linker flags
 #       COMPILE_FLAGS_VAR -Variable holding compiler flags
+#       LINK_FLAGS_VAR - Variable holding linker flags
 #       BOARD_ID - The board id name
 #
 # Configures the the build settings for the specified Arduino Board.
 #
-function(get_arduino_flags LINKER_FLAGS_VAR COMPILE_FLAGS_VAR BOARD_ID)
+function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)")
@@ -361,7 +379,7 @@ function(get_arduino_flags LINKER_FLAGS_VAR COMPILE_FLAGS_VAR BOARD_ID)
 
         # output
         set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -mmcu=${${BOARD_ID}.build.mcu} -I${ARDUINO_CORES_PATH}/${BOARD_CORE} -I${ARDUINO_LIBRARIES_PATH}")
-        set(LINKER_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
+        set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
             set(PIN_HEADER ${${BOARD_ID}.build.variant})
             set(COMPILE_FLAGS "${COMPILE_FLAGS} -I${ARDUINO_VARIANTS_PATH}/${PIN_HEADER}")
@@ -369,7 +387,7 @@ function(get_arduino_flags LINKER_FLAGS_VAR COMPILE_FLAGS_VAR BOARD_ID)
 
         # output 
         set(${COMPILE_FLAGS_VAR} "${COMPILE_FLAGS}" PARENT_SCOPE)
-        set(${LINKER_FLAGS_VAR} "${LINKER_FLAGS}" PARENT_SCOPE)
+        set(${LINK_FLAGS_VAR} "${LINK_FLAGS}" PARENT_SCOPE)
 
     else()
         message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
@@ -395,10 +413,10 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
         # Debian/Ubuntu fix
         list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
-        get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
+        get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID})
         set_target_properties(${CORE_LIB_NAME} PROPERTIES
             COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS}"
-            LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
+            LINK_FLAGS "${ARDUINO_LINK_FLAGS}")
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
 endfunction()
@@ -453,11 +471,13 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_library(VAR_NAME BOARD_ID LIB_PATH)
+# setup_arduino_library(VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
 #        BOARD_ID    - Board name
 #        LIB_PATH    - path of the library
+#        COMPILE_FLAGS    - compile flags
+#        LINK_FLAGS    - link flags
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
@@ -469,7 +489,7 @@ endfunction()
 set(Wire_RECURSE True)
 set(Ethernet_RECURSE True)
 set(SD_RECURSE True)
-function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
+function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
 
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
@@ -488,21 +508,18 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
             message(STATUS "Generating Arduino ${LIB_NAME} library")
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
-            get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
+            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID})
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
 
-            set(LIB_DEP_INCLUDES)
-
             foreach(LIB_DEP ${LIB_DEPS})
-                set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP})
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
             endforeach()
 
             set_target_properties(${TARGET_LIB_NAME} PROPERTIES
-                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility ${LIB_DEP_INCLUDES}"
-                LINK_FLAGS "${ARDUINO_LINKER_FLAGS}")
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility ${COMPILE_FLAGS}"
+                LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
 
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
@@ -521,19 +538,22 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_libraries(VAR_NAME BOARD_ID SRCS)
+# setup_arduino_libraries(VAR_NAME BOARD_ID SRCS COMPILE_FLAGS LINK_FLAGS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
 #        BOARD_ID    - Board ID
 #        SRCS        - source files
+#        COMPILE_FLAGS    - Compile flags
+#        LINK_FLAGS    - Linker flags
 #
 # Finds and creates all dependency libraries based on sources.
 #
-function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS)
+function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
     find_arduino_libraries(TARGET_LIBS "${SRCS}")
     foreach(TARGET_LIB ${TARGET_LIBS})
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}) # Create static library instead of returning sources
+        # Create static library instead of returning sources
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
     endforeach()
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
@@ -542,26 +562,31 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS LINKER_FLAGS COMPILE_FLAGS)
+# setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS)
 #
 #        TARGET_NAME - Target name
 #        BOARD_ID - The arduino board
 #        ALL_SRCS    - All sources
 #        ALL_LIBS    - All libraries
-#        LINKER_FLAGS    - Linker flags
 #        COMPILE_FLAGS    - Compile flags
+#        LINK_FLAGS    - Linker flags
 #
 # Creates an Arduino firmware target.
 #
-function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS LINKER_FLAGS COMPILE_FLAGS)
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS)
+
+    foreach(LIB_DEP ${ALL_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
+    endforeach()
+
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
-    get_arduino_flags(ARDUINO_LINKER_FLAGS ARDUINO_COMPILE_FLAGS ${BOARD_ID})
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${BOARD_ID})
 
     set_target_properties(${TARGET_NAME} PROPERTIES
-                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
-                LINK_FLAGS "${ARDUINO_LINKER_FLAGS} ${LINKER_FLAGS}")
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
+                LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
     target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 
     set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
