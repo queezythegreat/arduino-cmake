@@ -33,6 +33,13 @@ set(BLINK_BOARD mega2560)
 set(BLINK_PORT /dev/ttyUSB0)
 generate_arduino_firmware(BLINK)
 
+set(BLINK2_SKETCH ${CMAKE_SOURCE_DIR}/Blink2)
+set(BLINK2_BOARD mega)
+set(BLINK2_PORT /dev/ttyUSB0)
+generate_arduino_firmware(BLINK2)
+
+
+
 #set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/ArduCopter)
 #set(ARDUCOPTER_BOARD mega2560)
 #set(ARDUCOPTER_PORT /dev/ttyUSB0)

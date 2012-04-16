@@ -162,7 +162,6 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
-    setup_arduino_compiler(${INPUT_BOARD})
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     if(INPUT_AUTOLIBS)
@@ -205,7 +204,6 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
 
-    setup_arduino_compiler(${INPUT_BOARD})
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     if(INPUT_SKETCH)
@@ -223,7 +221,7 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}")
+    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
@@ -251,7 +249,6 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
     set(INPUT_PORT  ${ARGV3})
     set(INPUT_SERIAL ${ARGV4})
 
-    setup_arduino_compiler(${BOARD_ID})
     setup_arduino_core(CORE_LIB ${BOARD_ID})
 
     setup_arduino_example("${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
@@ -336,13 +333,15 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_compiler(BOARD_ID)
+# get_arduino_flags(LINKER_FLAGS COMPILE_FLAGS BOARD_ID)
 #
+#       LINKER_FLAGS_VAR - Variable holding linker flags
+#       COMPILE_FLAGS_VAR -Variable holding compiler flags
 #       BOARD_ID - The board id name
 #
 # Configures the the build settings for the specified Arduino Board.
 #
-function(setup_arduino_compiler BOARD_ID)
+function(get_arduino_flags LINKER_FLAGS_VAR COMPILE_FLAGS_VAR BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)")
@@ -360,20 +359,18 @@ function(setup_arduino_compiler BOARD_ID)
             message("Invalid Arduino SDK Version (${ARDUINO_SDK_VERSION})")
         endif()
 
-        set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
+        # output
+        set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -mmcu=${${BOARD_ID}.build.mcu} -I${ARDUINO_CORES_PATH}/${BOARD_CORE} -I${ARDUINO_LIBRARIES_PATH}")
+        set(LINKER_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
             set(PIN_HEADER ${${BOARD_ID}.build.variant})
-            include_directories(${ARDUINO_VARIANTS_PATH}/${PIN_HEADER})
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I${ARDUINO_VARIANTS_PATH}/${PIN_HEADER}")
         endif()
-        include_directories(${BOARD_CORE_PATH})
-        include_directories(${ARDUINO_LIBRARIES_PATH})
-        add_definitions(-DF_CPU=${${BOARD_ID}.build.f_cpu}
-                        -DARDUINO=${ARDUINO_VERSION_DEFINE}
-                        -mmcu=${${BOARD_ID}.build.mcu}
-                        )
-        set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
-        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -mmcu=${${BOARD_ID}.build.mcu}" PARENT_SCOPE)
+
+        # output 
+        set(${COMPILE_FLAGS_VAR} "${COMPILE_FLAGS}" PARENT_SCOPE)
+        set(${LINKER_FLAGS_VAR} "${LINKER_FLAGS}" PARENT_SCOPE)
+
     else()
         message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
     endif()
@@ -398,6 +395,11 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
         # Debian/Ubuntu fix
         list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
+        get_arduino_flags(LINKER_FLAGS COMPILE_FLAGS ${BOARD_ID})
+        message(STATUS "LINKER FLAGS ${LINKER_FLAGS}")
+        message(STATUS "COMPILER FLAGS ${COMPILE_FLAGS}")
+        target_link_libraries(${CORE_LIB_NAME} "${LINKER_FLAGS}")
+        set_target_properties(${CORE_LIB_NAME} PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS}")
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
 endfunction()
@@ -485,8 +487,12 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
         if(LIB_SRCS)
 
             message(STATUS "Generating Arduino ${LIB_NAME} library")
-            include_directories(${LIB_PATH} ${LIB_PATH}/utility)
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
+
+            get_arduino_flags(LINKER_FLAGS COMPILE_FLAGS ${BOARD_ID})
+            target_link_libraries(${TARGET_LIB_NAME} ${LINKER_FLAGS})
+            set_target_properties(${TARGET_LIB_NAME} PROPERTIES COMPILE_FLAGS 
+                "${COMPILE_FLAGS} -I${LIB_PATH} -I${LIB_PATH}/utility")
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
             foreach(LIB_DEP ${LIB_DEPS})
@@ -499,7 +505,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
         endif()
     else()
         # Target already exists, skiping creating
-        include_directories(${LIB_PATH} ${LIB_PATH}/utility)
+        #include_directories(${LIB_PATH} ${LIB_PATH}/utility)
         list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
     endif()
     if(LIB_TARGETS)
@@ -534,16 +540,22 @@ endfunction()
 # setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS)
 #
 #        TARGET_NAME - Target name
+#        BOARD_ID - The arduino board
 #        ALL_SRCS    - All sources
 #        ALL_LIBS    - All libraries
 #
 # Creates an Arduino firmware target.
 #
-function(setup_arduino_target TARGET_NAME ALL_SRCS ALL_LIBS)
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS)
     #message(STATUS "linker flags: ${CMAKE_EXE_LINKER_FLAGS}")
+
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     target_link_libraries(${TARGET_NAME} ${CMAKE_EXE_LINKER_FLAGS} ${ALL_LIBS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
+
+    get_arduino_flags(LINKER_FLAGS COMPILE_FLAGS ${BOARD_ID})
+    target_link_libraries(${TARGET_NAME} ${LINKER_FLAGS})
+    set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS})
 
     set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
@@ -1091,7 +1103,6 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
     get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
 
     if(EXISTS "${SKETCH_PATH}")
-        include_directories(${SKETCH_PATH})
         set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.cpp)
         set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
@@ -1105,7 +1116,7 @@ function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
         #message("${MAIN_SKETCH}")
 
         # Find all sketch files
-        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.h ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
+        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
         list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
         list(SORT SKETCH_SOURCES)
         

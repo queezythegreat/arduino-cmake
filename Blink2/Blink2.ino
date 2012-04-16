@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-Test1 a;
+Test2 a;
 
 void setup() {                
   // initialize the digital pin as an output.
