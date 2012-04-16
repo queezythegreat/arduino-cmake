@@ -1182,12 +1182,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(READ  ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
     # remove comments
-    #message(STATUS "MAIN SKETCH:\n${MAIN_SKETCH}")
-	#file(WRITE "testFile.txt" ${MAIN_SKETCH})
-    string(REGEX REPLACE "[/][\\*](([^\\*]+)|([\\*]+[^/]))*[\\*]+[/]" "" MAIN_SKETCH "${MAIN_SKETCH}")
-    string(REGEX REPLACE "[/][/][^\n]*" "" MAIN_SKETCH "${MAIN_SKETCH}")
-    #message(STATUS "MAIN SKETCH:\n${MAIN_SKETCH}")
-	#file(WRITE "testFileNew.txt" ${MAIN_SKETCH})
+    remove_comments(MAIN_SKETCH)
 
     # find first statement
     string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH}")
@@ -1200,15 +1195,15 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
     math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-(${FIRST_STATEMENT_POSITION})")
     string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_STATEMENT_POSITION} ${LENGTH_STR1} STR1)
-    arduino_debug("STR1:\n${STR1}")
+    #arduino_debug("STR1:\n${STR1}")
 
     string(SUBSTRING "${MAIN_SKETCH}" 0 ${FIRST_STATEMENT_POSITION} SKETCH_HEAD)
-    arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
+    #arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
     math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${FIRST_STATEMENT_POSITION}-1")
     string(SUBSTRING "${MAIN_SKETCH}" "${FIRST_STATEMENT_POSITION}+1" "${BODY_LENGTH}" SKETCH_BODY)
-    arduino_debug("BODY:\n${SKETCH_BODY}")
+    #arduino_debug("BODY:\n${SKETCH_BODY}")
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_HEAD}\n")
@@ -1223,6 +1218,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
         arduino_debug("Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+        #remove_comments(SKETCH_SOURCE)
         string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES ${SKETCH_SOURCE})
 
         # Write function prototypes
@@ -1235,12 +1231,12 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 		endforeach()
         file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
 	endforeach()
-
 	
     # Write Sketch CPP source
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
     foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+        #remove_comments(SKETCH_SOURCE)
         file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
 	endforeach()
 endfunction()
@@ -1309,6 +1305,27 @@ function(ARDUINO_DEBUG MSG)
         message("## ${MSG}")
     endif()
 endfunction()
+
+
+# [PRIVATE/INTERNAL]
+#
+# remove_comments(SRC_VAR)
+#
+#        SRC_VAR - variable holding sources
+#
+function(REMOVE_COMMENTS SRC_VAR)
+	#file(WRITE "${SRC_VAR)_pre_remove_comments.txt" ${${SRC_VAR}})
+
+    # get all c-style commnets
+    string(REGEX REPLACE "[/][\\*](([^\\*])|([\\*]+[^/]))*[\\*]+[/]" "" SRC "${${SRC_VAR}}")
+
+    # get all c++ style comments
+    string(REGEX REPLACE "[/][/][^\n]*" "" SRC "${SRC}")
+
+	#file(WRITE "${SRC_VAR)_post_remove_comments.txt" ${SRC})
+    set(${SRC_VAR} ${SRC} PARENT_SCOPE)
+endfunction()
+
 
 #=============================================================================#
 #                          Initialization                                     #
