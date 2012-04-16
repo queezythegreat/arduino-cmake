@@ -3,14 +3,11 @@
   Turns on an LED on for one second, then off for one second, repeatedly.
  
   This example code is in the public domain.
-*/
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif 
+ */
 
+#include "config.h"
 
+Test1 a;
 
 void setup() {                
   // initialize the digital pin as an output.
