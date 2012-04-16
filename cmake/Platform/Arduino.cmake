@@ -1184,7 +1184,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     # remove comments
     #message(STATUS "MAIN SKETCH:\n${MAIN_SKETCH}")
 	#file(WRITE "testFile.txt" ${MAIN_SKETCH})
-    string(REGEX REPLACE "[/][\\*]([^\\*]|[\\*][/^])*[\\*][/]" "" MAIN_SKETCH "${MAIN_SKETCH}")
+    string(REGEX REPLACE "[/][\\*](([^\\*]+)|([\\*]+[^/]))*[\\*]+[/]" "" MAIN_SKETCH "${MAIN_SKETCH}")
     string(REGEX REPLACE "[/][/][^\n]*" "" MAIN_SKETCH "${MAIN_SKETCH}")
     #message(STATUS "MAIN SKETCH:\n${MAIN_SKETCH}")
 	#file(WRITE "testFileNew.txt" ${MAIN_SKETCH})

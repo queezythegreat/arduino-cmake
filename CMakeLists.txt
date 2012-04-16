@@ -40,10 +40,10 @@ generate_arduino_firmware(BLINK2)
 #set(ARDUPLANE_PORT /dev/ttyUSB0)
 #generate_arduino_firmware(ARDUPLANE)
 
-#set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter)
-#set(ARDUCOPTER_BOARD mega2560)
-#set(ARDUCOPTER_PORT /dev/ttyUSB0)
-#generate_arduino_firmware(ARDUCOPTER)
+set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter)
+set(ARDUCOPTER_BOARD mega2560)
+set(ARDUCOPTER_PORT /dev/ttyUSB0)
+generate_arduino_firmware(ARDUCOPTER)
 
 
 
