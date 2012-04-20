@@ -1199,7 +1199,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         set(QUALIFIERS "([${ALPHA}]+[ ])*")
         set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])")
         set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
-        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]")
+        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
         set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
         set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
 
@@ -1321,6 +1321,11 @@ function(REMOVE_COMMENTS SRC_VAR OUT_VAR)
 
 endfunction()
 
+function(GET_NUM_LINES VAR NUM_LINES)
+    string(REGEX MATCHALL "[\n]" MATCH_LIST "${VAR}")
+    list(LENGTH MATCH_LIST NUM)
+    set(${NUM_LINES} ${NUM} PARENT_SCOPE)
+endfunction()
 
 #=============================================================================#
 #                              C Flags                                        #
@@ -1539,8 +1544,3 @@ if(NOT ARDUINO_FOUND)
 
 endif()
 
-function(GET_NUM_LINES VAR NUM_LINES)
-    string(REGEX MATCHALL "[\n]" MATCH_LIST "${VAR}")
-    list(LENGTH MATCH_LIST NUM)
-    set(${NUM_LINES} ${NUM} PARENT_SCOPE)
-endfunction()
