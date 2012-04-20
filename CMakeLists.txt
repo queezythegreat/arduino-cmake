@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ArduinoExample C CXX)
 
 option(TEST "Enable testing" ON)
-option(DEBUG "Enable debug" OFF)
+option(DEBUG "Enable debug" ON)
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")

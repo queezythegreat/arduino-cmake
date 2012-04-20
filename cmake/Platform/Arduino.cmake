@@ -85,11 +85,6 @@
 # Print the detected Arduino board settings.
 
 
-
-
-
-
-
 #=============================================================================#
 #                           User Functions                                    #
 #=============================================================================#
@@ -169,7 +164,6 @@ function(GENERATE_ARDUINO_LIBRARY TARGET_NAME)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
     endforeach()
-    message(STATUS "includes: ${LIB_DEP_INCLUDES}")
 
     if(INPUT_AUTOLIBS)
         setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
@@ -274,7 +268,6 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
     endforeach()
 
-    message(STATUS "includes: ${LIB_DEP_INCLUDES}")
     setup_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -289,14 +282,6 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
         setup_serial_target(${TARGET_NAME} "${INPUT_SERIAL}")
     endif()
 endfunction()
-
-
-
-
-
-
-
-
 
 
 #=============================================================================#
@@ -731,26 +716,12 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT)
         return()
     endif()
 
-    if(NOT ${BOARD_ID}.bootloader.unlock_bits)
-        message("Missing ${BOARD_ID}.bootloader.unlock_bits, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-        return()
-    endif()
-    if(NOT ${BOARD_ID}.bootloader.high_fuses)
-        message("Missing ${BOARD_ID}.bootloader.high_fuses, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-        return()
-    endif()
-    if(NOT ${BOARD_ID}.bootloader.low_fuses)
-        message("Missing ${BOARD_ID}.bootloader.low_fuses, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-        return()
-    endif()
-    if(NOT ${BOARD_ID}.bootloader.path)
-        message("Missing ${BOARD_ID}.bootloader.path, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-        return()
-    endif()
-    if(NOT ${BOARD_ID}.bootloader.file)
-        message("Missing ${BOARD_ID}.bootloader.file, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-        return()
-    endif()
+    foreach( ITEM unlock_bits high_fuses low_fuses path file)
+        if(NOT ${BOARD_ID}.bootloader.${ITEM})
+            message("Missing ${BOARD_ID}.bootloader.${ITEM}, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+            return()
+        endif()
+    endforeach()
 
     if(NOT EXISTS "${ARDUINO_BOOTLOADERS_PATH}/${${BOARD_ID}.bootloader.path}/${${BOARD_ID}.bootloader.file}")
         message("${ARDUINO_BOOTLOADERS_PATH}/${${BOARD_ID}.bootloader.path}/${${BOARD_ID}.bootloader.file}")
@@ -766,8 +737,9 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT)
     if(${BOARD_ID}.bootloader.extended_fuses)
         list(APPEND AVRDUDE_ARGS "-Uefuse:w:${${BOARD_ID}.bootloader.extended_fuses}:m")
     endif()
-    list(APPEND AVRDUDE_ARGS "-Uhfuse:w:${${BOARD_ID}.bootloader.high_fuses}:m")
-    list(APPEND AVRDUDE_ARGS "-Ulfuse:w:${${BOARD_ID}.bootloader.low_fuses}:m")
+    list(APPEND AVRDUDE_ARGS
+        "-Uhfuse:w:${${BOARD_ID}.bootloader.high_fuses}:m"
+        "-Ulfuse:w:${${BOARD_ID}.bootloader.low_fuses}:m")
 
     # Set bootloader image
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${${BOARD_ID}.bootloader.file}:i")
@@ -851,9 +823,10 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
         set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
     endif()
 
-    list(APPEND AVRDUDE_ARGS "-C${ARDUINO_AVRDUDE_CONFIG_PATH}") # avrdude config
-
-    list(APPEND AVRDUDE_ARGS "-p${${BOARD_ID}.build.mcu}")  # MCU Type
+    list(APPEND AVRDUDE_ARGS
+        "-C${ARDUINO_AVRDUDE_CONFIG_PATH}"  # avrdude config
+        "-p${${BOARD_ID}.build.mcu}"        # MCU Type
+        )
 
     # Programmer
     if(${BOARD_ID}.upload.protocol STREQUAL "stk500")
@@ -862,11 +835,11 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
         list(APPEND AVRDUDE_ARGS "-c${${BOARD_ID}.upload.protocol}")
     endif()
 
-    list(APPEND AVRDUDE_ARGS "-b${${BOARD_ID}.upload.speed}") # Baud rate
-
-    list(APPEND AVRDUDE_ARGS "-P${PORT}")  # Serial port
-
-    list(APPEND AVRDUDE_ARGS "-D")  # Dont erase
+    list(APPEND AVRDUDE_ARGS
+        "-b${${BOARD_ID}.upload.speed}"     # Baud rate
+        "-P${PORT}"                         # Serial port
+        "-D"                                # Dont erase
+        )  
 
     list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
 
@@ -998,7 +971,6 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
             string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
 
             list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
-
 
             # Add entry to settings list if it does not exist
             list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
@@ -1182,50 +1154,50 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(READ  ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
     # remove comments
-    remove_comments(MAIN_SKETCH "${MAIN_SKETCH_PATH}")
+    remove_comments(MAIN_SKETCH MAIN_SKETCH_NO_COMMENTS)
 
     # find first statement
-    string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH}")
-    string(FIND "${MAIN_SKETCH}" "${FIRST_STATEMENT}" FIRST_STATEMENT_POSITION)
-    if ("${FIRST_STATEMENT_POSITION}" STREQUAL "-1")
-        set(FIRST_STATEMENT_POSITION 0)
+    string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH_NO_COMMENTS}")
+    string(FIND "${MAIN_SKETCH}" "${FIRST_STATEMENT}" HEAD_LENGTH)
+    if ("${HEAD_LENGTH}" STREQUAL "-1")
+        set(HEAD_LENGTH 0)
     endif()
     #message(STATUS "FIRST STATEMENT: ${FIRST_STATEMENT}")
-    #message(STATUS "FIRST STATEMENT POSITION: ${FIRST_STATEMENT_POSITION}")
+    #message(STATUS "FIRST STATEMENT POSITION: ${HEAD_LENGTH}")
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
-    math(EXPR LENGTH_STR1 "${MAIN_SKETCH_LENGTH}-(${FIRST_STATEMENT_POSITION})")
-    string(SUBSTRING "${MAIN_SKETCH}" ${FIRST_STATEMENT_POSITION} ${LENGTH_STR1} STR1)
-    #arduino_debug("STR1:\n${STR1}")
 
-    string(SUBSTRING "${MAIN_SKETCH}" 0 ${FIRST_STATEMENT_POSITION} SKETCH_HEAD)
-    #arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
+    string(SUBSTRING "${MAIN_SKETCH}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
+    arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
-    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${FIRST_STATEMENT_POSITION}-1")
-    string(SUBSTRING "${MAIN_SKETCH}" "${FIRST_STATEMENT_POSITION}+1" "${BODY_LENGTH}" SKETCH_BODY)
-    #arduino_debug("BODY:\n${SKETCH_BODY}")
+    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${HEAD_LENGTH}")
+    string(SUBSTRING "${MAIN_SKETCH}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
+    arduino_debug("BODY:\n${SKETCH_BODY}")
 
 	# write the file head
-    file(APPEND ${SKETCH_CPP} "\n${SKETCH_HEAD}\n")
+    file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
+
+    # add arduino include header
+    file(APPEND ${SKETCH_CPP} "#line 1 \"autogenerated\"\n")
     if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
     else()
         file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
     endif()
-    file(APPEND ${SKETCH_CPP} "\n")
 
-    # Find function prototypes
+    # add function prototypes
     foreach(SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
         arduino_debug("Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        remove_comments(SKETCH_SOURCE "${SKETCH_SOURCE_PATH}")
-        string(REGEX MATCHALL "(^|[\n])([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
+        remove_comments(SKETCH_SOURCE SKETCH_SOURCE)
+        string(REGEX MATCHALL "(^|[\n])(([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)])([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
+        set(SKETCH_SOURCE ${CMAKE_MATCH_2})
 
         # Write function prototypes
         file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
         foreach(SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})	
             string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            string(REPLACE "{" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+            string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             arduino_debug("\tprototype: ${SKETCH_PROTOTYPE};")
             file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
 		endforeach()
@@ -1233,11 +1205,15 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 	endforeach()
 	
     # Write Sketch CPP source
+    get_num_lines("${SKETCH_HEAD}" HEAD_NUM_LINES)
+    file(APPEND ${SKETCH_CPP} "#line ${HEAD_NUM_LINES} \"${MAIN_SKETCH_PATH}\"\n")
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
     foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        remove_comments(SKETCH_SOURCE "${SKETCH_SOURCE_PATH}")
+        file(APPEND ${SKETCH_CPP} "\n//=== START : ${SKETCH_SOURCE_PATH}\n")
+        file(APPEND ${SKETCH_CPP} "#line 1 \"${SKETCH_SOURCE_PATH}\"\n")
         file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
+        file(APPEND ${SKETCH_CPP} "\n//=== END : ${SKETCH_SOURCE_PATH}\n")
 	endforeach()
 endfunction()
 
@@ -1309,27 +1285,28 @@ endfunction()
 
 # [PRIVATE/INTERNAL]
 #
-# remove_comments(SRC_VAR NAME)
+# remove_comments(SRC_VAR OUT_VAR)
 #
 #        SRC_VAR - variable holding sources
-#        NAME - variable for labelling output debug files
+#        OUT_VAR - variable holding sources with no comments
 #
-function(REMOVE_COMMENTS SRC_VAR NAME)
+function(REMOVE_COMMENTS SRC_VAR OUT_VAR)
     string(REGEX REPLACE "[\\./\\\\]" "_" FILE "${NAME}")
 
-    set(SRC "${${SRC_VAR}}")
+    set(SRC ${${SRC_VAR}})
 
     #message(STATUS "removing comments from: ${FILE}")
 	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_pre_remove_comments.txt" ${SRC})
     #message(STATUS "\n${SRC}")
 
     # remove all comments
-    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" SRC "${SRC}")
+    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" OUT "${SRC}")
 
 	#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
     #message(STATUS "\n${SRC}")
 
-    set(${SRC_VAR} "${SRC}" PARENT_SCOPE)
+    set(${OUT_VAR} ${OUT} PARENT_SCOPE)
+
 endfunction()
 
 
@@ -1530,10 +1507,8 @@ if(NOT ARDUINO_FOUND)
     load_board_settings()
     load_programmers_settings()
 
-    print_board_list()
-    print_programmer_list()
-
-
+    #print_board_list()
+    #print_programmer_list()
 
     set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
     mark_as_advanced(ARDUINO_CORES_PATH
@@ -1552,4 +1527,8 @@ if(NOT ARDUINO_FOUND)
 
 endif()
 
-
+function(GET_NUM_LINES VAR NUM_LINES)
+    string(REGEX MATCHALL "[\n]" MATCH_LIST "${VAR}")
+    list(LENGTH MATCH_LIST NUM)
+    set(${NUM_LINES} ${NUM} PARENT_SCOPE)
+endfunction()
