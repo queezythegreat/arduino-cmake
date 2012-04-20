@@ -1167,12 +1167,12 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
 
     string(SUBSTRING "${MAIN_SKETCH}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
-    arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
+    #arduino_debug("SKETCH_HEAD:\n${SKETCH_HEAD}")
 
 	# find the body of the main pde
     math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${HEAD_LENGTH}")
     string(SUBSTRING "${MAIN_SKETCH}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
-    arduino_debug("BODY:\n${SKETCH_BODY}")
+    #arduino_debug("BODY:\n${SKETCH_BODY}")
 
 	# write the file head
     file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
@@ -1190,8 +1190,20 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         arduino_debug("Sketch: ${SKETCH_SOURCE_PATH}")
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
         remove_comments(SKETCH_SOURCE SKETCH_SOURCE)
-        string(REGEX MATCHALL "(^|[\n])(([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*&]?[ ]?[a-zA-Z0-9_](\\[([0-9]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)])([ ]*[\n][\t]*|[ ]|[\n])*{" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
-        set(SKETCH_SOURCE ${CMAKE_MATCH_2})
+
+        set(ALPHA "a-zA-Z")
+        set(NUM "0-9")
+        set(ALPHANUM "${ALPHA}${NUM}")
+        set(WORD "_${ALPHANUM}")
+        set(LINE_START "(^|[\n])")
+        set(QUALIFIERS "([${ALPHA}]+[ ])*")
+        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])")
+        set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
+        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?[.][.][.])?[)]")
+        set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
+        set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
+
+        string(REGEX MATCHALL "${PROTOTYPE_PATTERN}" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
 
         # Write function prototypes
         file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
