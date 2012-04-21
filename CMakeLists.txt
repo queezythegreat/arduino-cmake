@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ArduinoExample C CXX)
 
 option(TEST "Enable testing" ON)
-option(DEBUG "Enable debug" ON)
+option(DEBUG "Enable debug" OFF)
 
 # modify flags from default toolchain flags
 set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
@@ -31,24 +31,30 @@ if (DEBUG)
 endif()
 
 # projects
-set(BLINK_SKETCH ${CMAKE_SOURCE_DIR}/example/Blink)
-set(BLINK_BOARD mega2560)
-set(BLINK_PORT /dev/ttyUSB0)
-generate_arduino_firmware(BLINK)
+generate_arduino_firmware(
+    NAME Blink
+    SKETCH ${CMAKE_SOURCE_DIR}/example/Blink
+    BOARD mega2560
+    PORT /dev/ttyUSB0
+    NO_AUTOLIBS)
 
 if (TEST)
-    set(BLINK2_SKETCH ${CMAKE_SOURCE_DIR}/test/Blink2)
-    set(BLINK2_BOARD mega)
-    set(BLINK2_PORT /dev/ttyUSB0)
-    generate_arduino_firmware(BLINK2)
+    generate_arduino_firmware(
+        NAME Blink2
+        SKETCH ${CMAKE_SOURCE_DIR}/test/Blink2
+        BOARD mega
+        PORT /dev/ttyUSB0)
 
-    set(ARDUPLANE_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduPlane)
-    set(ARDUPLANE_BOARD mega2560)
-    set(ARDUPLANE_PORT /dev/ttyUSB0)
-    generate_arduino_firmware(ARDUPLANE)
+    generate_arduino_firmware(
+        NAME ArduPlane
+        SKETCH ${CMAKE_SOURCE_DIR}/test/ArduPlane
+        BOARD mega
+        PORT /dev/ttyUSB0)
 
-    #set(ARDUCOPTER_SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter)
-    #set(ARDUCOPTER_BOARD mega2560)
-    #set(ARDUCOPTER_PORT /dev/ttyUSB0)
-    #generate_arduino_firmware(ARDUCOPTER)
+    generate_arduino_firmware(
+        NAME ArduCopter
+        SKETCH ${CMAKE_SOURCE_DIR}/test/ArduCopter
+        BOARD mega
+        PORT /dev/ttyUSB0)
+
 endif()
