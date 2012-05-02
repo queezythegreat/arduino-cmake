@@ -14,6 +14,9 @@ cmake_minimum_required(VERSION 2.8)
 #====================================================================#
 project(ArduinoExample C CXX)
 
+print_board_list()
+print_programmer_list()
+
 generate_arduino_firmware(Blink
     SKETCH ${CMAKE_SOURCE_DIR}/example/Blink
     BOARD diecimila
