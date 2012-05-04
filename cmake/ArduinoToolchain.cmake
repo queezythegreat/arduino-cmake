@@ -1,3 +1,11 @@
+#=============================================================================#
+# Author: Tomasz Bogdal (QueezyTheGreat)
+# Home:   https://github.com/queezythegreat/arduino-cmake
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#=============================================================================#
 set(CMAKE_SYSTEM_NAME Arduino)
 
 set(CMAKE_C_COMPILER   avr-gcc)
