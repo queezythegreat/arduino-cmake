@@ -17,8 +17,16 @@ project(ArduinoExample C CXX)
 print_board_list()
 print_programmer_list()
 
-generate_arduino_firmware(Blink
+generate_arduino_firmware(blink
     SKETCH ${CMAKE_SOURCE_DIR}/example/Blink
     BOARD diecimila
     PORT /dev/ttyUSB0
     NO_AUTOLIBS)
+
+# Alternative way of specifying options:
+#
+#set(blink_SKETCH ${CMAKE_SOURCE_DIR}/example/Blink)
+#set(blink_BOARD diecimila)
+#set(blink_PORT /dev/ttyUSB0)
+#set(blink_NO_AUTOLIBS True)
+#generate_arduino_firmware(blink)

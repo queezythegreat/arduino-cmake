@@ -1,20 +1,31 @@
 #=============================================================================#
-# generate_arduino_firmware()
+# generate_arduino_firmware(name
+#      [BOARD board_id]
+#      [SKETCH sketch_path |
+#       SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN]
+#      [PORT  port]
+#      [SERIAL serial_cmd]
+#      [PROGRAMMER programmer_id]
+#      [AFLAGS flags]
+#      [NO_AUTOLIBS])
 #=============================================================================#
 #
 #   generaters firmware and libraries for Arduino devices
 #
 # The arguments are as follows:
 #
-#      NAME           # The name of the firmware target [REQUIRED]
+#      name           # The name of the firmware target         [REQUIRED]
 #      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
-#      SRCS           # Sources [must have SRCS or SKETCH]
-#      LIBS           # Libraries to link
 #      SKETCH         # Arduino sketch [must have SRCS or SKETCH]
+#      SRCS           # Sources        [must have SRCS or SKETCH]
 #      HDRS           # Headers 
-#      PORT           # Serial port, for upload and serial targets
-#      AFLAGS         # Override global Avrdude flags for target
+#      LIBS           # Libraries to link
+#      PORT           # Serial port (enables upload support)
 #      SERIAL         # Serial command for serial target
+#      PROGRAMMER     # Programmer id (enables programmer support)
+#      AFLAGS         # Avrdude flags for target
 #      NO_AUTOLIBS    # Disables Arduino library detection
 #
 # Here is a short example for a target named test:
@@ -26,18 +37,33 @@
 #           HDRS test.h test2.h
 #           BOARD uno)
 #
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_arduino_firmware(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
+#
 #=============================================================================#
-# generate_arduino_library()
+# generate_arduino_library(name
+#      [BOARD board_id]
+#      [SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN]
+#      [NO_AUTOLIBS])
 #=============================================================================#
 #   generaters firmware and libraries for Arduino devices
 #
 # The arguments are as follows:
 #
-#      NAME           # The name of the firmware target [REQUIRED]
+#      name           # The name of the firmware target         [REQUIRED]
 #      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
-#      SRCS           # Sources [must have SRCS or SKETCH]
-#      LIBS           # Libraries to link
+#      SRCS           # Sources                                 [REQUIRED]
 #      HDRS           # Headers 
+#      LIBS           # Libraries to link
 #      NO_AUTOLIBS    # Disables Arduino library detection
 #
 # Here is a short example for a target named test:
@@ -48,6 +74,16 @@
 #                test2.cpp
 #           HDRS test.h test2.h
 #           BOARD uno)
+#
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_arduino_library(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
 #=============================================================================#
 # generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
@@ -167,13 +203,13 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
-    cmake_parse_arguments(INPUT "NO_AUTOLIBS" "BOARD" "SRCS;HDRS;LIBS" ${ARGN})
-    error_for_unparsed(INPUT)
-    load_generator_settings(${INPUT_NAME} INPUT _SRCS       # Sources
-                                                _HDRS       # Headers
-                                                _LIBS       # Libraries to linked in
-                                                _BOARD)     # Board name (such as uno, mega2560, ...)
     message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS"                         # Options
+                              "BOARD"                               # One Value Keywords
+                              "SRCS;HDRS;LIBS"                      # Multi Value Keywords
+                              ${ARGN})
+
     required_variables(VARS SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
     
     set(ALL_LIBS)
@@ -202,17 +238,13 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
-    cmake_parse_arguments(INPUT "NO_AUTOLIBS" "BOARD;PORT;SKETCH;SERIAL" "SRCS;HDRS;LIBS;AFLAGS" ${ARGN})
-    error_for_unparsed(INPUT)
-    load_generator_settings(${INPUT_NAME} INPUT _SRCS       # Sources
-                                                _HDRS       # Headers
-                                                _LIBS       # Libraries to linked in
-                                                _BOARD      # Board name (such as uno, mega2560, ...)
-                                                _PORT       # Serial port, for upload and serial targets
-                                                _AFLAGS     # Override global Avrdude flags for target
-                                                _SKETCH     # Arduino sketch
-                                                _SERIAL)    # Serial command for serial target
     message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS"                         # Options
+                              "BOARD;PORT;SKETCH;SERIAL;PROGRAMMER" # One Value Keywords
+                              "SRCS;HDRS;LIBS;AFLAGS"               # Multi Value Keywords
+                              ${ARGN})
+
     required_variables(VARS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
 
     set(ALL_LIBS)
@@ -305,6 +337,29 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
+# parse_generator_arguments(TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS [ARG1 ARG2 .. ARGN])
+#
+#         PREFIX     - Parsed options prefix
+#         OPTIONS    - List of options
+#         ARGS       - List of one value keyword arguments
+#         MULTI_ARGS - List of multi value keyword arguments
+#         [ARG1 ARG2 .. ARGN] - command arguments [optional]
+#
+# Parses generator options from either variables or command arguments
+#
+#=============================================================================#
+macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
+    #CMAKE_PARSE_ARGUMENTS(<prefix> <options> <one_value_keywords> <multi_value_keywords> args...)
+    #cmake_parse_arguments(INPUT "NO_AUTOLIBS" "BOARD;PORT;SKETCH;SERIAL;PROGRAMMER" "SRCS;HDRS;LIBS;AFLAGS" ${ARGN})
+
+    cmake_parse_arguments(${PREFIX} "${OPTIONS}" "${ARGS}" "${MULTI_ARGS}" ${ARGN})
+    error_for_unparsed(${PREFIX})
+    load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
+endmacro()
+
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
 # load_board_settings()
 #
 # Load the Arduino SDK board settings from the boards.txt file.
@@ -348,8 +403,8 @@ endfunction()
 #=============================================================================#
 function(LOAD_GENERATOR_SETTINGS TARGET_NAME PREFIX)
     foreach(GEN_SUFFIX ${ARGN})
-        if(${TARGET_NAME}${GEN_SUFFIX} AND NOT ${PREFIX}${GEN_SUFFIX})
-            set(${PREFIX}${GEN_SUFFIX} ${${TARGET_NAME}${GEN_SUFFIX}} PARENT_SCOPE)
+        if(${TARGET_NAME}_${GEN_SUFFIX} AND NOT ${PREFIX}_${GEN_SUFFIX})
+            set(${PREFIX}_${GEN_SUFFIX} ${${TARGET_NAME}_${GEN_SUFFIX}} PARENT_SCOPE)
         endif()
     endforeach()
 endfunction()
@@ -488,10 +543,10 @@ endfunction()
 # setup_arduino_library(VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
-#        BOARD_ID    - Board name
-#        LIB_PATH    - path of the library
-#        COMPILE_FLAGS    - compile flags
-#        LINK_FLAGS    - link flags
+#        BOARD_ID    - Board ID
+#        LIB_PATH    - Path of the library
+#        COMPILE_FLAGS - Compile flags
+#        LINK_FLAGS    - Link flags
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
@@ -558,7 +613,7 @@ endfunction()
 #        VAR_NAME    - Vairable wich will hold the generated library names
 #        BOARD_ID    - Board ID
 #        SRCS        - source files
-#        COMPILE_FLAGS    - Compile flags
+#        COMPILE_FLAGS - Compile flags
 #        LINK_FLAGS    - Linker flags
 #
 # Finds and creates all dependency libraries based on sources.
@@ -582,10 +637,10 @@ endfunction()
 # setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS)
 #
 #        TARGET_NAME - Target name
-#        BOARD_ID - The arduino board
+#        BOARD_ID    - Arduino board ID
 #        ALL_SRCS    - All sources
 #        ALL_LIBS    - All libraries
-#        COMPILE_FLAGS    - Compile flags
+#        COMPILE_FLAGS - Compile flags
 #        LINK_FLAGS    - Linker flags
 #
 # Creates an Arduino firmware target.
@@ -655,7 +710,6 @@ endfunction()
 #
 #=============================================================================#
 function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
-# setup_arduino_bootloader_upload()
     setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT})
 
     # Add programmer support if defined
