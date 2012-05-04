@@ -729,6 +729,7 @@ endfunction()
 #      TARGET_NAME - target name
 #      BOARD_ID    - board id
 #      PORT        - serial port
+#      AVRDUDE_FLAGS - avrdude flags (override)
 #
 # Set up target for upload firmware via the bootloader.
 #
@@ -756,11 +757,13 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_programmer_burn(TARGET_NAME BOARD_ID PROGRAMMER)
+# setup_arduino_programmer_burn(TARGET_NAME BOARD_ID PROGRAMMER PORT AVRDUDE_FLAGS)
 #
 #      TARGET_NAME - name of target to burn
 #      BOARD_ID    - board id
 #      PROGRAMMER  - programmer id
+#      PORT        - serial port
+#      AVRDUDE_FLAGS - avrdude flags (override)
 # 
 # Sets up target for burning firmware via a programmer.
 #
@@ -790,11 +793,13 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_bootloader_burn(TARGET_NAME BOARD_ID PROGRAMMER)
+# setup_arduino_bootloader_burn(TARGET_NAME BOARD_ID PROGRAMMER PORT AVRDUDE_FLAGS)
 # 
 #      TARGET_NAME - name of target to burn
 #      BOARD_ID    - board id
 #      PROGRAMMER  - programmer id
+#      PORT        - serial port
+#      AVRDUDE_FLAGS - avrdude flags (override)
 #
 # Create a target for burning a bootloader via a programmer.
 #
@@ -855,10 +860,13 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_programmer_args(PROGRAMMER OUTPUT_VAR)
+# setup_arduino_programmer_args(BOARD_ID PROGRAMMER TARGET_NAME PORT AVRDUDE_FLAGS OUTPUT_VAR)
 #
+#      BOARD_ID    - board id
 #      PROGRAMMER  - programmer id
 #      TARGET_NAME - target name
+#      PORT        - serial port
+#      AVRDUDE_FLAGS - avrdude flags (override)
 #      OUTPUT_VAR  - name of output variable for result
 #
 # Sets up default avrdude settings for burning firmware via a programmer.
@@ -906,11 +914,12 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_bootloader_args(BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
+# setup_arduino_bootloader_args(BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS OUTPUT_VAR)
 #
 #      BOARD_ID    - board id
 #      TARGET_NAME - target name
 #      PORT        - serial port
+#      AVRDUDE_FLAGS - avrdude flags (override)
 #      OUTPUT_VAR  - name of output variable for result
 #
 # Sets up default avrdude settings for uploading firmware via the bootloader.
