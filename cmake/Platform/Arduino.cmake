@@ -273,7 +273,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "-I${INPUT_SKETCH} ${LIB_DEP_INCLUDES}" "")
     
     if(INPUT_PORT)
-        setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT})
+        setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
     endif()
     
     if(INPUT_SERIAL)
@@ -290,6 +290,7 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
+    #TODO: Add support for options like generate_arduino_*
 
     set(TARGET_NAME "example-${LIBRARY_NAME}-${EXAMPLE_NAME}")
 
@@ -322,7 +323,8 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
     setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
 
     if(INPUT_PORT)
-        setup_arduino_upload(${BOARD_ID} ${TARGET_NAME} ${INPUT_PORT})
+        #TODO fill in options (PROGRAMMER_ID and AFLAGS)
+        setup_arduino_upload(${BOARD_ID} ${TARGET_NAME} ${INPUT_PORT} "" "")
     endif()
     
     if(INPUT_SERIAL)
@@ -349,9 +351,6 @@ endfunction()
 #
 #=============================================================================#
 macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
-    #CMAKE_PARSE_ARGUMENTS(<prefix> <options> <one_value_keywords> <multi_value_keywords> args...)
-    #cmake_parse_arguments(INPUT "NO_AUTOLIBS" "BOARD;PORT;SKETCH;SERIAL;PROGRAMMER" "SRCS;HDRS;LIBS;AFLAGS" ${ARGN})
-
     cmake_parse_arguments(${PREFIX} "${OPTIONS}" "${ARGS}" "${MULTI_ARGS}" ${ARGN})
     error_for_unparsed(${PREFIX})
     load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
@@ -705,17 +704,19 @@ endfunction()
 #        BOARD_ID    - Arduino board id
 #        TARGET_NAME - Target name
 #        PORT        - Serial port for upload
+#        PROGRAMMER_ID - Programmer ID
+#        AVRDUDE_FLAGS - avrdude flags
 #
 # Create an upload target (${TARGET_NAME}-upload) for the specified Arduino target.
 #
 #=============================================================================#
-function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
-    setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT})
+function(setup_arduino_upload BOARD_ID TARGET_NAME PORT PROGRAMMER_ID AVRDUDE_FLAGS)
+    setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT} "${AVRDUDE_FLAGS}")
 
     # Add programmer support if defined
-    if(${TARGET_NAME}_PROGRAMMER AND ${${TARGET_NAME}_PROGRAMMER}.protocol)
-        setup_arduino_programmer_burn(${TARGET_NAME} ${BOARD_ID} ${${TARGET_NAME}_PROGRAMMER} ${PORT})
-        setup_arduino_bootloader_burn(${TARGET_NAME} ${BOARD_ID} ${${TARGET_NAME}_PROGRAMMER} ${PORT})
+    if(PROGRAMMER_ID AND ${PROGRAMMER_ID}.protocol)
+        setup_arduino_programmer_burn(${TARGET_NAME} ${BOARD_ID} ${PROGRAMMER_ID} ${PORT} "${AVRDUDE_FLAGS}")
+        setup_arduino_bootloader_burn(${TARGET_NAME} ${BOARD_ID} ${PROGRAMMER_ID} ${PORT} "${AVRDUDE_FLAGS}")
     endif()
 endfunction()
 
@@ -734,11 +735,11 @@ endfunction()
 # The target for uploading the firmware is ${TARGET_NAME}-upload .
 #
 #=============================================================================#
-function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
+function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT AVRDUDE_FLAGS)
     set(UPLOAD_TARGET ${TARGET_NAME}-upload)
     set(AVRDUDE_ARGS)
 
-    setup_arduino_bootloader_args(${BOARD_ID} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+    setup_arduino_bootloader_args(${BOARD_ID} ${TARGET_NAME} ${PORT} "${AVRDUDE_FLAGS}" AVRDUDE_ARGS)
 
     if(NOT AVRDUDE_ARGS)
         message("Could not generate default avrdude bootloader args, aborting!")
@@ -748,7 +749,7 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT)
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_NAME}.hex")
     add_custom_target(${UPLOAD_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
-                        ${AVRDUDE_ARGS}
+                     ${AVRDUDE_ARGS}
                      DEPENDS ${TARGET_NAME})
 endfunction()
 
@@ -766,12 +767,12 @@ endfunction()
 # The target for burning the firmware is ${TARGET_NAME}-burn .
 #
 #=============================================================================#
-function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER)
+function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRDUDE_FLAGS)
     set(PROGRAMMER_TARGET ${TARGET_NAME}-burn)
 
     set(AVRDUDE_ARGS)
 
-    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} "${AVRDUDE_FLAGS}" AVRDUDE_ARGS)
 
     if(NOT AVRDUDE_ARGS)
         message("Could not generate default avrdude programmer args, aborting!")
@@ -782,7 +783,7 @@ function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER)
 
     add_custom_target(${PROGRAMMER_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
-                        ${AVRDUDE_ARGS}
+                     ${AVRDUDE_ARGS}
                      DEPENDS ${TARGET_NAME})
 endfunction()
 
@@ -800,12 +801,12 @@ endfunction()
 # The target for burning the bootloader is ${TARGET_NAME}-burn-bootloader
 #
 #=============================================================================#
-function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT)
+function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRDUDE_FLAGS)
     set(BOOTLOADER_TARGET ${TARGET_NAME}-burn-bootloader)
 
     set(AVRDUDE_ARGS)
 
-    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} AVRDUDE_ARGS)
+    setup_arduino_programmer_args(${BOARD_ID} ${PROGRAMMER} ${TARGET_NAME} ${PORT} "${AVRDUDE_FLAGS}" AVRDUDE_ARGS)
 
     if(NOT AVRDUDE_ARGS)
         message("Could not generate default avrdude programmer args, aborting!")
@@ -862,12 +863,11 @@ endfunction()
 #
 # Sets up default avrdude settings for burning firmware via a programmer.
 #=============================================================================#
-function(setup_arduino_programmer_args BOARD_ID PROGRAMMER TARGET_NAME PORT OUTPUT_VAR)
+function(setup_arduino_programmer_args BOARD_ID PROGRAMMER TARGET_NAME PORT AVRDUDE_FLAGS OUTPUT_VAR)
     set(AVRDUDE_ARGS ${${OUTPUT_VAR}})
 
-    set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
-    if(DEFINED ${TARGET_NAME}_AFLAGS)
-        set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
+    if(NOT AVRDUDE_FLAGS)
+        set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
     endif()
 
     list(APPEND AVRDUDE_ARGS "-C${ARDUINO_AVRDUDE_CONFIG_PATH}")
@@ -915,12 +915,11 @@ endfunction()
 #
 # Sets up default avrdude settings for uploading firmware via the bootloader.
 #=============================================================================#
-function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT OUTPUT_VAR)
+function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS OUTPUT_VAR)
     set(AVRDUDE_ARGS ${${OUTPUT_VAR}})
 
-    set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
-    if(DEFINED ${TARGET_NAME}_AFLAGS)
-        set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
+    if(NOT AVRDUDE_FLAGS)
+        set(AVRDUDE_FLAGS ${ARDUINO_AVRDUDE_FLAGS})
     endif()
 
     list(APPEND AVRDUDE_ARGS
@@ -1185,7 +1184,15 @@ function(PRINT_LIST SETTINGS_LIST)
 endfunction()
 
 #=============================================================================#
-# setup_arduino_example()
+# [PRIVATE/INTERNAL]
+#
+# setup_arduino_example(LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+#
+#      LIBRARY_NAME - Library name
+#      EXAMPLE_NAME - Example name
+#      OUTPUT_VAR   - Variable name to save sketch path.
+#
+# Creates a Arduino example from a the specified library.
 #=============================================================================#
 function(SETUP_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     set(EXAMPLE_SKETCH_PATH )
@@ -1429,6 +1436,7 @@ endfunction()
 #        SRC_VAR - variable holding sources
 #        OUT_VAR - variable holding sources with no comments
 #
+# Removes all comments from the source code.
 #=============================================================================#
 function(REMOVE_COMMENTS SRC_VAR OUT_VAR)
     string(REGEX REPLACE "[\\./\\\\]" "_" FILE "${NAME}")
@@ -1451,21 +1459,34 @@ endfunction()
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
+#
+# get_num_lines(DOCUMENT OUTPUT_VAR)
+#
+#        DOCUMENT   - Document contents
+#        OUTPUT_VAR - Variable which will hold the line number count
+#
+# Counts the line number of the document.
 #=============================================================================#
-function(GET_NUM_LINES VAR NUM_LINES)
-    string(REGEX MATCHALL "[\n]" MATCH_LIST "${VAR}")
+function(GET_NUM_LINES DOCUMENT OUTPUT_VAR)
+    string(REGEX MATCHALL "[\n]" MATCH_LIST "${DOCUMENT}")
     list(LENGTH MATCH_LIST NUM)
-    set(${NUM_LINES} ${NUM} PARENT_SCOPE)
+    set(${OUTPUT_VAR} ${NUM} PARENT_SCOPE)
 endfunction()
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
+#
+# required_variables(MSG msg VARS var1 var2 .. varN)
+#
+#        MSG  - Message to be displayed in case of error
+#        VARS - List of variables names to check
+#
+# Ensure the specified variables are not empty, otherwise a fatal error is emmited.
 #=============================================================================#
 function(REQUIRED_VARIABLES)
     cmake_parse_arguments(INPUT "" "MSG" "VARS" ${ARGN})
     error_for_unparsed(INPUT)
     foreach(VAR ${INPUT_VARS})
-        #message(STATUS "processing: ${VAR}")
         if ("${${VAR}}" STREQUAL "")
             message(FATAL_ERROR "${VAR} not set: ${INPUT_MSG}")
         endif()
@@ -1473,7 +1494,13 @@ function(REQUIRED_VARIABLES)
 endfunction()
 
 #=============================================================================#
-# error_for_unparsed()
+# [PRIVATE/INTERNAL]
+#
+# error_for_unparsed(PREFIX)
+#
+#        PREFIX - Prefix name
+#
+# Emit fatal error if there are unparsed argument from cmake_parse_arguments().
 #=============================================================================#
 function(ERROR_FOR_UNPARSED PREFIX)
     set(ARGS "${${PREFIX}_UNPARSED_ARGUMENTS}")
@@ -1481,6 +1508,11 @@ function(ERROR_FOR_UNPARSED PREFIX)
         message(FATAL_ERROR "unparsed argument: ${ARGS}")
     endif()
 endfunction()
+
+
+
+
+
 
 #=============================================================================#
 #                              C Flags                                        
