@@ -249,11 +249,21 @@ Creating firmware images
 
 Once you have the **Arduino CMake** loaded you can start defining firmware images.
 
-To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command::
+To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` command. The full syntax of the command is::
 
-    ${TARGET_NAME}_${OPTION_NAME}
+    generate_arduino_firmware(target_name
+         [BOARD board_id]
+         [SKETCH sketch_path | SRCS  src1 src2 ... srcN]
+         [HDRS  hdr1 hdr2 ... hdrN]
+         [LIBS  lib1 lib2 ... libN]
+         [PORT  port]
+         [SERIAL serial_cmd]
+         [PROGRAMMER programmer_id]
+         [AFLAGS flags]
+         [NO_AUTOLIBS])
 
-Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one of the following option suffixes:
+
+The options are:
 
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | Name               | Description                                                          | Required                           |
@@ -279,6 +289,11 @@ Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named:
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is the name of the option.
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
 
@@ -287,19 +302,6 @@ So to create a target (firmware image) called ``blink``, composed of ``blink.h``
     set(blink_BOARD uno)
 
     generate_arduino_firmware(blink)
-
-The full syntax of the **generate_arduino_firmaware** command is::
-
-    generate_arduino_firmware(name
-         [BOARD board_id]
-         [SKETCH sketch_path | SRCS  src1 src2 ... srcN]
-         [HDRS  hdr1 hdr2 ... hdrN]
-         [LIBS  lib1 lib2 ... libN]
-         [PORT  port]
-         [SERIAL serial_cmd]
-         [PROGRAMMER programmer_id]
-         [AFLAGS flags]
-         [NO_AUTOLIBS])
 
 The previous example can be rewritten as::
 
