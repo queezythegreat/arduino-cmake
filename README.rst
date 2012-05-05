@@ -266,21 +266,21 @@ To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` co
 The options are:
 
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| Name               | Description                                                          | Required                           |
+| **Name**           | **Description**                                                      | **Required**                       |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **SKETCH**         | Sketch path *(directory)*                                            | **SKETCH or SRCS are REQUIRED**    |
+| **SKETCH**         | Sketch path (see `Arduino Sketches`_)                                | **SKETCH or SRCS are REQUIRED**    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **SRCS**           | Source files                                                         | **SKETCH or SRCS are REQUIRED**    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **HDRS**           | Headers files *(for project based build systems)*                    |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
+| **LIBS**           | Libraries to link (see `Creating libraries`_)                        |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **PORT**           | Serial port, for upload and serial targets                           |                                    |
+| **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **SERIAL**         | Serial command for serial target                                     |                                    |
+| **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
