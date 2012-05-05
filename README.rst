@@ -258,11 +258,11 @@ Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | Name               | Description                                                          | Required                           |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **BOARD**          | Board ID (such as uno, mega2560, ...)                                | **[REQUIRED]**                     |
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **SKETCH**         | Sketch path (directory)                                              | **[SKETCH or SRCS are REQUIRED]**  |
+| **SKETCH**         | Sketch path *(directory)*                                            | **SKETCH or SRCS are REQUIRED**    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **SRCS**           | Source files                                                         | **[SKETCH or SRCS are REQUIRED]**  |
+| **SRCS**           | Source files                                                         | **SKETCH or SRCS are REQUIRED**    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **HDRS**           | Headers files *(for project based build systems)*                    |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -288,7 +288,7 @@ So to create a target (firmware image) called ``blink``, composed of ``blink.h``
 
     generate_arduino_firmware(blink)
 
-Another way of specifying the same thing is by using the command options. Here is the full syntax of the **generate_arduino_firmaware** command::
+The full syntax of the **generate_arduino_firmaware** command is::
 
     generate_arduino_firmware(name
          [BOARD board_id]
@@ -301,7 +301,7 @@ Another way of specifying the same thing is by using the command options. Here i
          [AFLAGS flags]
          [NO_AUTOLIBS])
 
-The previous example will look like this::
+The previous example can be rewritten as::
 
     generate_arduino_firmware(blink
           SRCS  blink.cpp
