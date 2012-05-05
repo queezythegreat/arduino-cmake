@@ -105,6 +105,7 @@ Contents
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
    8. `Advanced Options`_
+   9. `Bundling Arduino CMake`_
 
 3. `Linux Environment`_
 
@@ -577,6 +578,22 @@ When **Arduino CMake** is configured properly, these options are defined:
 
 
 
+Bundling Arduino CMake
+~~~~~~~~~~~~~~~~~~~~~~
+
+Using **Arduino CMake** in your own project is simple, you just need a single directory called **cmake**. Just copy that entire directory into you project and you are set.
+
+Copying the **cmake** directory, although simple is not the best solution. If you are using GIT for source code versioning, the best solution is using a submodule. The submodule gives you the power of updating to the latest version of **Arduino CMake** without any effort. To add a submodule do::
+
+    git submodule add git://github.com/queezythegreat/arduino-cmake.git arduino-cmake
+
+Then just set the CMAKE_TOOLCHAIN_FILE variable::
+
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/arduino-cmake/cmake/ArduinoToolchain.cmake)
+
+For more information on GIT submodules please read: `GIT Book - Submodules`_
+
+.. _GIT Book - Submodules: http://book.git-scm.com/5_submodules.html
 
 Linux Environment
 -----------------
