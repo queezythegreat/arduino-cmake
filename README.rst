@@ -282,18 +282,18 @@ The options are:
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **SERIAL**         | Serial command for serial target                                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| **PROGRAMMER**     | Programmer ID, enables programmer burning *(including bootloader)*.  |                                    |
+| **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **AFLAGS**         | avrdude flags for target                                             |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
-You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named:
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
 
     ${TARGET_NAME}_${OPTION_NAME}
 
-Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is the name of the option.
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
 
@@ -313,9 +313,22 @@ The previous example can be rewritten as::
 Upload Firmware
 _______________
 
-To enable firmware upload functionality, you need to add the ``_PORT`` settings::
+To enable firmware upload functionality, you need to add the ``PORT`` option::
 
+    set(blink_SRCS  blink.cpp)
+    set(blink_HDRS  blink.h)
     set(blink_PORT /dev/ttyUSB0)
+    set(blink_BOARD uno)
+
+    generate_arduino_firmware(blink)
+
+Or::
+
+    generate_arduino_firmware(blink
+          SRCS  blink.cpp
+          HDRS  blink.h
+          PORT  /dev/ttyUSB0
+          BOARD uno)
 
 Once defined there will be two targets available for uploading, ``${TARGET_NAME}-upload`` and a global ``upload`` target (which will depend on all other upload targets defined in the build):
 
@@ -324,9 +337,24 @@ Once defined there will be two targets available for uploading, ``${TARGET_NAME}
 
 Serial Terminal
 _______________
-To enable serial terminal, add the ``_SERIAL`` setting (``@INPUT_PORT@`` will be replaced with the ``blink_PORT`` setting)::
+To enable serial terminal, use the ``SERIAL`` option (``@INPUT_PORT@`` will be replaced with the ``PORT`` option)::
 
-    set(blink_PORT picocom @INPUT_PORT@ -b 9600 -l)
+    set(blink_SRCS  blink.cpp)
+    set(blink_HDRS  blink.h)
+    set(blink_PORT  /dev/ttyUSB0)
+    set(blink_SERIAL "picocom @INPUT_PORT@ -b 9600 -l")
+    set(blink_BOARD uno)
+
+    generate_arduino_firmware(blink)
+
+Alternatively::
+
+    generate_arduino_firmware(blink
+          SRCS  blink.cpp
+          HDRS  blink.h
+          PORT  /dev/ttyUSB0
+          SERIAL "picocom @INPUT_PORT@ -b 9600 -l"
+          BOARD uno)
 
 This will create a target named ``${TARGET_NAME}-serial`` (in this example: blink-serial).
 
@@ -336,22 +364,51 @@ This will create a target named ``${TARGET_NAME}-serial`` (in this example: blin
 Creating libraries
 ~~~~~~~~~~~~~~~~~~
 
-Creating libraries is very similar to defining a firmware image, except we use the ``generate_arduino_library`` command. The syntax of the settings is the same except we have a different list of settings::
+Creating libraries is very similar to defining a firmware image, except we use the ``generate_arduino_library`` command. This command creates static libraries, and are not to be confused with `Arduino Libraries`_. The full command syntax:
 
-     _SRCS           # Library Sources
-     _HDRS           # Library Headers
-     _LIBS           # Libraries to linked in (sets up dependency tracking)
-     _BOARD          # Board name (such as uno, mega2560, ...)
-     _NO_AUTOLIBS    # Disables Arduino library detection
+    generate_arduino_library(name
+         [BOARD board_id]
+         [SRCS  src1 src2 ... srcN]
+         [HDRS  hdr1 hdr2 ... hdrN]
+         [LIBS  lib1 lib2 ... libN]
+         [NO_AUTOLIBS])
+
+The options are:
+
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| Name               | Description                                                          | Required                           |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SRCS**           | Source files                                                         | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **HDRS**           | Headers files *(for project based build systems)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
 
 Lets define a simple library called ``blink_lib``, with two sources files for the *Arduino Uno*::
-
 
     set(blink_lib_SRCS  blink_lib.cpp)
     set(blink_lib_HDRS  blink_lib.h)
     set(blink_lib_BOARD uno)
 
     generate_arduino_library(blink_lib)
+
+The other way of defining the same thing is::
+
+    generate_arduino_library(blink_lib
+        SRCS  blink_lib.cpp
+        HDRS  blink_lib.h
+        BOARD uno)
 
 Once that library is defined we can use it in our other firmware images... Lets add ``blink_lib`` to the ``blink`` firmware::
 
@@ -370,9 +427,9 @@ CMake has automatic dependency tracking, so when you build the ``blink`` target,
 Arduino Sketches
 ~~~~~~~~~~~~~~~~
 
-To build a Arduino sketch use the **${TARGET_NAME}_SKETCH** option (directory of the sketch). For example::
+To build a Arduino sketch use the **SKETCH** option (see `Creating firmware images`_). For example::
 
-    set(blink_SKETCH  /PATH_TO_ARDUINO_SDK/examples/1.Basics/Blink) # Path to sketch directory
+    set(blink_SKETCH  ${ARDUINO_SDK_PATH}/examples/1.Basics/Blink) # Path to sketch directory
     set(blink_BOARD   uno)
 
     generate_arduino_firmware(blink)
@@ -414,6 +471,9 @@ If a library contains nested sources, a special option must be defined to enable
     set(Wire_RECURSE True)
 
 The option name should be **${LIBRARY_NAME}_RECURSE**, where in this case **LIBRARY_NAME** is equal to *Wire*.
+
+
+Arduino Libraries are not to be confused with normal static libraries (for exmaple *system libraries* or libraries created using generate_arduino_library). The **LIBS** option only accepts static libraries, so do not list the Arduino Libraries in that option (as you will get an error).
 
 
 Arduino Library Examples
@@ -465,15 +525,23 @@ Programmers
 If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
 As of version 1.0 of the *Arduino SDK*, the following programmers are supported:
 
-* **avrisp** - AVR ISP
-* **avrispmkii** - AVRISP mkII
-* **usbtinyisp** - USBtinyISP
-* **parallel** - Parallel Programmer
-* **arduinoisp** - Arduino as ISP
++----------------+---------------------+
+| Programmer ID  | Description         |
++----------------+---------------------+
+| **avrisp**     | AVR ISP             |
++----------------+---------------------+
+| **avrispmkii** | AVRISP mkII         |
++----------------+---------------------+
+| **usbtinyisp** | USBtinyISP          |
++----------------+---------------------+
+| **parallel**   | Parallel Programmer |
++----------------+---------------------+
+| **arduinoisp** | Arduino as ISP      |
++----------------+---------------------+
 
-The programmers.txt file located in `${ARDUINO_SDK}/hardware/arduino/` lists all supported programmers by the *Arduino SDK*.
+The programmers.txt file located in `${ARDUINO_SDK_PATH}/hardware/arduino/` lists all supported programmers by the *Arduino SDK*.
 
-In order to enable programmer support, you have to define the following setting::
+In order to enable programmer support, you have to use the **PROGRAMMER** option::
 
     set(${TARGET_NAME}_PROGRAMMER programmer_id)
 
