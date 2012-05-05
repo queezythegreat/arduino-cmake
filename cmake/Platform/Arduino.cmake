@@ -253,7 +253,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
-        setup_arduino_sketch(${INPUT_SKETCH} ALL_SRCS)
+        setup_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
     endif()
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
@@ -304,7 +304,7 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
 
     setup_arduino_core(CORE_LIB ${BOARD_ID})
 
-    setup_arduino_example("${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
+    setup_arduino_example("${TARGET_NAME}" "${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
 
     if(NOT ALL_SRCS)
         message(FATAL_ERROR "Missing sources for example, aborting!")
@@ -320,7 +320,7 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_target(${TARGET_NAME} ${BOARD_ID}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
 
     if(INPUT_PORT)
         #TODO fill in options (PROGRAMMER_ID and AFLAGS)
@@ -1195,15 +1195,16 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_example(LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+# setup_arduino_example(TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
 #
+#      TARGET_NAME  - Target name
 #      LIBRARY_NAME - Library name
 #      EXAMPLE_NAME - Example name
 #      OUTPUT_VAR   - Variable name to save sketch path.
 #
 # Creates a Arduino example from a the specified library.
 #=============================================================================#
-function(SETUP_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     set(EXAMPLE_SKETCH_PATH )
 
     get_property(LIBRARY_SEARCH_PATH
@@ -1217,7 +1218,7 @@ function(SETUP_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     endforeach()
 
     if(EXAMPLE_SKETCH_PATH)
-        setup_arduino_sketch(${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
+        setup_arduino_sketch(${TARGET_NAME} ${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
         set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
     else()
         message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME} from library ${LIBRARY_NAME}")
@@ -1227,19 +1228,20 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_sketch(SKETCH_PATH OUTPUT_VAR)
+# setup_arduino_sketch(TARGET_NAME SKETCH_PATH OUTPUT_VAR)
 #
+#      TARGET_NAME - Target name
 #      SKETCH_PATH - Path to sketch directory
 #      OUTPUT_VAR  - Variable name where to save generated sketch source
 #
 # Generates C++ sources from Arduino Sketch.
 #=============================================================================#
-function(SETUP_ARDUINO_SKETCH SKETCH_PATH OUTPUT_VAR)
+function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
     get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
     get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
 
     if(EXISTS "${SKETCH_PATH}")
-        set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.cpp)
+        set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SKETCH_NAME}.cpp)
         set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
         if(EXISTS "${MAIN_SKETCH}.pde")

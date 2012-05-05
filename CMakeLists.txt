@@ -17,6 +17,8 @@ project(ArduinoExample C CXX)
 print_board_list()
 print_programmer_list()
 
+generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
+
 generate_arduino_firmware(blink
     SKETCH ${CMAKE_SOURCE_DIR}/example/Blink
     BOARD diecimila
@@ -24,6 +26,7 @@ generate_arduino_firmware(blink
     PROGRAMMER usbtinyisp
     AFLAGS -V
     NO_AUTOLIBS)
+
 
 # Alternative way of specifying options:
 #
