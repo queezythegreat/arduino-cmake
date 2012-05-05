@@ -423,7 +423,6 @@ CMake has automatic dependency tracking, so when you build the ``blink`` target,
 
 
 
-
 Arduino Sketches
 ~~~~~~~~~~~~~~~~
 
