@@ -376,7 +376,7 @@ Creating libraries is very similar to defining a firmware image, except we use t
 The options are:
 
 +--------------------+----------------------------------------------------------------------+------------------------------------+
-| Name               | Description                                                          | Required                           |
+| **Name**           | **Description**                                                      | **Required**                       |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -525,23 +525,23 @@ Programmers
 If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
 As of version 1.0 of the *Arduino SDK*, the following programmers are supported:
 
-+----------------+---------------------+
-| Programmer ID  | Description         |
-+----------------+---------------------+
-| **avrisp**     | AVR ISP             |
-+----------------+---------------------+
-| **avrispmkii** | AVRISP mkII         |
-+----------------+---------------------+
-| **usbtinyisp** | USBtinyISP          |
-+----------------+---------------------+
-| **parallel**   | Parallel Programmer |
-+----------------+---------------------+
-| **arduinoisp** | Arduino as ISP      |
-+----------------+---------------------+
++--------------------+---------------------+
+| **Programmer ID**  | **Description**     |
++--------------------+---------------------+
+| **avrisp**         | AVR ISP             |
++--------------------+---------------------+
+| **avrispmkii**     | AVRISP mkII         |
++--------------------+---------------------+
+| **usbtinyisp**     | USBtinyISP          |
++--------------------+---------------------+
+| **parallel**       | Parallel Programmer |
++--------------------+---------------------+
+| **arduinoisp**     | Arduino as ISP      |
++--------------------+---------------------+
 
 The programmers.txt file located in `${ARDUINO_SDK_PATH}/hardware/arduino/` lists all supported programmers by the *Arduino SDK*.
 
-In order to enable programmer support, you have to use the **PROGRAMMER** option::
+In order to enable programmer support, you have to use the **PROGRAMMER** option (see `Creating firmware images`_)::
 
     set(${TARGET_NAME}_PROGRAMMER programmer_id)
 
