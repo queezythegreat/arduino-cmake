@@ -210,7 +210,7 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
                               "SRCS;HDRS;LIBS"                      # Multi Value Keywords
                               ${ARGN})
 
-    required_variables(VARS SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
+    required_variables(VARS INPUT_SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
     
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
@@ -230,6 +230,13 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
         
     add_library(${INPUT_NAME} ${ALL_SRCS})
+
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD})
+
+    set_target_properties(${INPUT_NAME} PROPERTIES
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
+                LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
+
     target_link_libraries(${INPUT_NAME} ${ALL_LIBS} "-lc -lm")
 endfunction()
 
@@ -253,6 +260,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
+        get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
         setup_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
     endif()
 
@@ -514,6 +522,11 @@ endfunction()
 function(find_arduino_libraries VAR_NAME SRCS)
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
+        if(NOT (EXISTS ${SRC} OR
+                EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
+                EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
+            message(FATAL_ERROR "Invalid source file: ${SRC}")
+        endif()
         file(STRINGS ${SRC} SRC_CONTENTS)
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
