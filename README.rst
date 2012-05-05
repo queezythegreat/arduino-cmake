@@ -255,16 +255,29 @@ To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` co
 
 Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one of the following option suffixes:
 
-* **SKETCH**         - Sketch path (directory) **[SKETCH or SRCS are REQUIRED]**
-* **SRCS**           - Source files            **[SKETCH or SRCS are REQUIRED]**
-* **HDRS**           - Headers files (for project based build systems)
-* **LIBS**           - Libraries to link (sets up dependency tracking)
-* **BOARD**          - Board ID (such as uno, mega2560, ...)      **[REQUIRED]**
-* **PORT**           - Serial port, for upload and serial targets
-* **SERIAL**         - Serial command for serial target
-* **PROGRAMMER**     - Programmer ID, enables programmer burning (including bootloader).
-* **AFLAGS**         - avrdude flags for target
-* **NO_AUTOLIBS**    - Disable Arduino library detection (default On)
++--------------------+----------------------------------------------------------------------+
+| Name               | Description                                                          |
++--------------------+----------------------------------------------------------------------+
+| **BOARD**          | Board ID (such as uno, mega2560, ...)      **[REQUIRED]**            |
++--------------------+----------------------------------------------------------------------+
+| **SKETCH**         | Sketch path (directory) **[SKETCH or SRCS are REQUIRED]**            |
++--------------------+----------------------------------------------------------------------+
+| **SRCS**           | Source files            **[SKETCH or SRCS are REQUIRED]**            |
++--------------------+----------------------------------------------------------------------+
+| **HDRS**           | Headers files (for project based build systems)                      |
++--------------------+----------------------------------------------------------------------+
+| **LIBS**           | Libraries to link (sets up dependency tracking)                      |
++--------------------+----------------------------------------------------------------------+
+| **PORT**           | Serial port, for upload and serial targets                           |
++--------------------+----------------------------------------------------------------------+
+| **SERIAL**         | Serial command for serial target                                     |
++--------------------+----------------------------------------------------------------------+
+| **PROGRAMMER**     | Programmer ID, enables programmer burning (including bootloader).    |
++--------------------+----------------------------------------------------------------------+
+| **AFLAGS**         | avrdude flags for target                                             |
++--------------------+----------------------------------------------------------------------+
+| **NO_AUTOLIBS**    | Disable Arduino library detection (default On)                       |
++--------------------+----------------------------------------------------------------------+
 
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
