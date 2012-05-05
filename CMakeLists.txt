@@ -21,6 +21,8 @@ generate_arduino_firmware(blink
     SKETCH ${CMAKE_SOURCE_DIR}/example/Blink
     BOARD diecimila
     PORT /dev/ttyUSB0
+    PROGRAMMER usbtinyisp
+    AFLAGS -V
     NO_AUTOLIBS)
 
 # Alternative way of specifying options:
@@ -29,4 +31,7 @@ generate_arduino_firmware(blink
 #set(blink_BOARD diecimila)
 #set(blink_PORT /dev/ttyUSB0)
 #set(blink_NO_AUTOLIBS True)
+#set(blink_PROGRAMMER usbtinyisp)
+#set(blink_AFLAGS -V)
+#
 #generate_arduino_firmware(blink)

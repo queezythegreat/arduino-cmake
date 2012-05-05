@@ -255,13 +255,13 @@ To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` co
 
 Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one of the following option suffixes:
 
-* **SKETCH**         - Sketch path (directory) [SKETCH or SRCS are required]
-* **SRCS**           - Source files            [SKETCH or SRCS are required]
+* **SKETCH**         - Sketch path (directory) **[SKETCH or SRCS are REQUIRED]**
+* **SRCS**           - Source files            **[SKETCH or SRCS are REQUIRED]**
 * **HDRS**           - Headers files (for project based build systems)
 * **LIBS**           - Libraries to link (sets up dependency tracking)
-* **BOARD**          - Board ID (such as uno, mega2560, ...)      [REQUIRED]
-* **PORT**           - Serial port, for upload and serial targets [OPTIONAL]
-* **SERIAL**         - Serial command for serial target           [OPTIONAL]
+* **BOARD**          - Board ID (such as uno, mega2560, ...)      **[REQUIRED]**
+* **PORT**           - Serial port, for upload and serial targets
+* **SERIAL**         - Serial command for serial target
 * **PROGRAMMER**     - Programmer ID, enables programmer burning (including bootloader).
 * **AFLAGS**         - avrdude flags for target
 * **NO_AUTOLIBS**    - Disable Arduino library detection (default On)
@@ -277,18 +277,17 @@ So to create a target (firmware image) called ``blink``, composed of ``blink.h``
 
 Another way of specifying the same thing is by using the command options. Here is the full syntax of the **generate_arduino_firmaware** command:
 
-.. code:: cmake
-    generate_arduino_firmware(name
-         [BOARD board_id]
-         [SKETCH sketch_path |
-          SRCS  src1 src2 ... srcN]
-         [HDRS  hdr1 hdr2 ... hdrN]
-         [LIBS  lib1 lib2 ... libN]
-         [PORT  port]
-         [SERIAL serial_cmd]
-         [PROGRAMMER programmer_id]
-         [AFLAGS flags]
-         [NO_AUTOLIBS])
+generate_arduino_firmware(name
+     [BOARD board_id]
+     [SKETCH sketch_path |
+      SRCS  src1 src2 ... srcN]
+     [HDRS  hdr1 hdr2 ... hdrN]
+     [LIBS  lib1 lib2 ... libN]
+     [PORT  port]
+     [SERIAL serial_cmd]
+     [PROGRAMMER programmer_id]
+     [AFLAGS flags]
+     [NO_AUTOLIBS])
 
 Upload Firmware
 _______________
