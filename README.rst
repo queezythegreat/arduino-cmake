@@ -251,20 +251,20 @@ Once you have the **Arduino CMake** loaded you can start defining firmware image
 
 To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` command. This function only accepts a single argument, the target name. To configure the target you need to specify a list of variables of the following format before the command::
 
-    ${TARGET_NAME}${OPTION_SUFFIX}
+    ${TARGET_NAME}_${OPTION_NAME}
 
-Where ``${TARGET_NAME}`` is the name of you target and ``${OPTIONS_SUFFIX}`` is one of the following option suffixes::
+Where ``${TARGET_NAME}`` is the name of you target and ``${OPTION_NAME}`` is one of the following option suffixes:
 
-     _SRCS           # Target source files
-     _HDRS           # Target Headers files (for project based build systems)
-     _SKETCH         # Target sketch (directory)
-     _LIBS           # Libraries to linked against target (sets up dependency tracking)
-     _BOARD          # Board name (such as uno, mega2560, ...)
-     _PORT           # Serial port, for upload and serial targets [OPTIONAL]
-     _SERIAL         # Serial command for serial target           [OPTIONAL]
-     _NO_AUTOLIBS    # Disables Arduino library detection (default On)
-     _AFLAGS         # Overide global avrdude flags for target
-     _PROGRAMMER     # Programmer name, enables programmer burning (including bootloader).
+* **SKETCH**         - Sketch path (directory) [SKETCH or SRCS are required]
+* **SRCS**           - Source files            [SKETCH or SRCS are required]
+* **HDRS**           - Headers files (for project based build systems)
+* **LIBS**           - Libraries to link (sets up dependency tracking)
+* **BOARD**          - Board ID (such as uno, mega2560, ...)      [REQUIRED]
+* **PORT**           - Serial port, for upload and serial targets [OPTIONAL]
+* **SERIAL**         - Serial command for serial target           [OPTIONAL]
+* **PROGRAMMER**     - Programmer ID, enables programmer burning (including bootloader).
+* **AFLAGS**         - avrdude flags for target
+* **NO_AUTOLIBS**    - Disable Arduino library detection (default On)
 
 
 So to create a target (firmware image) called ``blink``, composed of ``blink.h`` and ``blink.cpp`` source files for the *Arduino Uno*, you write the following::
@@ -274,6 +274,21 @@ So to create a target (firmware image) called ``blink``, composed of ``blink.h``
     set(blink_BOARD uno)
 
     generate_arduino_firmware(blink)
+
+Another way of specifying the same thing is by using the command options. Here is the full syntax of the **generate_arduino_firmaware** command:
+
+.. code:: cmake
+    generate_arduino_firmware(name
+         [BOARD board_id]
+         [SKETCH sketch_path |
+          SRCS  src1 src2 ... srcN]
+         [HDRS  hdr1 hdr2 ... hdrN]
+         [LIBS  lib1 lib2 ... libN]
+         [PORT  port]
+         [SERIAL serial_cmd]
+         [PROGRAMMER programmer_id]
+         [AFLAGS flags]
+         [NO_AUTOLIBS])
 
 Upload Firmware
 _______________
