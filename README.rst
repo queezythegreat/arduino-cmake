@@ -913,7 +913,7 @@ To register a non-standard directory containing Arduino libraries, use the follo
 
     link_directories(path_to_directory_containing_libraries)
 
-Remember to **use this command before defining any firmware**, depending on libraries located in that directory.
+Remember to **use this command before defining the firmware**, which requires the library from that directory.
 
 
 
