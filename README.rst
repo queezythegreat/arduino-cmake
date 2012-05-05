@@ -364,7 +364,7 @@ This will create a target named ``${TARGET_NAME}-serial`` (in this example: blin
 Creating libraries
 ~~~~~~~~~~~~~~~~~~
 
-Creating libraries is very similar to defining a firmware image, except we use the ``generate_arduino_library`` command. This command creates static libraries, and are not to be confused with `Arduino Libraries`_. The full command syntax:
+Creating libraries is very similar to defining a firmware image, except we use the ``generate_arduino_library`` command. This command creates static libraries, and are not to be confused with `Arduino Libraries`_. The full command syntax::
 
     generate_arduino_library(name
          [BOARD board_id]
