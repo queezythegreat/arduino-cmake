@@ -1583,7 +1583,7 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #=============================================================================#
 #                          Initialization                                     
 #=============================================================================#
-if(NOT ARDUINO_FOUND)
+if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     find_file(ARDUINO_CORES_PATH
               NAMES cores
               PATHS ${ARDUINO_SDK_PATH}

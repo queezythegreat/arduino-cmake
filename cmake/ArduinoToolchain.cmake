@@ -36,16 +36,18 @@ endif()
 #=============================================================================#
 #                         Detect Arduino SDK                                  #
 #=============================================================================#
-set(ARDUINO_PATHS)
-foreach(VERSION 22 1)
-    list(APPEND ARDUINO_PATHS arduino-00${VERSION})
-endforeach()
+if(NOT ARDUINO_SDK_PATH)
+    set(ARDUINO_PATHS)
+    foreach(VERSION 22 1)
+        list(APPEND ARDUINO_PATHS arduino-00${VERSION})
+    endforeach()
 
-file(GLOB SDK_PATH_HINTS /usr/share/arduino*
-                         /opt/local/ardiuno*
-                         /usr/local/share/arduino*)
-list(SORT SDK_PATH_HINTS)
-list(REVERSE SDK_PATH_HINTS)
+    file(GLOB SDK_PATH_HINTS /usr/share/arduino*
+                             /opt/local/ardiuno*
+                             /usr/local/share/arduino*)
+    list(SORT SDK_PATH_HINTS)
+    list(REVERSE SDK_PATH_HINTS)
+endif()
 
 find_path(ARDUINO_SDK_PATH
           NAMES lib/version.txt
