@@ -501,9 +501,15 @@ Compiler and Linker Flags
 
 The default compiler and linker flags should be fine for most projects. If you required specific compiler/linker flags, use the following options to change them:
 
-* **ARDUINO_C_FLAGS** - C compiler flags
-* **ARDUINO_CXX_FLAGS** - C++ compiler flags
-* **ARDUINO_LINKER_FLAGS** - Linker flags
++--------------------------+----------------------+
+|  **Name**                | **Description**      |
++--------------------------+----------------------+
+| **ARDUINO_C_FLAGS**      | C compiler flags     |
++--------------------------+----------------------+
+| **ARDUINO_CXX_FLAGS**    | C++ compiler flags   |
++--------------------------+----------------------+
+| **ARDUINO_LINKER_FLAGS** | Linker flags         |
++--------------------------+----------------------+
 
 
 Set these option either before the `project()` like so::
@@ -511,6 +517,7 @@ Set these option either before the `project()` like so::
     set(ARDUINO_C_FLAGS      "-ffunction-sections -fdata-sections")
     set(ARDUINO_CXX_FLAGS    "${ARDUINO_C_FLAGS} -fno-exceptions")
     set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections")
+    
     project(ArduinoExample C CXX)
 
 or when configuring the project::
@@ -560,9 +567,23 @@ Advanced Options
 
 The following options control how **Arduino CMake** is configured:
 
-* **ARDUINO_SDK_PATH** - Full path to the **Arduino SDK**
-* **ARDUINO_AVRDUDE_PROGRAM** - Full path to `avrdude` programmer
-* **ARDUINO_AVRDUDE_CONFIG_PATH** - Full path to `avrdude` configuration file
++---------------------------------+-----------------------------------------------------+
+| **Name**                        | **Description**                                     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_PATH**            | Full path to the **Arduino SDK**                    |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_AVRDUDE_PROGRAM**     | Full path to `avrdude` programmer                   |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_AVRDUDE_CONFIG_PATH** | Full path to `avrdude` configuration file           |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_DEFAULT_BOARD**       | Default Arduino Board ID, when not specified.       |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_DEFAULT_PORT**        | Default Arduino port, when not specified.           |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_DEFAULT_SERIAL**      | Default Arduino Serial command, when not specified. |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_DEFAULT_PROGRAMMER**  | Default Arduino Programmer ID, when not specified.  |
++---------------------------------+-----------------------------------------------------+
 
 To force a specific version of **Arduino SDK**, configure the project like so::
 
