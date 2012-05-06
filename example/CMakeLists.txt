@@ -56,7 +56,6 @@ generate_arduino_firmware(blink_bundled
 generate_arduino_library(blink_lib
     SRCS blink_lib.cpp
     HDRS blink_lib.h
-    PORT  /dev/ttyACM0
     BOARD uno)
 
 # Alternative: by variables
