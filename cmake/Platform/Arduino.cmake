@@ -125,6 +125,26 @@
 #
 # Print the detected Arduino board settings.
 #
+#=============================================================================#
+# Configuration Options
+#=============================================================================#
+#
+# ARDUINO_SDK_PATH            - Arduino SDK Path
+# ARDUINO_AVRDUDE_PROGRAM     - Full path to avrdude programmer
+# ARDUINO_AVRDUDE_CONFIG_PATH - Full path to avrdude configuration file
+#
+# ARDUINO_C_FLAGS             - C compiler flags
+# ARDUINO_CXX_FLAGS           - C++ compiler flags
+# ARDUINO_LINKER_FLAGS        - Linker flags
+#
+# ARDUINO_DEFAULT_BOARD      - Default Arduino Board ID when not specified.
+# ARDUINO_DEFAULT_PORT       - Default Arduino port when not specified.
+# ARDUINO_DEFAULT_SERIAL     - Default Arduino Serial command when not specified.
+# ARDUINO_DEFAULT_PROGRAMMER - Default Arduino Programmer ID when not specified.
+#
+#
+# ARDUINO_FOUND       - Set to True when the Arduino SDK is detected and configured.
+# ARDUINO_SDK_VERSION - Set to the version of the detected Arduino SDK (ex: 1.0)
 
 #=============================================================================#
 # Author: Tomasz Bogdal (QueezyTheGreat)
@@ -210,7 +230,10 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
                               "SRCS;HDRS;LIBS"                      # Multi Value Keywords
                               ${ARGN})
 
-    required_variables(VARS SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif()
+    required_variables(VARS INPUT_SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
     
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
@@ -230,6 +253,13 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
         
     add_library(${INPUT_NAME} ${ALL_SRCS})
+
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD})
+
+    set_target_properties(${INPUT_NAME} PROPERTIES
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
+                LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
+
     target_link_libraries(${INPUT_NAME} ${ALL_LIBS} "-lc -lm")
 endfunction()
 
@@ -245,6 +275,18 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
                               "SRCS;HDRS;LIBS;AFLAGS"               # Multi Value Keywords
                               ${ARGN})
 
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif()
+    if(NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif()
+    if(NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif()
+    if(NOT INPUT_PROGRAMMER)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif()
     required_variables(VARS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
 
     set(ALL_LIBS)
@@ -253,6 +295,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
+        get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
         setup_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
     endif()
 
@@ -285,11 +328,11 @@ endfunction()
 #=============================================================================#
 # [PUBLIC/USER]
 #
-# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
+# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL] [PORGRAMMER])
 #
 # see documentation at top
 #=============================================================================#
-function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
+function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME)
     #TODO: Add support for options like generate_arduino_*
 
     set(TARGET_NAME "example-${LIBRARY_NAME}-${EXAMPLE_NAME}")
@@ -299,10 +342,25 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
     set(ALL_LIBS)
     set(ALL_SRCS)
 
+    set(INPUT_BOARD ${ARGV2})
     set(INPUT_PORT  ${ARGV3})
     set(INPUT_SERIAL ${ARGV4})
+    set(INPUT_PROGRAMMER ${ARGV5})
 
-    setup_arduino_core(CORE_LIB ${BOARD_ID})
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif()
+    if(NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif()
+    if(NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif()
+    if(NOT INPUT_PROGRAMMER)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif()
+
+    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     setup_arduino_example("${TARGET_NAME}" "${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
 
@@ -316,15 +374,15 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME BOARD_ID)
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
     endforeach()
 
-    setup_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} ${BOARD_ID}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
 
     if(INPUT_PORT)
-        #TODO fill in options (PROGRAMMER_ID and AFLAGS)
-        setup_arduino_upload(${BOARD_ID} ${TARGET_NAME} ${INPUT_PORT} "" "")
+        #TODO fill in options (AFLAGS)
+        setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "")
     endif()
     
     if(INPUT_SERIAL)
@@ -514,6 +572,11 @@ endfunction()
 function(find_arduino_libraries VAR_NAME SRCS)
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
+        if(NOT (EXISTS ${SRC} OR
+                EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
+                EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
+            message(FATAL_ERROR "Invalid source file: ${SRC}")
+        endif()
         file(STRINGS ${SRC} SRC_CONTENTS)
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
@@ -1311,7 +1374,7 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
 
     # add arduino include header
-    file(APPEND ${SKETCH_CPP} "#line 1 \"autogenerated\"\n")
+    file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
     if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
     else()
@@ -1640,6 +1703,11 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
                       hardware/tools/avr/etc
         DOC "Path to avrdude programmer configuration file.")
 
+    set(ARDUINO_DEFAULT_BOARD uno  CACHE STRING "Default Arduino Board ID when not specified.")
+    set(ARDUINO_DEFAULT_PORT       CACHE STRING "Default Arduino port when not specified.")
+    set(ARDUINO_DEFAULT_SERIAL     CACHE STRING "Default Arduino Serial command when not specified.")
+    set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
+
     # Ensure that all required paths are found
     required_variables(VARS 
         ARDUINO_CORES_PATH
@@ -1688,5 +1756,4 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         ARDUINO_OBJCOPY_HEX_FLAGS
         AVRSIZE_PROGRAM)
 endif()
-
 
