@@ -599,27 +599,24 @@ When **Arduino CMake** is configured properly, these options are defined:
 Miscellaneous Functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-This section will outlines some of the additional miscellaneous function available to the user.
+This section will outlines some of the additional miscellaneous functions available to the user.
 
-**print_board_list()**:
- 
-    Print list of detected Arduino Boards.
-
-**print_programmer_list()**:
- 
-    Print list of detected Programmers.
-
-**print_programmer_settings(PROGRAMMER)**:
-    
+* **print_board_list()**:
+  
+  Print list of detected Arduino Boards.
+* **print_programmer_list()**:
+  
+  Print list of detected Programmers.
+* **print_programmer_settings(PROGRAMMER)**:
+  
      *PROGRAMMER* - programmer id
-    
- Print the detected Programmer settings.
-
-**print_board_settings(BOARD_ID)**:
-    
+  
+  Print the detected Programmer settings.
+* **print_board_settings(BOARD_ID)**:
+  
     *BOARD_ID* - Board ID
-    
- Print the detected Arduino board settings.
+  
+  Print the detected Arduino board settings.
 
 
 
