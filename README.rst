@@ -105,7 +105,8 @@ Contents
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
    8. `Advanced Options`_
-   9. `Bundling Arduino CMake`_
+   9. `Miscellaneous Functions`_
+   10. `Bundling Arduino CMake`_
 
 3. `Linux Environment`_
 
@@ -479,17 +480,15 @@ Arduino Libraries are not to be confused with normal static libraries (for exmap
 Arduino Library Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. For example::
+Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. The syntax of the command is::
+
+    generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [SERIAL_PORT] [SERIAL_COMMAND] [PROGRAMMER_ID])
+
+where **SERIAL_PORT**, **SERIAL_COMMAND** and **PROGRAMMER_ID** are optional.
+
+To generate a target for the **master_writer** example from the **Wire** library for the **Uno**::
 
     generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
-
-will generate a target for the **master_writer** example from the **Wire** library for the **Uno**.
-
-The syntax of the command is::
-
-    generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID SERIAL_PORT SERIAL_COMMAND)
-
-where **SERIAL_PORT** and **SERIAL_COMMAND** are optional.
 
 The previous example will generate the following two target::
 
@@ -596,6 +595,29 @@ When **Arduino CMake** is configured properly, these options are defined:
 
 * **ARDUINO_FOUND** - Set to True when the **Arduino SDK** is detected and configured.
 * **ARDUINO_SDK_VERSION** - Version of the detected **Arduino SDK** (ex: 1.0)
+
+Miscellaneous Functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+print_board_list()
+
+    Print list of detected Arduino Boards.
+
+print_programmer_list()
+
+    Print list of detected Programmers.
+
+print_programmer_settings(PROGRAMMER)
+
+           PROGRAMMER - programmer id
+
+    Print the detected Programmer settings.
+
+print_board_settings(ARDUINO_BOARD)
+
+           ARDUINO_BOARD - Board id
+
+    Print the detected Arduino board settings.
 
 
 
