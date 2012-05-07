@@ -607,12 +607,12 @@ This section will outlines some of the additional miscellaneous functions availa
 * **print_programmer_list()**:
   
   Print list of detected Programmers.
-* **print_programmer_settings(PROGRAMMER)**:
+* **print_programmer_settings(*PROGRAMMER*)**:
   
      *PROGRAMMER* - programmer id
   
   Print the detected Programmer settings.
-* **print_board_settings(BOARD_ID)**:
+* **print_board_settings(*BOARD_ID*)**:
   
     *BOARD_ID* - Board ID
   
