@@ -74,7 +74,8 @@ generate_arduino_library(blink_lib
 #====================================================================#
 generate_arduino_firmware(blink
     SRCS blink.cpp
-    LIBS blink_lib)
+    LIBS blink_lib
+    BOARD uno)
 
 # Alternative: by variables
 #set(blink_SRCS blink.cpp)

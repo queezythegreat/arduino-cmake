@@ -291,18 +291,19 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
+    set(LIB_DEP_INCLUDES)
 
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
         get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
         setup_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${INPUT_SKETCH}")
     endif()
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
-    set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I${LIB_DEP}")
     endforeach()
@@ -313,7 +314,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "-I${INPUT_SKETCH} ${LIB_DEP_INCLUDES}" "")
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
