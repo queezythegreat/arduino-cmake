@@ -320,7 +320,6 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
     endif()
     
-    message("INPUT_SERIAL for ${INPUT_NAME}: ${INPUT_SERIAL}")
     if(INPUT_SERIAL)
         setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}")
     endif()
@@ -813,6 +812,13 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT AVRDUDE_FLAGS
                      ${ARDUINO_AVRDUDE_PROGRAM} 
                      ${AVRDUDE_ARGS}
                      DEPENDS ${TARGET_NAME})
+
+    # Global upload target
+    if(NOT TARGET upload)
+        add_custom_target(upload)
+    endif()
+
+    add_dependencies(upload ${UPLOAD_TARGET})
 endfunction()
 
 #=============================================================================#
