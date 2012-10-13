@@ -20,11 +20,13 @@ generate_arduino_example(Wire master_writer)
 generate_arduino_firmware(blink_original
     SKETCH ${ARDUINO_SDK_PATH}/examples/1.Basics/Blink
     PORT  /dev/ttyACM0
+    SERIAL "picocom @SERIAL_PORT@"
     BOARD uno)
 
 # Alternative: by variables
 #set(blink_original_SKETCH ${ARDUINO_SDK_PATH}/examples/1.Basics/Blink)
-#set(blink_original_PORT  ${ARDUINO_PORT})
+#set(blink_original_PORT  /dev/ttyACM))
+#set(blink_original_SERIAL "picocom @SERIAL_PORT@")
 #set(blink_original_BOARD uno)
 #
 #generate_arduino_firmware(blink_original)
@@ -61,7 +63,6 @@ generate_arduino_library(blink_lib
 # Alternative: by variables
 #set(blink_lib_SRCS blink_lib.cpp)
 #set(blink_lib_HDRS blink_lib.h)
-#set(blink_lib_PORT /dev/ttyACM0)
 #set(blink_lib_BOARD uno)
 #
 #generate_arduino_library(blink_lib)
@@ -80,5 +81,6 @@ generate_arduino_firmware(blink
 # Alternative: by variables
 #set(blink_SRCS blink.cpp)
 #set(blink_LIBS blink_lib)
+#set(blink_BOARD uno)
 #
 #generate_arduino_firmware(blink)
