@@ -519,20 +519,22 @@ To generate a target for the **master_writer** example from the **Wire** library
     generate_arduino_example(wire_example
                              LIBRARY Wire
                              EXAMPLE master_writer
-                             BOARD uno)
+                             BOARD uno
+                             PORT  /dev/ttyUSB0)
 
 You can also rewrite the previous like so::
 
     set(wire_example_LIBRARY Wire)
     set(wire_example_EXAMPLE master_writer)
     set(wire_example_BOARD uno)
+    set(wire_example_PORT /dev/ttyUSB0)
 
     generate_arduino_example(wire_example)
 
 The previous example will generate the following two target::
 
-    example-Wire-master_writer
-    example-Wire-master_writer-upload
+    wire_example
+    wire_example-upload
 
 Compiler and Linker Flags
 ~~~~~~~~~~~~~~~~~~~~~~~~~
