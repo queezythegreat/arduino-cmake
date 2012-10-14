@@ -518,12 +518,14 @@ To generate a target for the **master_writer** example from the **Wire** library
 
     generate_arduino_example(wire_example
                              LIBRARY Wire
-                             EXAMPLE master_writer)
+                             EXAMPLE master_writer
+                             BOARD uno)
 
 You can also rewrite the previous like so::
 
     set(wire_example_LIBRARY Wire)
     set(wire_example_EXAMPLE master_writer)
+    set(wire_example_BOARD uno)
 
     generate_arduino_example(wire_example)
 
