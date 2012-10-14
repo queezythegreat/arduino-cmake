@@ -484,13 +484,48 @@ Arduino Library Examples
 
 Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. The syntax of the command is::
 
-    generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [SERIAL_PORT] [SERIAL_COMMAND] [PROGRAMMER_ID])
+    generate_arduino_example(target_name
+                             LIBRARY library_name
+                             EXAMPLE example_name
+                             [BOARD  board_id]
+                             [PORT port]
+                             [SERIAL serial command]
+                             [PORGRAMMER programmer_id]
+                             [AFLAGS avrdude_flags])
 
-where **SERIAL_PORT**, **SERIAL_COMMAND** and **PROGRAMMER_ID** are optional.
+The options are:
+
+
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **Name**           | **Description**                                                      | **Required**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LIBRARY**        | Library name.                                                        | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **EXAMPLE**        | Example name.                                                        | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **AFLAGS**         | avrdude flags for target                                             |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
 
 To generate a target for the **master_writer** example from the **Wire** library for the **Uno**::
 
-    generate_arduino_example(Wire master_writer uno /dev/ttyACM0)
+    generate_arduino_example(wire_example
+                             LIBRARY Wire
+                             EXAMPLE master_writer)
+
+You can also rewrite the previous like so::
+
+    set(wire_example_LIBRARY Wire)
+    set(wire_example_EXAMPLE master_writer)
+
+    generate_arduino_example(wire_example)
 
 The previous example will generate the following two target::
 

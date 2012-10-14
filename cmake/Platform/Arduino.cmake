@@ -88,14 +88,25 @@
 # All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
 #=============================================================================#
-# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL])
+# generate_arduino_example(name
+#                          LIBRARY library_name
+#                          EXAMPLE example_name
+#                          [BOARD  board_id]
+#                          [PORT port]
+#                          [SERIAL serial command]
+#                          [PORGRAMMER programmer_id]
+#                          [AFLAGS avrdude_flags])
 #=============================================================================#
 #
-#        BOARD_ID     - Board ID
-#        LIBRARY_NAME - Library name
-#        EXAMPLE_NAME - Example name
+#        name         - The name of the library example        [REQUIRED]
+#        LIBRARY      - Library name                           [REQUIRED]
+#        EXAMPLE      - Example name                           [REQUIRED]
+#        BOARD        - Board ID
 #        PORT         - Serial port [optional]
 #        SERIAL       - Serial command [optional]
+#        PROGRAMMER   - Programmer id (enables programmer support)
+#        AFLAGS       - Avrdude flags for target
+#
 # Creates a example from the specified library.
 #
 #
@@ -340,25 +351,15 @@ endfunction()
 
 #=============================================================================#
 # [PUBLIC/USER]
-#
-# generate_arduino_example(LIBRARY_NAME EXAMPLE_NAME BOARD_ID [PORT] [SERIAL] [PORGRAMMER])
-#
 # see documentation at top
 #=============================================================================#
-function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME)
-    #TODO: Add support for options like generate_arduino_*
-
-    set(TARGET_NAME "example-${LIBRARY_NAME}-${EXAMPLE_NAME}")
-
+function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     message(STATUS "Generating example ${LIBRARY_NAME}-${EXAMPLE_NAME}")
-
-    set(ALL_LIBS)
-    set(ALL_SRCS)
-
-    set(INPUT_BOARD ${ARGV2})
-    set(INPUT_PORT  ${ARGV3})
-    set(INPUT_SERIAL ${ARGV4})
-    set(INPUT_PROGRAMMER ${ARGV5})
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              ""                                       # Options
+                              "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
+                              "SERIAL;AFLAGS"                          # Multi Value Keywords
+                              ${ARGN})
 
     if(NOT INPUT_BOARD)
         set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
@@ -370,12 +371,17 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME)
         set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
     endif()
     if(NOT INPUT_PROGRAMMER)
-        set(INPUT_SERIAL ${ARDUINO_DEFAULT_PROGRAMMER})
+        set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
     endif()
+    required_variables(VARS INPUT_LIBRARY INPUT_EXAMPLE INPUT_BOARD
+                       MSG "must define for target ${INPUT_NAME}")
+
+    set(ALL_LIBS)
+    set(ALL_SRCS)
 
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
-    setup_arduino_example("${TARGET_NAME}" "${LIBRARY_NAME}" "${EXAMPLE_NAME}" ALL_SRCS)
+    setup_arduino_example("${INPUT_NAME}" "${INPUT_LIBRARY}" "${INPUT_EXAMPLE}" ALL_SRCS)
 
     if(NOT ALL_SRCS)
         message(FATAL_ERROR "Missing sources for example, aborting!")
@@ -391,15 +397,14 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME)
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE)
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE)
 
     if(INPUT_PORT)
-        #TODO fill in options (AFLAGS)
-        setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "")
+        setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
     endif()
     
     if(INPUT_SERIAL)
-        setup_serial_target(${TARGET_NAME} "${INPUT_SERIAL}")
+        setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
 endfunction()
 
