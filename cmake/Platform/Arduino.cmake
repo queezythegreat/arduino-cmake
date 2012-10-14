@@ -9,7 +9,8 @@
 #      [SERIAL serial_cmd]
 #      [PROGRAMMER programmer_id]
 #      [AFLAGS flags]
-#      [NO_AUTOLIBS])
+#      [NO_AUTOLIBS]
+#      [MANUAL])
 #=============================================================================#
 #
 #   generaters firmware and libraries for Arduino devices
@@ -27,6 +28,7 @@
 #      PROGRAMMER     # Programmer id (enables programmer support)
 #      AFLAGS         # Avrdude flags for target
 #      NO_AUTOLIBS    # Disables Arduino library detection
+#      MANUAL     # (Advanced) Only use AVR Libc/Includes
 #
 # Here is a short example for a target named test:
 #    
@@ -225,7 +227,7 @@ endfunction()
 function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS"                         # Options
+                              "NO_AUTOLIBS;MANUAL"                  # Options
                               "BOARD"                               # One Value Keywords
                               "SRCS;HDRS;LIBS"                      # Multi Value Keywords
                               ${ARGN})
@@ -233,12 +235,17 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     if(NOT INPUT_BOARD)
         set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
     endif()
+    if(NOT INPUT_MANUAL)
+        set(INPUT_MANUAL FALSE)
+    endif()
     required_variables(VARS INPUT_SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
     
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
 
-    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+    if(NOT INPUT_MANUAL)
+      setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+    endif()
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
     set(LIB_DEP_INCLUDES)
@@ -254,7 +261,7 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
         
     add_library(${INPUT_NAME} ${ALL_SRCS})
 
-    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD})
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD} ${INPUT_MANUAL})
 
     set_target_properties(${INPUT_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
@@ -270,7 +277,7 @@ endfunction()
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS"                         # Options
+                              "NO_AUTOLIBS;MANUAL"              # Options
                               "BOARD;PORT;SKETCH;SERIAL;PROGRAMMER" # One Value Keywords
                               "SRCS;HDRS;LIBS;AFLAGS"               # Multi Value Keywords
                               ${ARGN})
@@ -287,13 +294,18 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     if(NOT INPUT_PROGRAMMER)
         set(INPUT_SERIAL ${ARDUINO_DEFAULT_PROGRAMMER})
     endif()
+    if(NOT INPUT_MANUAL)
+        set(INPUT_MANUAL FALSE)
+    endif()
     required_variables(VARS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
 
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
     set(LIB_DEP_INCLUDES)
 
-    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+    if(NOT INPUT_MANUAL)
+      setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+    endif()
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
         get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
@@ -313,8 +325,8 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     endif()
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-    
-    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
+   
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
@@ -379,7 +391,7 @@ function(GENERATE_ARDUINO_EXAMPLE LIBRARY_NAME EXAMPLE_NAME)
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_target(${TARGET_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE)
 
     if(INPUT_PORT)
         #TODO fill in options (AFLAGS)
@@ -470,16 +482,18 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# get_arduino_flags(COMPILE_FLAGS LINK_FLAGS BOARD_ID)
+# get_arduino_flags(COMPILE_FLAGS LINK_FLAGS BOARD_ID MANUAL)
 #
 #       COMPILE_FLAGS_VAR -Variable holding compiler flags
 #       LINK_FLAGS_VAR - Variable holding linker flags
 #       BOARD_ID - The board id name
+#       MANUAL - (Advanced) Only use AVR Libc/Includes
 #
 # Configures the the build settings for the specified Arduino Board.
 #
 #=============================================================================#
-function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID)
+function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
+   
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)")
@@ -498,11 +512,16 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID)
         endif()
 
         # output
-        set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -mmcu=${${BOARD_ID}.build.mcu} -I${ARDUINO_CORES_PATH}/${BOARD_CORE} -I${ARDUINO_LIBRARIES_PATH}")
+        set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -mmcu=${${BOARD_ID}.build.mcu}")
+        if(NOT MANUAL)
+          set(COMPILE_FLAGS "${COMPILE_FLAGS} -I${ARDUINO_CORES_PATH}/${BOARD_CORE} -I${ARDUINO_LIBRARIES_PATH}")
+        endif()
         set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
             set(PIN_HEADER ${${BOARD_ID}.build.variant})
-            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I${ARDUINO_VARIANTS_PATH}/${PIN_HEADER}")
+            if(NOT MANUAL)
+              set(COMPILE_FLAGS "${COMPILE_FLAGS} -I${ARDUINO_VARIANTS_PATH}/${PIN_HEADER}")
+            endif()
         endif()
 
         # output 
@@ -536,7 +555,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
             # Debian/Ubuntu fix
             list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
             add_library(${CORE_LIB_NAME} ${CORE_SRCS})
-            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID})
+            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
             set_target_properties(${CORE_LIB_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS}")
@@ -641,7 +660,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             arduino_debug_msg("Generating Arduino ${LIB_NAME} library")
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
-            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID})
+            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
 
@@ -697,7 +716,7 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS)
+# setup_arduino_target(TARGET_NAME ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL)
 #
 #        TARGET_NAME - Target name
 #        BOARD_ID    - Arduino board ID
@@ -705,16 +724,17 @@ endfunction()
 #        ALL_LIBS    - All libraries
 #        COMPILE_FLAGS - Compile flags
 #        LINK_FLAGS    - Linker flags
+#        MANUAL - (Advanced) Only use AVR Libc/Includes
 #
 # Creates an Arduino firmware target.
 #
 #=============================================================================#
-function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS)
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL)
 
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
-    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${BOARD_ID})
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${BOARD_ID} ${MANUAL})
 
     set_target_properties(${TARGET_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
