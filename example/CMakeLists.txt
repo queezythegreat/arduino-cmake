@@ -28,13 +28,13 @@ endif()
 generate_arduino_firmware(blink_original
     SKETCH "${BLINK_SKETCH}"
     PORT  /dev/ttyACM0
-    SERIAL "picocom @SERIAL_PORT@"
+    SERIAL picocom @SERIAL_PORT@
     BOARD uno)
 
 # Alternative: by variables
 #set(blink_original_SKETCH "${BLINK_SKETCH}")
-#set(blink_original_PORT  /dev/ttyACM))
-#set(blink_original_SERIAL "picocom @SERIAL_PORT@")
+#set(blink_original_PORT  /dev/ttyACM)
+#set(blink_original_SERIAL picocom @SERIAL_PORT@)
 #set(blink_original_BOARD uno)
 #
 #generate_arduino_firmware(blink_original)

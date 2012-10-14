@@ -277,9 +277,9 @@ endfunction()
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS;MANUAL"              # Options
-                              "BOARD;PORT;SKETCH;SERIAL;PROGRAMMER" # One Value Keywords
-                              "SRCS;HDRS;LIBS;AFLAGS"               # Multi Value Keywords
+                              "NO_AUTOLIBS;MANUAL"            # Options
+                              "BOARD;PORT;SKETCH;PROGRAMMER"  # One Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
 
     if(NOT INPUT_BOARD)
@@ -333,7 +333,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     endif()
     
     if(INPUT_SERIAL)
-        setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}")
+        setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
 
 endfunction()
@@ -1085,10 +1085,10 @@ endfunction()
 # Creates a target (${TARGET_NAME}-serial) for launching the serial termnial.
 #
 #=============================================================================#
-function(setup_serial_target TARGET_NAME CMD)
+function(setup_serial_target TARGET_NAME CMD SERIAL_PORT)
     string(CONFIGURE "${CMD}" FULL_CMD @ONLY)
     add_custom_target(${TARGET_NAME}-serial
-                      ${FULL_CMD})
+                      COMMAND ${FULL_CMD})
 endfunction()
 
 

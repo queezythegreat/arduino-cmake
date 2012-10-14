@@ -218,7 +218,7 @@ For a more detailed explanation, please read on...
 
    In order to get access to the serial port use the following in your command::
 
-        @INPUT_PORT@
+        @SERIAL_PORT@
 
    That constant will get replaced with the actual serial port used (see uploading). In the case of our example configuration we can get the serial terminal by executing the following::
 
@@ -341,12 +341,12 @@ Once defined there will be two targets available for uploading, ``${TARGET_NAME}
 
 Serial Terminal
 _______________
-To enable serial terminal, use the ``SERIAL`` option (``@INPUT_PORT@`` will be replaced with the ``PORT`` option)::
+To enable serial terminal, use the ``SERIAL`` option (``@SERIAL_PORT@`` will be replaced with the ``PORT`` option)::
 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
     set(blink_PORT  /dev/ttyUSB0)
-    set(blink_SERIAL "picocom @INPUT_PORT@ -b 9600 -l")
+    set(blink_SERIAL picocom @INPUT_PORT@ -b 9600 -l)
     set(blink_BOARD uno)
 
     generate_arduino_firmware(blink)
@@ -357,7 +357,7 @@ Alternatively::
           SRCS  blink.cpp
           HDRS  blink.h
           PORT  /dev/ttyUSB0
-          SERIAL "picocom @INPUT_PORT@ -b 9600 -l"
+          SERIAL picocom @INPUT_PORT@ -b 9600 -l
           BOARD uno)
 
 This will create a target named ``${TARGET_NAME}-serial`` (in this example: blink-serial).
