@@ -292,6 +292,8 @@ The options are:
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
+| **MANUAL**         | Disable Arduino Core (enables pure AVR development)                  |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
 
 You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
 
@@ -391,6 +393,8 @@ The options are:
 | **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **MANUAL**         | Disable Arduino Core (enables pure AVR development)                  |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
 You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
