@@ -346,7 +346,7 @@ To enable serial terminal, use the ``SERIAL`` option (``@SERIAL_PORT@`` will be 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
     set(blink_PORT  /dev/ttyUSB0)
-    set(blink_SERIAL picocom @INPUT_PORT@ -b 9600 -l)
+    set(blink_SERIAL picocom @SERIAL_PORT@ -b 9600 -l)
     set(blink_BOARD uno)
 
     generate_arduino_firmware(blink)
@@ -357,7 +357,7 @@ Alternatively::
           SRCS  blink.cpp
           HDRS  blink.h
           PORT  /dev/ttyUSB0
-          SERIAL picocom @INPUT_PORT@ -b 9600 -l
+          SERIAL picocom @SERIAL_PORT@ -b 9600 -l
           BOARD uno)
 
 This will create a target named ``${TARGET_NAME}-serial`` (in this example: blink-serial).
@@ -751,7 +751,7 @@ Where ``/dev/tty.usbmodemXXX`` is the terminal device. To exit press ``C-a C-\``
 
 CMake configuration example::
 
-    set(${FIRMWARE_NAME}_SERIAL screen @INPUT_PORT@)
+    set(${FIRMWARE_NAME}_SERIAL screen @SERIAL_PORT@)
 
 
 
@@ -823,7 +823,7 @@ Putty is a great multi-protocol terminal, which supports SSH, Telnet, Serial, an
 
 CMake configuration example (assuming putty is on the **System Path**)::
 
-    set(${FIRMWARE_NAME}_SERIAL putty -serial @INPUT_PORT@)
+    set(${FIRMWARE_NAME}_SERIAL putty -serial @SERIAL_PORT@)
 
 Putty - http://tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe
 
