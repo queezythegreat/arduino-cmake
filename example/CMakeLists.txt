@@ -18,7 +18,7 @@ generate_arduino_example(Wire master_writer)
 # Original blink sketch (from Arduino SDK examples)
 #====================================================================#
 generate_arduino_firmware(blink_original
-    SKETCH ${ARDUINO_SDK_PATH}/examples/1.Basics/Blink
+    SKETCH ${ARDUINO_SDK_PATH}/examples/01.Basics/Blink
     PORT  /dev/ttyACM0
     BOARD uno)
 
