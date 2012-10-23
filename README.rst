@@ -73,6 +73,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Andrew Stromme (`astromme`_)
 * `johnyb`_
 * `arunh`_
+* Sebastian Herp (`sebastianherp`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -80,6 +81,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _astromme: https://github.com/astromme
 .. _johnyb: https://github.com/johnyb
 .. _arunh: https://github.com/arunh
+.. _sebastianherp: https://github.com/sebastianherp
 
 
 License
