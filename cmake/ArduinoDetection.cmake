@@ -1,3 +1,13 @@
+#=============================================================================#
+# Author: Tomasz Bogdal (QueezyTheGreat)
+# Home:   https://github.com/queezythegreat/arduino-cmake
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#=============================================================================#
+cmake_minimum_required(VERSION 2.8.5 FATAL_ERROR)
+
 include(CMakeParseArguments)
 
 
@@ -306,32 +316,60 @@ endfunction()
 
 
 
-#=============================================================================#
-#                         Arduino Settings                                    
-#=============================================================================#
-set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load
-    --no-change-warnings --change-section-lma .eeprom=0   CACHE STRING "")
-set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom          CACHE STRING "")
-set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
-
-
-
-
 
 
 #=============================================================================#
-#                          Initialization                                     
+# [PRIVATE/INTERNAL]
+#
+# setup_arduino_sdk()
+#
+# Initialize the Arduino build system.
+#
 #=============================================================================#
 macro(setup_arduino_sdk)
 
-if(ARDUINO_SDK_PATH)
-    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
-    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
-else()
-    message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
-endif()
+    if(NOT ARDUINO_SDK_PATH)
+        message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
+    endif()
 
-if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
+    if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
+    #=============================================================================#
+    #                       General Arduino SDK Setup                             #
+    #=============================================================================#
+    set(ARDUINO_DEFAULT_BOARD uno  CACHE STRING "Default Arduino Board ID when not specified.")
+    set(ARDUINO_DEFAULT_PORT       CACHE STRING "Default Arduino port when not specified.")
+    set(ARDUINO_DEFAULT_SERIAL     CACHE STRING "Default Arduino Serial command when not specified.")
+    set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
+
+    set(ARDUINO_SDK_PACKAGE_PATHS CACHE STRING "Arduino SDK Package paths (semicolon sperated search paths).")
+
+    find_file(ARDUINO_VERSION_PATH
+        NAMES lib/version.txt
+        PATHS ${ARDUINO_SDK_PATH}
+        DOC "Path to Arduino version file.")
+
+    find_file(ARDUINO_LIBRARIES_PATH
+              NAMES libraries
+              PATHS ${ARDUINO_SDK_PATH}
+              DOC "Path to directory containing the Arduino libraries.")
+
+
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE INTERNAL "Arduino SDK Major Version")
+    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE INTERNAL "Arduino SDK Minor Version")
+    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE INTERNAL "Arduino SDK Patch Version")
+
+    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
+         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
+    endif()
+
+
+
+    #=============================================================================#
+    #                       Version specific setup                                #
+    #=============================================================================#
+
     find_file(ARDUINO_CORES_PATH
               NAMES cores
               PATHS ${ARDUINO_SDK_PATH}
@@ -350,11 +388,6 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
               PATH_SUFFIXES hardware/arduino
               DOC "Path to directory containing the Arduino bootloader images and sources.")
 
-    find_file(ARDUINO_LIBRARIES_PATH
-              NAMES libraries
-              PATHS ${ARDUINO_SDK_PATH}
-              DOC "Path to directory containing the Arduino libraries.")
-
     find_file(ARDUINO_BOARDS_PATH
               NAMES boards.txt
               PATHS ${ARDUINO_SDK_PATH}
@@ -367,10 +400,8 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         PATH_SUFFIXES hardware/arduino
         DOC "Path to Arduino programmers definition file.")
 
-    find_file(ARDUINO_VERSION_PATH
-        NAMES lib/version.txt
-        PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to Arduino version file.")
+    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
+    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
         NAMES avrdude
@@ -392,10 +423,15 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
                       hardware/tools/avr/etc
         DOC "Path to avrdude programmer configuration file.")
 
-    set(ARDUINO_DEFAULT_BOARD uno  CACHE STRING "Default Arduino Board ID when not specified.")
-    set(ARDUINO_DEFAULT_PORT       CACHE STRING "Default Arduino port when not specified.")
-    set(ARDUINO_DEFAULT_SERIAL     CACHE STRING "Default Arduino Serial command when not specified.")
-    set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
+
+    #=============================================================================#
+    #                         Arduino Settings                                    
+    #=============================================================================#
+    set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load
+        --no-change-warnings --change-section-lma .eeprom=0   CACHE STRING "")
+    set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom          CACHE STRING "")
+    set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
+
 
     # Ensure that all required paths are found
     required_variables(VARS 
@@ -410,18 +446,6 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         ARDUINO_AVRDUDE_CONFIG_PATH
         AVRSIZE_PROGRAM
         MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
-
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
-    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
-    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
-    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
-
-    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
-         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
-    endif()
-
-    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
@@ -446,59 +470,76 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         ARDUINO_AVRDUDE_CONFIG_PATH
         ARDUINO_OBJCOPY_EEP_FLAGS
         ARDUINO_OBJCOPY_HEX_FLAGS
-        ARDUINO_SDK_VERSION_MAJOR
-        ARDUINO_SDK_VERSION_MINOR
-        ARDUINO_SDK_VERSION_PATCH
         AVRSIZE_PROGRAM)
 
-    set(CMAKE_C_COMPILER   avr-gcc)
-    set(CMAKE_CXX_COMPILER avr-g++)
+    if (ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+        set(CMAKE_C_COMPILER   avr-gcc)
+        set(CMAKE_CXX_COMPILER avr-g++)
 
-    #=============================================================================#
-    #                              C Flags                                        
-    #=============================================================================#
-    set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
-    set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}"    CACHE STRING "")
-    set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}"    CACHE STRING "")
-    set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}"    CACHE STRING "")
-    set(CMAKE_C_FLAGS_RELEASE        "-Os -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+        #=============================================================================#
+        #                              C Flags                                        
+        #=============================================================================#
+        set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
+        set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}"    CACHE STRING "")
+        set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}"    CACHE STRING "")
+        set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}"    CACHE STRING "")
+        set(CMAKE_C_FLAGS_RELEASE        "-Os -DNDEBUG -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
+        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRING "")
 
-    #=============================================================================#
-    #                             C++ Flags                                       
-    #=============================================================================#
-    set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
-    set(CMAKE_CXX_FLAGS                "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-    set(CMAKE_CXX_FLAGS_DEBUG          "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-    set(CMAKE_CXX_FLAGS_RELEASE        "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+        #=============================================================================#
+        #                             C++ Flags                                       
+        #=============================================================================#
+        set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
+        set(CMAKE_CXX_FLAGS                "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+        set(CMAKE_CXX_FLAGS_DEBUG          "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+        set(CMAKE_CXX_FLAGS_RELEASE        "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 
-    #=============================================================================#
-    #                       Executable Linker Flags                               #
-    #=============================================================================#
-    set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections -lm")
-    set(CMAKE_EXE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        #=============================================================================#
+        #                       Executable Linker Flags                               #
+        #=============================================================================#
+        set(ARDUINO_LINKER_FLAGS "-Wl,--gc-sections -lm")
+        set(CMAKE_EXE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_EXE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
 
-    #=============================================================================#
-    #=============================================================================#
-    #                       Shared Lbrary Linker Flags                            #
-    #=============================================================================#
-    set(CMAKE_SHARED_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        #=============================================================================#
+        #=============================================================================#
+        #                       Shared Lbrary Linker Flags                            #
+        #=============================================================================#
+        set(CMAKE_SHARED_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_SHARED_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
 
-    set(CMAKE_MODULE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_MODULE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-    set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
-endif()
+        set(CMAKE_MODULE_LINKER_FLAGS                "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_MODULE_LINKER_FLAGS_DEBUG          "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL     "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_MODULE_LINKER_FLAGS_RELEASE        "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+        set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STRING "")
+    else()
+        if(NOT DEFINED ARDUONO_SDK_PACKAGE)
+            set(ARDUINO_SDK_PACKAGE arduino CACHE STRING "Arduino SDK package.")
+            message(STATUS "Using default Arduino Package: ${ARDUINO_SDK_PACKAGE}")
+        endif()
+        if(NOT DEFINED ARDUONO_SDK_PLATFORM)
+            set(ARDUINO_SDK_PLATFORM avr CACHE STRING "Arduino SDK platform.")
+            message(STATUS "Using default Arduino Platform: ${ARDUINO_SDK_PLATFORM}")
+        endif()
+
+        message(FATAL_ERROR "Arduino SDK 1.5 not yet supported!")
+    endif()
+
+    endif(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
+
+    if (NOT DEFINED ARDUINO_CMAKE_INFO_MESSAGE)
+        set(ARDUINO_CMAKE_INFO_MESSAGE True)
+        message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+        message(STATUS "Arduino SDK package/platform: ${ARDUINO_SDK_PACKAGE}/${ARDUINO_SDK_PLATFORM}")
+    endif()
 endmacro()
 
