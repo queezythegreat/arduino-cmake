@@ -321,7 +321,12 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
         get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
         setup_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
-        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${INPUT_SKETCH}\"")
+        if (IS_DIRECTORY "${INPUT_SKETCH}")
+            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${INPUT_SKETCH}\"")
+        else()
+            get_filename_component(INPUT_SKETCH_PATH "${INPUT_SKETCH}" PATH)
+            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${INPUT_SKETCH_PATH}\"")
+        endif()
     endif()
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
@@ -518,8 +523,14 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
 
         # output
         set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -mmcu=${${BOARD_ID}.build.mcu}")
+        if(DEFINED ${BOARD_ID}.build.vid)
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_VID=${${BOARD_ID}.build.vid}")
+        endif()
+        if(DEFINED ${BOARD_ID}.build.pid)
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_PID=${${BOARD_ID}.build.pid}")
+        endif()
         if(NOT MANUAL)
-          set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${ARDUINO_CORES_PATH}/${BOARD_CORE}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${ARDUINO_CORES_PATH}/${BOARD_CORE}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
         endif()
         set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
@@ -1104,16 +1115,36 @@ endfunction()
 #
 #       VAR_NAME - Variable name where the detected version will be saved
 #
-# Detects the Arduino SDK Version based on the revisions.txt file.
+# Detects the Arduino SDK Version based on the revisions.txt file. The
+# following variables will be generated:
+#
+#    ${VAR_NAME}         -> the full version (major.minor.patch)
+#    ${VAR_NAME}_MAJOR   -> the major version
+#    ${VAR_NAME}_MINOR   -> the minor version
+#    ${VAR_NAME}_PATCH   -> the patch version
 #
 #=============================================================================#
 function(detect_arduino_version VAR_NAME)
     if(ARDUINO_VERSION_PATH)
-        file(READ ${ARDUINO_VERSION_PATH} ARD_VERSION)
-        if("${ARD_VERSION}" MATCHES " *[0]+([0-9]+)")
-            set(${VAR_NAME} 0.${CMAKE_MATCH_1} PARENT_SCOPE)
-        elseif("${ARD_VERSION}" MATCHES "[ ]*([0-9]+[.][0-9]+)")
-            set(${VAR_NAME} ${CMAKE_MATCH_1} PARENT_SCOPE)
+        file(READ ${ARDUINO_VERSION_PATH} RAW_VERSION)
+        if("${RAW_VERSION}" MATCHES " *[0]+([0-9]+)")
+            set(PARSED_VERSION 0.${CMAKE_MATCH_1}.0)
+        elseif("${RAW_VERSION}" MATCHES "[ ]*([0-9]+[.][0-9]+[.][0-9]+)")
+            set(PARSED_VERSION ${CMAKE_MATCH_1})
+        elseif("${RAW_VERSION}" MATCHES "[ ]*([0-9]+[.][0-9]+)")
+            set(PARSED_VERSION ${CMAKE_MATCH_1}.0)
+        endif()
+
+        if(NOT PARSED_VERSION STREQUAL "")
+            string(REPLACE "." ";" SPLIT_VERSION ${PARSED_VERSION})
+            list(GET SPLIT_VERSION 0 SPLIT_VERSION_MAJOR)
+            list(GET SPLIT_VERSION 1 SPLIT_VERSION_MINOR)
+            list(GET SPLIT_VERSION 2 SPLIT_VERSION_PATCH)
+
+            set(${VAR_NAME}       "${PARSED_VERSION}"      PARENT_SCOPE)
+            set(${VAR_NAME}_MAJOR "${SPLIT_VERSION_MAJOR}" PARENT_SCOPE)
+            set(${VAR_NAME}_MINOR "${SPLIT_VERSION_MINOR}" PARENT_SCOPE)
+            set(${VAR_NAME}_PATCH "${SPLIT_VERSION_PATCH}" PARENT_SCOPE)
         endif()
     endif()
 endfunction()
@@ -1334,14 +1365,22 @@ function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
 
     if(EXISTS "${SKETCH_PATH}")
         set(SKETCH_CPP  ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SKETCH_NAME}.cpp)
-        set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
-        if(EXISTS "${MAIN_SKETCH}.pde")
-            set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
-        elseif(EXISTS "${MAIN_SKETCH}.ino")
-            set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
+        if (IS_DIRECTORY "${SKETCH_PATH}")
+            # Sketch directory specified, try to find main sketch...
+            set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
+
+            if(EXISTS "${MAIN_SKETCH}.pde")
+                set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
+            elseif(EXISTS "${MAIN_SKETCH}.ino")
+                set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
+            else()
+                message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}! Please specify the main sketch file path instead of directory.")
+            endif()
         else()
-            message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}!")
+            # Sektch file specified, assuming parent directory as sketch directory
+            set(MAIN_SKETCH ${SKETCH_PATH})
+            get_filename_component(SKETCH_PATH "${SKETCH_PATH}" PATH)
         endif()
         arduino_debug_msg("sketch: ${MAIN_SKETCH}")
 
@@ -1406,8 +1445,14 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     # write the file head
     file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
 
+    # Count head line offset (for GCC error reporting)
+    file(STRINGS ${SKETCH_CPP} SKETCH_HEAD_LINES)
+    list(LENGTH SKETCH_HEAD_LINES SKETCH_HEAD_LINES_COUNT)
+    math(EXPR SKETCH_HEAD_OFFSET "${SKETCH_HEAD_LINES_COUNT}+2")
+
     # add arduino include header
-    file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
+    #file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
+    file(APPEND ${SKETCH_CPP} "\n#line ${SKETCH_HEAD_OFFSET} \"${SKETCH_CPP}\"\n")
     if(ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
     else()
@@ -1425,8 +1470,8 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         set(ALPHANUM "${ALPHA}${NUM}")
         set(WORD "_${ALPHANUM}")
         set(LINE_START "(^|[\n])")
-        set(QUALIFIERS "([${ALPHA}]+[ ])*")
-        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])")
+        set(QUALIFIERS "[ \t]*([${ALPHA}]+[ ])*")
+        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])+")
         set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
         set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
         set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
@@ -1440,6 +1485,12 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
             string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             arduino_debug_msg("\tprototype: ${SKETCH_PROTOTYPE};")
+			# " else if(var == other) {" shoudn't be listed as prototype
+			if(NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
+                file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
+            else()
+                arduino_debug_msg("\trejected prototype: ${SKETCH_PROTOTYPE};")
+            endif()
             file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
         endforeach()
         file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
@@ -1756,7 +1807,10 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
 
     detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
+    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
+    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
 
     if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
          message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")

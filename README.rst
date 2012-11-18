@@ -73,6 +73,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Andrew Stromme (`astromme`_)
 * `johnyb`_
 * `arunh`_
+* Sebastian Herp (`sebastianherp`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -80,6 +81,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _astromme: https://github.com/astromme
 .. _johnyb: https://github.com/johnyb
 .. _arunh: https://github.com/arunh
+.. _sebastianherp: https://github.com/sebastianherp
 
 
 License
@@ -132,6 +134,7 @@ Contents
    1. `undefined reference to `__cxa_pure_virtual'`_
    2. `Arduino Mega 2560 image does not work`_
    3. `Library not detected automatically`_
+   4. `error: attempt to use poisoned "SIG_USART0_RECV"`_
 
 8. `Resources`_
 
@@ -443,6 +446,10 @@ To build a Arduino sketch use the **SKETCH** option (see `Creating firmware imag
 
 This will build the **blink** example from the **Arduino SDK**.
 
+Note: When specifying the sketch directory path, arduino-cmake is expecting to find a sketch file named after the directory (with a extension of .pde or .ino).
+
+You can also specify the path to the main sketch file, then the parent directory of that sketch will be search for additional sketch files.
+
 Arduino Libraries
 ~~~~~~~~~~~~~~~~~
 
@@ -638,8 +645,20 @@ Note: You must create a new build system if you change **ARDUINO_SDK_PATH**.
 
 When **Arduino CMake** is configured properly, these options are defined:
 
-* **ARDUINO_FOUND** - Set to True when the **Arduino SDK** is detected and configured.
-* **ARDUINO_SDK_VERSION** - Version of the detected **Arduino SDK** (ex: 1.0)
++---------------------------------+-----------------------------------------------------+
+| **Name**                        | **Description**                                     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_FOUND**               | Set to True when the **Arduino SDK** is detected    |
+|                                 | and configured.                                     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION**         | Full version of the **Arduino SDK** (ex: 1.0.0)     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_MAJOR**   | Major version of the **Arduino SDK** (ex: 1)        |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_MINOR**   | Minor version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_PATCH**   | Patch version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
 
 Miscellaneous Functions
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1003,7 +1022,22 @@ To register a non-standard directory containing Arduino libraries, use the follo
 Remember to **use this command before defining the firmware**, which requires the library from that directory.
 
 
+error: attempt to use poisoned "SIG_USART0_RECV"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If you get the following error::
+
+    /usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.cpp:91:41: error: attempt to use poisoned "SIG_USART0_RECV"
+    /usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.cpp:101:15: error: attempt to use poisoned "SIG_USART0_RECV"
+    /usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.cpp:132:15: error: attempt to use poisoned "SIG_USART1_RECV"
+    /usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.cpp:145:15: error: attempt to use poisoned "SIG_USART2_RECV"
+    /usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.cpp:158:15: error: attempt to use poisoned "SIG_USART3_RECV"
+
+You probably recently upgraded `avr-libc` to the latest version, which has deperecated the use of these symbols. There is a `Arduino Patch`_ which
+fixes these error, you can read more about this bug here: `Arduino Bug ISSUE 955`_.
+
+.. _Arduino Bug ISSUE 955: http://code.google.com/p/arduino/issues/detail?id=955
+.. _Arduino Patch: http://arduino.googlecode.com/issues/attachment?aid=9550004000&name=sig-patch.diff&token=R2RWB0LZXQi8OpPLsyAdnMATDNU%3A1351021269609
 
 Resources
 ---------
