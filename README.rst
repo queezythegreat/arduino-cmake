@@ -645,8 +645,20 @@ Note: You must create a new build system if you change **ARDUINO_SDK_PATH**.
 
 When **Arduino CMake** is configured properly, these options are defined:
 
-* **ARDUINO_FOUND** - Set to True when the **Arduino SDK** is detected and configured.
-* **ARDUINO_SDK_VERSION** - Version of the detected **Arduino SDK** (ex: 1.0)
++---------------------------------+-----------------------------------------------------+
+| **Name**                        | **Description**                                     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_FOUND**               | Set to True when the **Arduino SDK** is detected    |
+|                                 | and configured.                                     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION**         | Full version of the **Arduino SDK** (ex: 1.0.0)     |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_MAJOR**   | Major version of the **Arduino SDK** (ex: 1)        |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_MINOR**   | Minor version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
+| **ARDUINO_SDK_VERSION_PATCH**   | Patch version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
 
 Miscellaneous Functions
 ~~~~~~~~~~~~~~~~~~~~~~~
