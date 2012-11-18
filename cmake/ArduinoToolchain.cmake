@@ -52,7 +52,6 @@ if(NOT ARDUINO_SDK_PATH)
         list(APPEND ARDUINO_PATHS arduino-00${VERSION})
     endforeach()
 
-    message("ARDUION_PATHS=${ARDUINO_PATHS}") 
     file(GLOB SDK_PATH_HINTS /usr/share/arduino*
                              /opt/local/ardiuno*
                              /usr/local/share/arduino*)
