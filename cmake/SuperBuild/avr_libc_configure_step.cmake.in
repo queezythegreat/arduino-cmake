@@ -1,0 +1,6 @@
+
+set(ENV{PATH} "@AVR_GCC_DIR@/bin:$ENV{PATH}")
+execute_process(COMMAND @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/configure
+      --prefix=@ep_install_dir@/avr
+      --host=avr
+      WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@-build)

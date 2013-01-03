@@ -1,4 +1,4 @@
-set(ARDUINO_DEPENDENCY_URL "$ENV{HOME}/Downloads" CACHE PATH "Path for external packages." )
+set(ARDUINO_DEPENDENCIES_URL "$ENV{HOME}/Downloads" CACHE PATH "Path for external packages." )
 
 set(BINUTILS_MAJOR 2)
 set(BINUTILS_MINOR 23)
@@ -20,14 +20,14 @@ set(AVR_LIBC_MINOR 8)
 set(AVR_LIBC_PATCH 0)
 set(AVR_LIBC_VERSION ${AVR_LIBC_MAJOR}.${AVR_LIBC_MINOR}.${AVR_LIBC_PATCH})
 set(AVR_LIBC_URL http://download.savannah.gnu.org/releases/avr-libc)
-set(AVR_LIBC_GZ avr-libc-${AVR_LIBC_MAJOR}.tar.bz2)
+set(AVR_LIBC_GZ avr-libc-${AVR_LIBC_VERSION}.tar.bz2)
 set(AVR_LIBC_SHA1 2e3815221be8e22f5f2c07b922ce92ecfa85bade)
 
 set(ARDUINO_MAJOR 1)
 set(ARDUINO_MINOR 0)
 set(ARDUINO_PATCH 3)
 set(ARDUINO_VERSION ${ARDUINO_MAJOR}.${ARDUINO_MINOR}.${ARDUINO_PATCH})
-set(ARDUINO_URL http://arduino.googlecode.com/files)
+set(ARDUINO_URL https://arduino.googlecode.com/files)
 set(ARDUINO_GZ arduino-${ARDUINO_VERSION}-src.tar.gz)
 set(ARDUINO_SHA1 b1b3a99df4f016b7c021173f2d0ced300cb7587c)
 

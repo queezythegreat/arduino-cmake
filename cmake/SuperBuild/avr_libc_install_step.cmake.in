@@ -1,0 +1,3 @@
+
+set(ENV{PATH} "@AVR_GCC_DIR@/bin:$ENV{PATH}")
+execute_process(COMMAND make install WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@-build)

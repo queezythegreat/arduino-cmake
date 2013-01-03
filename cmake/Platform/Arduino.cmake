@@ -170,11 +170,6 @@
 cmake_minimum_required(VERSION 2.8.5)
 include(CMakeParseArguments)
 
-
-
-
-
-
 #=============================================================================#
 #                           User Functions                                    
 #=============================================================================#
@@ -277,7 +272,6 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     set_target_properties(${INPUT_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS} ${LIB_DEP_INCLUDES}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
-
     target_link_libraries(${INPUT_NAME} ${ALL_LIBS} "-lc -lm")
 endfunction()
 
@@ -1134,7 +1128,6 @@ function(detect_arduino_version VAR_NAME)
         elseif("${RAW_VERSION}" MATCHES "[ ]*([0-9]+[.][0-9]+)")
             set(PARSED_VERSION ${CMAKE_MATCH_1}.0)
         endif()
-
         if(NOT PARSED_VERSION STREQUAL "")
             string(REPLACE "." ";" SPLIT_VERSION ${PARSED_VERSION})
             list(GET SPLIT_VERSION 0 SPLIT_VERSION_MAJOR)
@@ -1726,6 +1719,7 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #=============================================================================#
 #                          Initialization                                     
 #=============================================================================#
+
 if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     find_file(ARDUINO_CORES_PATH
               NAMES cores
@@ -1806,8 +1800,10 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         AVRSIZE_PROGRAM
         MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
 
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    if(NOT ARDUINO_SDK_VERSION)
+      detect_arduino_version(ARDUINO_SDK_VERSION)
+      set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    endif()
     set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
     set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
     set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
@@ -1817,7 +1813,7 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     endif()
 
     message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
-
+    
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
 

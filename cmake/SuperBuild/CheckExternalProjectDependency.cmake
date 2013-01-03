@@ -16,6 +16,26 @@
 #
 ###########################################################################
 
+#!
+#! Convenient macro allowing to define a "empty" project in case an external one is provided
+#! using for example <proj>_DIR.
+#! Doing so allows to keep the external project dependency system happy.
+#!
+#! \ingroup CMakeUtilities
+macro(EmptyExternalProject proj dependencies)
+
+  ExternalProject_Add(${proj}
+    SOURCE_DIR ${CMAKE_BINARY_DIR}/${proj}
+    BINARY_DIR ${proj}-build
+    DOWNLOAD_COMMAND ""
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    DEPENDS
+      ${dependencies}
+    )
+endmacro()
+
 macro(CheckExternalProjectDependency project)
   # Set indent variable if needed
   if(NOT DEFINED __indent)
@@ -43,11 +63,11 @@ macro(CheckExternalProjectDependency project)
     endforeach()
     message(STATUS "SuperBuild - ${__indent}${project} => Requires${dependency_str}")
   endif()
-
+  
   # Include dependencies
   foreach(dep ${${project}_DEPENDENCIES})
     if(NOT External_${dep}_FILE_INCLUDED)
-      include(${ARDUINO_SOURCE_DIR}/cmake/SuperBuild/External_${dep}.cmake)
+      include(SuperBuild/External_${dep})
     endif()
   endforeach()
 
@@ -55,7 +75,7 @@ macro(CheckExternalProjectDependency project)
   if(NOT "${${project}_DEPENDENCIES}" STREQUAL "")
     message(STATUS "SuperBuild - ${__indent}${project}[OK]")
   endif()
-
+  
   # Update indent variable
   string(LENGTH "${__indent}" __indent_length)
   math(EXPR __indent_length "${__indent_length}-2")
