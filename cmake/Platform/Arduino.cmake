@@ -50,6 +50,52 @@
 # All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
 #=============================================================================#
+# generate_avr_firmware(name
+#      [BOARD board_id]
+#       SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN]
+#      [PORT  port]
+#      [SERIAL serial_cmd]
+#      [PROGRAMMER programmer_id]
+#      [AFLAGS flags])
+#=============================================================================#
+#
+#   generaters firmware and libraries for AVR devices
+#   it simply calls generate_arduino_firmware() with NO_AUTOLIBS and MANUAL
+#
+# The arguments are as follows:
+#
+#      name           # The name of the firmware target         [REQUIRED]
+#      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
+#      SRCS           # Sources                                 [REQUIRED]
+#      HDRS           # Headers 
+#      LIBS           # Libraries to link
+#      PORT           # Serial port (enables upload support)
+#      SERIAL         # Serial command for serial target
+#      PROGRAMMER     # Programmer id (enables programmer support)
+#      AFLAGS         # Avrdude flags for target
+#
+# Here is a short example for a target named test:
+#    
+#       generate_avr_firmware(
+#           NAME test
+#           SRCS test.cpp 
+#                test2.cpp
+#           HDRS test.h test2.h
+#           BOARD uno)
+#
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_avr_firmware(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
+#
+#=============================================================================#
 # generate_arduino_library(name
 #      [BOARD board_id]
 #      [SRCS  src1 src2 ... srcN]
@@ -86,6 +132,43 @@
 #       set(test_BOARD uno)
 #
 #       generate_arduino_library(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
+#
+#=============================================================================#
+# generate_avr_library(name
+#      [BOARD board_id]
+#      [SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN])
+#=============================================================================#
+#   generaters firmware and libraries for AVR devices
+#   it simply calls generate_arduino_library() with NO_AUTOLIBS and MANUAL
+#
+# The arguments are as follows:
+#
+#      name           # The name of the firmware target         [REQUIRED]
+#      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
+#      SRCS           # Sources                                 [REQUIRED]
+#      HDRS           # Headers 
+#      LIBS           # Libraries to link
+#
+# Here is a short example for a target named test:
+#    
+#       generate_avr_library(
+#           NAME test
+#           SRCS test.cpp 
+#                test2.cpp
+#           HDRS test.h test2.h
+#           BOARD uno)
+#
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_avr_library(test)
 #
 # All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
@@ -287,6 +370,41 @@ endfunction()
 # [PUBLIC/USER]
 # see documentation at top
 #=============================================================================#
+function(GENERATE_AVR_LIBRARY INPUT_NAME)
+    message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS;MANUAL"                  # Options
+                              "BOARD"                               # One Value Keywords
+                              "SRCS;HDRS;LIBS"                      # Multi Value Keywords
+                              ${ARGN})
+ 
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif() 
+    
+    required_variables(VARS INPUT_SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
+   
+    if(INPUT_HDRS)
+        set( INPUT_HDRS "SRCS ${INPUT_HDRS}" )
+    endif()
+    if(INPUT_LIBS)
+        set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
+    endif()
+
+    generate_arduino_library( ${INPUT_NAME} 
+        NO_AUTOLIBS
+        MANUAL
+        BOARD ${INPUT_BOARD}
+        SRCS ${INPUT_SRCS}
+        ${INPUT_HDRS}
+        ${INPUT_LIBS} )
+    
+endfunction()
+
+#=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
@@ -354,6 +472,57 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
 
+endfunction()
+
+#=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(GENERATE_AVR_FIRMWARE INPUT_NAME)
+    message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS;MANUAL"            # Options
+                              "BOARD;PORT;PROGRAMMER"  # One Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;AFLAGS"  # Multi Value Keywords
+                              ${ARGN})
+ 
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif()
+    if(NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif()
+    if(NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif()
+    if(NOT INPUT_PROGRAMMER)
+        set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif()
+    
+    required_variables(VARS INPUT_BOARD INPUT_SRCS MSG "must define for target ${INPUT_NAME}")
+
+    if(INPUT_HDRS)
+        set( INPUT_HDRS "SRCS ${INPUT_HDRS}" )
+    endif()
+    if(INPUT_LIBS)
+        set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
+    endif()
+    if(INPUT_AFLAGS)
+        set( INPUT_AFLAGS "AFLAGS ${INPUT_AFLAGS}" )
+    endif()
+
+    generate_arduino_firmware( ${INPUT_NAME} 
+        NO_AUTOLIBS
+        MANUAL
+        BOARD ${INPUT_BOARD}
+        PORT ${INPUT_PORT}
+        PROGRAMMER ${INPUT_PROGRAMMER}
+        SERIAL ${INPUT_SERIAL}
+        SRCS ${INPUT_SRCS}
+        ${INPUT_HDRS}
+        ${INPUT_LIBS}
+        ${INPUT_AFLAGS} )
+    
 endfunction()
 
 #=============================================================================#
