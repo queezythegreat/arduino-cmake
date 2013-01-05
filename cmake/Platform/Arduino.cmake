@@ -28,7 +28,7 @@
 #      PROGRAMMER     # Programmer id (enables programmer support)
 #      AFLAGS         # Avrdude flags for target
 #      NO_AUTOLIBS    # Disables Arduino library detection
-#      MANUAL     # (Advanced) Only use AVR Libc/Includes
+#      MANUAL         # (Advanced) Only use AVR Libc/Includes
 #
 # Here is a short example for a target named test:
 #    
@@ -55,7 +55,8 @@
 #      [SRCS  src1 src2 ... srcN]
 #      [HDRS  hdr1 hdr2 ... hdrN]
 #      [LIBS  lib1 lib2 ... libN]
-#      [NO_AUTOLIBS])
+#      [NO_AUTOLIBS]
+#      [MANUAL])
 #=============================================================================#
 #   generaters firmware and libraries for Arduino devices
 #
@@ -67,6 +68,7 @@
 #      HDRS           # Headers 
 #      LIBS           # Libraries to link
 #      NO_AUTOLIBS    # Disables Arduino library detection
+#      MANUAL         # (Advanced) Only use AVR Libc/Includes
 #
 # Here is a short example for a target named test:
 #    
