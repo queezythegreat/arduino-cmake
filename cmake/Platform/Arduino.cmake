@@ -781,6 +781,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${CMAKE_COMMAND}
                         ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
+                                -DEEPROM_IMAGE=${TARGET_PATH}.eep
                                 -P ${ARDUINO_SIZE_SCRIPT}
                         COMMENT "Calculating image size"
                         VERBATIM)
@@ -789,6 +790,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     add_custom_target(${TARGET_NAME}-size
                         COMMAND ${CMAKE_COMMAND}
                                 -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
+                                -DEEPROM_IMAGE=${TARGET_PATH}.eep
                                 -P ${ARDUINO_SIZE_SCRIPT}
                         DEPENDS ${TARGET_NAME}
                         COMMENT "Calculating ${TARGET_NAME} image size")
@@ -1527,19 +1529,11 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
     set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
     set(AVRSIZE_FLAGS --target=ihex -d)
 
-    execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
+    execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE} \${EEPROM_IMAGE}
                     OUTPUT_VARIABLE SIZE_OUTPUT)
 
-    string(STRIP \"\${SIZE_OUTPUT}\" SIZE_OUTPUT)
-
-    # Convert lines into a list
-    string(REPLACE \"\\n\" \";\" SIZE_OUTPUT \"\${SIZE_OUTPUT}\")
-
-    list(GET SIZE_OUTPUT 1 SIZE_ROW)
-
-    if(SIZE_ROW MATCHES \"[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*([0-9]+)[ \\t]*([0-9a-fA-F]+).*\")
-        message(\"Total size \${CMAKE_MATCH_1} bytes\")
-    endif()")
+    string( REGEX REPLACE \"/[^\\n]*/\" \"\" SIZE_OUTPUT \"\${SIZE_OUTPUT}\" )
+    message( \"\n\${SIZE_OUTPUT}\" )" )
 
     set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
 endfunction()
