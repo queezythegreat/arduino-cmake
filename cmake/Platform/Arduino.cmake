@@ -608,26 +608,33 @@ endfunction()
 function(find_arduino_libraries VAR_NAME SRCS)
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
-        if(NOT (EXISTS ${SRC} OR
-                EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
-                EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
-            message(FATAL_ERROR "Invalid source file: ${SRC}")
-        endif()
-        file(STRINGS ${SRC} SRC_CONTENTS)
-        foreach(SRC_LINE ${SRC_CONTENTS})
-            if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
-                get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                get_property(LIBRARY_SEARCH_PATH
-                             DIRECTORY     # Property Scope
-                             PROPERTY LINK_DIRECTORIES)
-                foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
-                    if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                        list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
-                        break()
-                    endif()
-                endforeach()
+
+        # Skipping generated files. They are, probably, not exist yet.
+        # TODO: Maybe it's possible to skip only really nonexisting files,
+        # but then it wiil be less deterministic.
+        get_source_file_property(_srcfile_generated ${SRC} GENERATED)
+        if(NOT ${_srcfile_generated})
+            if(NOT (EXISTS ${SRC} OR
+                    EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
+                    EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
+                message(FATAL_ERROR "Invalid source file: ${SRC}")
             endif()
-        endforeach()
+            file(STRINGS ${SRC} SRC_CONTENTS)
+            foreach(SRC_LINE ${SRC_CONTENTS})
+                if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
+                    get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
+                    get_property(LIBRARY_SEARCH_PATH
+                                 DIRECTORY     # Property Scope
+                                 PROPERTY LINK_DIRECTORIES)
+                    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+                        if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
+                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
+                            break()
+                        endif()
+                    endforeach()
+                endif()
+            endforeach()
+        endif()
     endforeach()
     if(ARDUINO_LIBS)
         list(REMOVE_DUPLICATES ARDUINO_LIBS)
