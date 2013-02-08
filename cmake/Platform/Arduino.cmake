@@ -23,6 +23,7 @@
 #      SRCS           # Sources        [must have SRCS or SKETCH]
 #      HDRS           # Headers 
 #      LIBS           # Libraries to link
+#      ARDLIBS        # Arduino libraries to link (Wire, Servo, SPI, etc)
 #      PORT           # Serial port (enables upload support)
 #      SERIAL         # Serial command for serial target
 #      PROGRAMMER     # Programmer id (enables programmer support)
@@ -343,14 +344,14 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
       setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     endif()
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
     if(NOT ${INPUT_NO_AUTOLIBS})
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "" "${LIB_DEP_INCLUDES}" "")
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -408,9 +409,9 @@ endfunction()
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS;MANUAL"            # Options
-                              "BOARD;PORT;SKETCH;PROGRAMMER"  # One Value Keywords
-                              "SERIAL;SRCS;HDRS;LIBS;AFLAGS"  # Multi Value Keywords
+                              "NO_AUTOLIBS;MANUAL"                  # Options
+                              "BOARD;PORT;SKETCH;PROGRAMMER"        # One Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
 
     if(NOT INPUT_BOARD)
@@ -451,13 +452,13 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
     if(NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
     endif()
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -563,13 +564,13 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
         message(FATAL_ERROR "Missing sources for example, aborting!")
     endif()
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
-    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "" "${LIB_DEP_INCLUDES}" "")
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
@@ -754,15 +755,19 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# find_arduino_libraries(VAR_NAME SRCS)
+# find_arduino_libraries(VAR_NAME SRCS ARDLIBS)
 #
 #      VAR_NAME - Variable name which will hold the results
 #      SRCS     - Sources that will be analized
+#      ARDLIBS  - Arduino libraries identified by name (e.g., Wire, SPI, Servo)
 #
 #     returns a list of paths to libraries found.
 #
 #  Finds all Arduino type libraries included in sources. Available libraries
 #  are ${ARDUINO_SDK_PATH}/libraries and ${CMAKE_CURRENT_SOURCE_DIR}.
+#
+#  Also adds Arduino libraries specifically names in ALIBS.  We add ".h" to the 
+#  names and then process them just like the Arduino libraries found in the sources.
 #
 #  A Arduino library is a folder that has the same name as the include header.
 #  For example, if we have a include "#include <LibraryName.h>" then the following
@@ -776,7 +781,7 @@ endfunction()
 #  to be part of that Arduino library.
 #
 #=============================================================================#
-function(find_arduino_libraries VAR_NAME SRCS)
+function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
         if(NOT (EXISTS ${SRC} OR
@@ -785,6 +790,9 @@ function(find_arduino_libraries VAR_NAME SRCS)
             message(FATAL_ERROR "Invalid source file: ${SRC}")
         endif()
         file(STRINGS ${SRC} SRC_CONTENTS)
+        foreach(LIBNAME ${ARDLIBS})
+            list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
+        endforeach()
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                 get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
@@ -849,7 +857,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
 
             get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
 
-            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
+            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach(LIB_DEP ${LIB_DEPS})
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
@@ -888,9 +896,9 @@ endfunction()
 # Finds and creates all dependency libraries based on sources.
 #
 #=============================================================================#
-function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS COMPILE_FLAGS LINK_FLAGS)
+function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
-    find_arduino_libraries(TARGET_LIBS "${SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
