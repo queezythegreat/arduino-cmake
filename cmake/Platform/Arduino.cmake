@@ -277,7 +277,7 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-        
+
     add_library(${INPUT_NAME} ${ALL_SRCS})
 
     get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD} ${INPUT_MANUAL})
@@ -427,56 +427,70 @@ endfunction()
 #=============================================================================#
 function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
     string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
-    message(STATUS "Loading hardware path: ${PLATFORM_PATH}")
     GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
 
-    if(PLATFORM) # TODO only load a platform once
+    if(PLATFORM)
         string(TOUPPER ${PLATFORM} PLATFORM)
-        set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
-        set(PLATFORMS ${PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
+        list(FIND PLATFORMS ${PLATFORM} platform_exists)
 
-        find_file(${PLATFORM}_CORES_PATH
-              NAMES cores
-              PATHS ${PLATFORM_PATH}
-              DOC "Path to directory containing the Arduino core sources.")
+        if (platform_exists EQUAL -1)
+            set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
+            set(PLATFORMS ${PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
 
-        find_file(${PLATFORM}_VARIANTS_PATH
-              NAMES variants
-              PATHS ${PLATFORM_PATH}
-              DOC "Path to directory containing the Arduino variant sources.")
+            find_file(${PLATFORM}_CORES_PATH
+                  NAMES cores
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino core sources.")
 
-        find_file(${PLATFORM}_BOOTLOADERS_PATH
-              NAMES bootloaders
-              PATHS ${PLATFORM_PATH}
-              DOC "Path to directory containing the Arduino bootloader images and sources.")
+            find_file(${PLATFORM}_VARIANTS_PATH
+                  NAMES variants
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino variant sources.")
 
-        find_file(${PLATFORM}_PROGRAMMERS_PATH
-            NAMES programmers.txt
-            PATHS ${PLATFORM_PATH}
-            DOC "Path to Arduino programmers definition file.")
+            find_file(${PLATFORM}_BOOTLOADERS_PATH
+                  NAMES bootloaders
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino bootloader images and sources.")
 
-        find_file(${PLATFORM}_BOARDS_PATH
-            NAMES boards.txt
-            PATHS ${PLATFORM_PATH}
-            DOC "Path to Arduino boards definition file.")
+            find_file(${PLATFORM}_PROGRAMMERS_PATH
+                NAMES programmers.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino programmers definition file.")
 
-        if(${PLATFORM}_BOARDS_PATH)
-            load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
-        endif()
+            find_file(${PLATFORM}_BOARDS_PATH
+                NAMES boards.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino boards definition file.")
 
-        if(${PLATFORM}_PROGRAMMERS_PATH)
-            load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
-        endif()
+            if(${PLATFORM}_BOARDS_PATH)
+                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
+            endif()
 
-        if(${PLATFORM}_VARIANTS_PATH)
-            file(GLOB sub-dir ${${PLATFORM}_VARIANTS_PATH}/*)
-            foreach(dir ${sub-dir})
-                if(IS_DIRECTORY ${dir})
-                    get_filename_component(variant ${dir} NAME)
-                    set(VARIANTS ${list_of_dirs} ${variant} CACHE INTERNAL "A list of registered variant boards")
-                    set(${variant}.path ${dir} CACHE INTERNAL "The path to the variant ${variant}")
-                endif()
-            endforeach()
+            if(${PLATFORM}_PROGRAMMERS_PATH)
+                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+            endif()
+
+            if(${PLATFORM}_VARIANTS_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_VARIANTS_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(variant ${dir} NAME)
+                        set(VARIANTS ${VARIANTS} ${variant} CACHE INTERNAL "A list of registered variant boards")
+                        set(${variant}.path ${dir} CACHE INTERNAL "The path to the variant ${variant}")
+                    endif()
+                endforeach()
+            endif()
+
+            if(${PLATFORM}_CORES_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_CORES_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(core ${dir} NAME)
+                        set(CORES ${CORES} ${core} CACHE INTERNAL "A list of registered cores")
+                        set(${core}.path ${dir} CACHE INTERNAL "The path to the core ${core}")
+                    endif()
+                endforeach()
+            endif()
         endif()
     endif()
 
@@ -599,7 +613,7 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
             set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_PID=${${BOARD_ID}.build.pid}")
         endif()
         if(NOT MANUAL)
-            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${ARDUINO_CORES_PATH}/${BOARD_CORE}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${${BOARD_CORE}.path}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
         endif()
         set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
@@ -635,7 +649,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(NOT TARGET ${CORE_LIB_NAME})
-            set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
+            set(BOARD_CORE_PATH ${${BOARD_CORE}.path})
             find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
             # Debian/Ubuntu fix
             list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
