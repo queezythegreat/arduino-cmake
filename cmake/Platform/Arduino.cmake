@@ -619,7 +619,9 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
             if(NOT MANUAL)
                 set(PIN_HEADER ${${${BOARD_ID}.build.variant}.path})
-                set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${PIN_HEADER}\"")
+                if(PIN_HEADER)
+                    set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${PIN_HEADER}\"")
+                endif()
             endif()
         endif()
 
@@ -1130,19 +1132,25 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
         )
 
     # Programmer
-    if(${BOARD_ID}.upload.protocol STREQUAL "stk500")
+    if(NOT ${BOARD_ID}.upload.protocol OR ${BOARD_ID}.upload.protocol STREQUAL "stk500")
         list(APPEND AVRDUDE_ARGS "-cstk500v1")
     else()
         list(APPEND AVRDUDE_ARGS "-c${${BOARD_ID}.upload.protocol}")
     endif()
 
+    set(UPLOAD_SPEED "19200")
+    if(${BOARD_ID}.upload.speed)
+        set(UPLOAD_SPEED ${${BOARD_ID}.upload.speed})
+    endif()
+
     list(APPEND AVRDUDE_ARGS
-        "-b${${BOARD_ID}.upload.speed}"     # Baud rate
+        "-b${UPLOAD_SPEED}"     # Baud rate
         "-P${PORT}"                         # Serial port
         "-D"                                # Dont erase
         )  
 
     list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
+    message(STATUS "DEBUG: ARGS: ${AVRDUDE_ARGS}")
 
     set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
 endfunction()
