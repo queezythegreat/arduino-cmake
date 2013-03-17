@@ -1150,7 +1150,6 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
         )  
 
     list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
-    message(STATUS "DEBUG: ARGS: ${AVRDUDE_ARGS}")
 
     set(${OUTPUT_VAR} ${AVRDUDE_ARGS} PARENT_SCOPE)
 endfunction()
