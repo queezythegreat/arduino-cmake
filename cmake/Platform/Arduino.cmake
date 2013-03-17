@@ -187,9 +187,13 @@ include(CMakeParseArguments)
 # see documentation at top
 #=============================================================================#
 function(PRINT_BOARD_LIST)
-    message(STATUS "Arduino Boards:")
-    print_list(ARDUINO_BOARDS)
-    message(STATUS "")
+    foreach(PLATFORM ${PLATFORMS})
+        if(${PLATFORM}_BOARDS)
+            message(STATUS "${PLATFORM} Boards:")
+            print_list(${PLATFORM}_BOARDS)
+            message(STATUS "")
+        endif()
+    endforeach()
 endfunction()
 
 #=============================================================================#
@@ -200,9 +204,13 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(PRINT_PROGRAMMER_LIST)
-    message(STATUS "Arduino Programmers:")
-    print_list(ARDUINO_PROGRAMMERS)
-    message(STATUS "")
+    foreach(PLATFORM ${PLATFORMS})
+        if(${PLATFORM}_PROGRAMMERS)
+            message(STATUS "${PLATFORM} Programmers:")
+            print_list(${PLATFORM}_PROGRAMMERS)
+        endif()
+        message(STATUS "")
+    endforeach()
 endfunction()
 
 #=============================================================================#
@@ -269,7 +277,7 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-        
+
     add_library(${INPUT_NAME} ${ALL_SRCS})
 
     get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${INPUT_BOARD} ${INPUT_MANUAL})
@@ -414,6 +422,81 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
 endfunction()
 
 #=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
+    string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
+    GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
+
+    if(PLATFORM)
+        string(TOUPPER ${PLATFORM} PLATFORM)
+        list(FIND PLATFORMS ${PLATFORM} platform_exists)
+
+        if (platform_exists EQUAL -1)
+            set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
+            set(PLATFORMS ${PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
+
+            find_file(${PLATFORM}_CORES_PATH
+                  NAMES cores
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino core sources.")
+
+            find_file(${PLATFORM}_VARIANTS_PATH
+                  NAMES variants
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino variant sources.")
+
+            find_file(${PLATFORM}_BOOTLOADERS_PATH
+                  NAMES bootloaders
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino bootloader images and sources.")
+
+            find_file(${PLATFORM}_PROGRAMMERS_PATH
+                NAMES programmers.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino programmers definition file.")
+
+            find_file(${PLATFORM}_BOARDS_PATH
+                NAMES boards.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino boards definition file.")
+
+            if(${PLATFORM}_BOARDS_PATH)
+                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
+            endif()
+
+            if(${PLATFORM}_PROGRAMMERS_PATH)
+                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+            endif()
+
+            if(${PLATFORM}_VARIANTS_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_VARIANTS_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(variant ${dir} NAME)
+                        set(VARIANTS ${VARIANTS} ${variant} CACHE INTERNAL "A list of registered variant boards")
+                        set(${variant}.path ${dir} CACHE INTERNAL "The path to the variant ${variant}")
+                    endif()
+                endforeach()
+            endif()
+
+            if(${PLATFORM}_CORES_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_CORES_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(core ${dir} NAME)
+                        set(CORES ${CORES} ${core} CACHE INTERNAL "A list of registered cores")
+                        set(${core}.path ${dir} CACHE INTERNAL "The path to the core ${core}")
+                    endif()
+                endforeach()
+            endif()
+        endif()
+    endif()
+
+endfunction()
+
+#=============================================================================#
 #                        Internal Functions                                   
 #=============================================================================#
 
@@ -445,17 +528,17 @@ endmacro()
 # Load the Arduino SDK board settings from the boards.txt file.
 #
 #=============================================================================#
-function(LOAD_BOARD_SETTINGS)
-    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
-endfunction()
+#function(LOAD_BOARD_SETTINGS)
+#    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
+#endfunction()
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
 #=============================================================================#
-function(LOAD_PROGRAMMERS_SETTINGS)
-    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
-endfunction()
+#function(LOAD_PROGRAMMERS_SETTINGS)
+#    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+#endfunction()
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
@@ -530,13 +613,15 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
             set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_PID=${${BOARD_ID}.build.pid}")
         endif()
         if(NOT MANUAL)
-            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${ARDUINO_CORES_PATH}/${BOARD_CORE}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${${BOARD_CORE}.path}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
         endif()
         set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
-            set(PIN_HEADER ${${BOARD_ID}.build.variant})
             if(NOT MANUAL)
-              set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${ARDUINO_VARIANTS_PATH}/${PIN_HEADER}\"")
+                set(PIN_HEADER ${${${BOARD_ID}.build.variant}.path})
+                if(PIN_HEADER)
+                    set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${PIN_HEADER}\"")
+                endif()
             endif()
         endif()
 
@@ -566,7 +651,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE)
         if(NOT TARGET ${CORE_LIB_NAME})
-            set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
+            set(BOARD_CORE_PATH ${${BOARD_CORE}.path})
             find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
             # Debian/Ubuntu fix
             list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
@@ -1047,14 +1132,19 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
         )
 
     # Programmer
-    if(${BOARD_ID}.upload.protocol STREQUAL "stk500")
+    if(NOT ${BOARD_ID}.upload.protocol OR ${BOARD_ID}.upload.protocol STREQUAL "stk500")
         list(APPEND AVRDUDE_ARGS "-cstk500v1")
     else()
         list(APPEND AVRDUDE_ARGS "-c${${BOARD_ID}.upload.protocol}")
     endif()
 
+    set(UPLOAD_SPEED "19200")
+    if(${BOARD_ID}.upload.speed)
+        set(UPLOAD_SPEED ${${BOARD_ID}.upload.speed})
+    endif()
+
     list(APPEND AVRDUDE_ARGS
-        "-b${${BOARD_ID}.upload.speed}"     # Baud rate
+        "-b${UPLOAD_SPEED}"     # Baud rate
         "-P${PORT}"                         # Serial port
         "-D"                                # Dont erase
         )  
@@ -1734,40 +1824,12 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #                          Initialization                                     
 #=============================================================================#
 if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
-    find_file(ARDUINO_CORES_PATH
-              NAMES cores
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino core sources.")
-
-    find_file(ARDUINO_VARIANTS_PATH
-              NAMES variants 
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino variant sources.")
-
-    find_file(ARDUINO_BOOTLOADERS_PATH
-              NAMES bootloaders
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino bootloader images and sources.")
+    register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
 
     find_file(ARDUINO_LIBRARIES_PATH
-              NAMES libraries
-              PATHS ${ARDUINO_SDK_PATH}
-              DOC "Path to directory containing the Arduino libraries.")
-
-    find_file(ARDUINO_BOARDS_PATH
-              NAMES boards.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to Arduino boards definition file.")
-
-    find_file(ARDUINO_PROGRAMMERS_PATH
-        NAMES programmers.txt
+        NAMES libraries
         PATHS ${ARDUINO_SDK_PATH}
-        PATH_SUFFIXES hardware/arduino
-        DOC "Path to Arduino programmers definition file.")
+        DOC "Path to directory containing the Arduino libraries.")
 
     find_file(ARDUINO_VERSION_PATH
         NAMES lib/version.txt
@@ -1800,7 +1862,8 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
 
     # Ensure that all required paths are found
-    required_variables(VARS 
+    required_variables(VARS
+        PLATFORMS
         ARDUINO_CORES_PATH
         ARDUINO_BOOTLOADERS_PATH
         ARDUINO_LIBRARIES_PATH
@@ -1827,9 +1890,6 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
-
-    load_board_settings()
-    load_programmers_settings()
 
     #print_board_list()
     #print_programmer_list()
