@@ -187,7 +187,7 @@ include(CMakeParseArguments)
 # see documentation at top
 #=============================================================================#
 function(PRINT_BOARD_LIST)
-    foreach(PLATFORM ${PLATFORMS})
+    foreach(PLATFORM ${ARDUINO_PLATFORMS})
         if(${PLATFORM}_BOARDS)
             message(STATUS "${PLATFORM} Boards:")
             print_list(${PLATFORM}_BOARDS)
@@ -204,7 +204,7 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(PRINT_PROGRAMMER_LIST)
-    foreach(PLATFORM ${PLATFORMS})
+    foreach(PLATFORM ${ARDUINO_PLATFORMS})
         if(${PLATFORM}_PROGRAMMERS)
             message(STATUS "${PLATFORM} Programmers:")
             print_list(${PLATFORM}_PROGRAMMERS)
@@ -401,6 +401,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     endif()
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    message("TARGET_LIBS ${TARGET_LIBS}")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
@@ -431,11 +432,11 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
 
     if(PLATFORM)
         string(TOUPPER ${PLATFORM} PLATFORM)
-        list(FIND PLATFORMS ${PLATFORM} platform_exists)
+        list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
 
         if (platform_exists EQUAL -1)
             set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
-            set(PLATFORMS ${PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
+            set(ARDUINO_PLATFORMS ${ARDUINO_PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
 
             find_file(${PLATFORM}_CORES_PATH
                   NAMES cores
@@ -698,7 +699,10 @@ function(find_arduino_libraries VAR_NAME SRCS)
         # TODO: Maybe it's possible to skip only really nonexisting files,
         # but then it wiil be less deterministic.
         get_source_file_property(_srcfile_generated ${SRC} GENERATED)
-        if(NOT ${_srcfile_generated})
+        # Workaround for sketches, which are marked as generated
+        get_source_file_property(_sketch_generated ${SRC} GENERATED_SKETCH)
+
+        if(NOT ${_srcfile_generated} OR ${_sketch_generated})
             if(NOT (EXISTS ${SRC} OR
                     EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
                     EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
@@ -1495,6 +1499,8 @@ function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
                            DEPENDS ${MAIN_SKETCH} ${SKETCH_SOURCES}
                            COMMENT "Regnerating ${SKETCH_NAME} Sketch")
         set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED TRUE)
+        # Mark file that it exists for find_file
+        set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED_SKETCH TRUE)
 
         set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
     else()
@@ -1863,7 +1869,7 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     # Ensure that all required paths are found
     required_variables(VARS
-        PLATFORMS
+        ARDUINO_PLATFORMS
         ARDUINO_CORES_PATH
         ARDUINO_BOOTLOADERS_PATH
         ARDUINO_LIBRARIES_PATH
