@@ -139,6 +139,34 @@
 # Print the detected Arduino board settings.
 #
 #=============================================================================#
+# register_hardware_platform(HARDWARE_PLATFORM_PATH)
+#=============================================================================#
+#
+#        HARDWARE_PLATFORM_PATH - Hardware platform path
+#
+# Registers a Hardware Platform path.
+# See: http://code.google.com/p/arduino/wiki/Platforms
+#
+# This enables you to register new types of hardware platforms such as the
+# Sagnuino, without having to copy the files into your Arduion SDK.
+#
+# A Hardware Platform is a directory containing the following:
+#
+#        HARDWARE_PLATFORM_PATH/
+#            |-- bootloaders/
+#            |-- cores/
+#            |-- variants/
+#            |-- boards.txt
+#            `-- programmers.txt
+#            
+#  The board.txt describes the target boards and bootloaders. While
+#  programmers.txt the programmer defintions.
+#
+#  A good example of a Hardware Platform is in the Arduino SDK:
+#
+#        ${ARDUINO_SDK_PATH}/hardware/arduino/
+#
+#=============================================================================#
 # Configuration Options
 #=============================================================================#
 #
@@ -367,12 +395,12 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
-    message(STATUS "Generating example ${LIBRARY_NAME}-${EXAMPLE_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
                               ""                                       # Options
                               "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
                               "SERIAL;AFLAGS"                          # Multi Value Keywords
                               ${ARGN})
+
 
     if(NOT INPUT_BOARD)
         set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
@@ -389,6 +417,8 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     required_variables(VARS INPUT_LIBRARY INPUT_EXAMPLE INPUT_BOARD
                        MSG "must define for target ${INPUT_NAME}")
 
+    message(STATUS "Generating ${INPUT_NAME}")
+
     set(ALL_LIBS)
     set(ALL_SRCS)
 
@@ -401,7 +431,6 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     endif()
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
-    message("TARGET_LIBS ${TARGET_LIBS}")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
