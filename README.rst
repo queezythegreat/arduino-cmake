@@ -74,6 +74,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * `johnyb`_
 * `arunh`_
 * Sebastian Herp (`sebastianherp`_)
+* Michael Daffin (`james147`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -82,6 +83,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _johnyb: https://github.com/johnyb
 .. _arunh: https://github.com/arunh
 .. _sebastianherp: https://github.com/sebastianherp
+.. _james147: https://github.com/james147
 
 
 License
@@ -681,8 +683,31 @@ This section will outlines some of the additional miscellaneous functions availa
     *BOARD_ID* - Board ID
   
   Print the detected Arduino board settings.
+* **register_hardware_platform(HARDWARE_PLATFORM_PATH)**:
+  
+    *HARDWARE_PLATFORM_PATH* - Hardware platform path
+  
+  Registers a ``Hardware Platform`` path. See: `Arduino Platforms`_.
+  
+  A Hardware Platform is a directory containing the following::
+  
+      HARDWARE_PLATFORM_PATH/
+          |-- bootloaders/
+          |-- cores/
+          |-- variants/
+          |-- boards.txt
+          `-- programmers.txt
+  
+  This enables you to register new types of hardware platforms such as the
+  Sagnuino, without having to copy the files into your Arduion SDK.
+  
+  The ``board.txt`` describes the target boards and bootloaders. While
+  ``programmers.txt`` the programmer defintions.
+  
+  A good example of a *Hardware Platform* is in the Arduino SDK: ``${ARDUINO_SDK_PATH}/hardware/arduino/``
 
 
+.. _Arduino Platforms: http://code.google.com/p/arduino/wiki/Platforms
 
 Bundling Arduino CMake
 ~~~~~~~~~~~~~~~~~~~~~~
