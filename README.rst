@@ -699,7 +699,7 @@ This section will outlines some of the additional miscellaneous functions availa
           `-- programmers.txt
   
   This enables you to register new types of hardware platforms such as the
-  Sagnuino, without having to copy the files into your Arduion SDK.
+  Sagnuino, without having to copy the files into your Arduino SDK.
   
   The ``board.txt`` describes the target boards and bootloaders. While
   ``programmers.txt`` the programmer defintions.
