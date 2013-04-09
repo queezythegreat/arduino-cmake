@@ -1617,8 +1617,8 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
             string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
             arduino_debug_msg("\tprototype: ${SKETCH_PROTOTYPE};")
-			# " else if(var == other) {" shoudn't be listed as prototype
-			if(NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
+            # " else if(var == other) {" shoudn't be listed as prototype
+            if(NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
                 file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
             else()
                 arduino_debug_msg("\trejected prototype: ${SKETCH_PROTOTYPE};")
