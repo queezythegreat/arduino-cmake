@@ -269,7 +269,8 @@ To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` co
          [SERIAL serial_cmd]
          [PROGRAMMER programmer_id]
          [AFLAGS flags]
-         [NO_AUTOLIBS])
+         [NO_AUTOLIBS]
+         [SIZE_VERBOSE])
 
 
 The options are:
@@ -298,6 +299,8 @@ The options are:
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **MANUAL**         | Disable Arduino Core (enables pure AVR development)                  |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SIZE_VERBOSE**   | Prints additional information about memory consumption               |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
 You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
@@ -504,7 +507,8 @@ Most Arduino libraries have examples bundled with them. If you would like to gen
                              [PORT port]
                              [SERIAL serial command]
                              [PORGRAMMER programmer_id]
-                             [AFLAGS avrdude_flags])
+                             [AFLAGS avrdude_flags]
+                             [SIZE_VERBOSE])
 
 The options are:
 
@@ -525,6 +529,8 @@ The options are:
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **AFLAGS**         | avrdude flags for target                                             |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SIZE_VERBOSE**   | Prints additional information about memory consumption               |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
 To generate a target for the **master_writer** example from the **Wire** library for the **Uno**::
