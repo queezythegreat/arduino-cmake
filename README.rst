@@ -75,6 +75,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * `arunh`_
 * Sebastian Herp (`sebastianherp`_)
 * Michael Daffin (`james147`_)
+* Pavel Ilin (`PIlin`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -84,6 +85,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _arunh: https://github.com/arunh
 .. _sebastianherp: https://github.com/sebastianherp
 .. _james147: https://github.com/james147
+.. _PIlin: https://github.com/PIlin
 
 
 License
@@ -660,6 +662,19 @@ When **Arduino CMake** is configured properly, these options are defined:
 | **ARDUINO_SDK_VERSION_MINOR**   | Minor version of the **Arduino SDK** (ex: 0)        |
 +---------------------------------+-----------------------------------------------------+
 | **ARDUINO_SDK_VERSION_PATCH**   | Patch version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
+
+
+During compilation, you can enable the following environment variables.
+
++---------------------------------+-----------------------------------------------------+
+| **Name**                        | **Description**                                     |
++---------------------------------+-----------------------------------------------------+
+| **VERBOSE**                     | Enables verbose compilation, displays commands      |
+|                                 | being executed. (Non empty value)                   |
++---------------------------------+-----------------------------------------------------+
+| **VERBOSE_SIZE**                | Enables full/verbose output from avr-size.          |
+|                                 | (Non empty value)                                   |
 +---------------------------------+-----------------------------------------------------+
 
 Miscellaneous Functions
