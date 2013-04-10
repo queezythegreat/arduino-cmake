@@ -703,7 +703,7 @@ This section will outlines some of the additional miscellaneous functions availa
   
     *HARDWARE_PLATFORM_PATH* - Hardware platform path
   
-  Registers a ``Hardware Platform`` path. See: `Arduino Platforms`_.
+  Registers a ``Hardware Platform`` path. See: `Arduino Platforms PRE 1.5`_ and `Arduino Platforms 1.5`_.
   
   A Hardware Platform is a directory containing the following::
   
@@ -723,8 +723,8 @@ This section will outlines some of the additional miscellaneous functions availa
   A good example of a *Hardware Platform* is in the Arduino SDK: ``${ARDUINO_SDK_PATH}/hardware/arduino/``
 
 
-.. _Arduino Platforms: http://code.google.com/p/arduino/wiki/Platforms
-
+.. _Arduino Platforms PRE 1.5: http://code.google.com/p/arduino/wiki/Platforms
+.. _Arduino Platforms 1.5: http://code.google.com/p/arduino/wiki/Platforms1
 Bundling Arduino CMake
 ~~~~~~~~~~~~~~~~~~~~~~
 
