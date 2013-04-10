@@ -25,6 +25,7 @@ Features
 * Generates libraries.
 * Sketch support.
 * Upload support.
+* Hardware Platform support.
 * Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
 * Cross-platform: Windows, Linux, Mac
