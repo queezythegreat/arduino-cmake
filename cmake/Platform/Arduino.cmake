@@ -517,6 +517,7 @@ endfunction()
 # see documentation at top
 #=============================================================================#
 function(GENERATE_AVR_FIRMWARE INPUT_NAME)
+    # TODO: This is not optimal!!!!
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
                               "NO_AUTOLIBS;MANUAL"            # Options
@@ -726,26 +727,6 @@ endmacro()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# load_board_settings()
-#
-# Load the Arduino SDK board settings from the boards.txt file.
-#
-#=============================================================================#
-#function(LOAD_BOARD_SETTINGS)
-#    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
-#endfunction()
-
-#=============================================================================#
-# [PRIVATE/INTERNAL]
-#
-#=============================================================================#
-#function(LOAD_PROGRAMMERS_SETTINGS)
-#    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
-#endfunction()
-
-#=============================================================================#
-# [PRIVATE/INTERNAL]
-#
 # load_generator_settings(TARGET_NAME PREFIX [SUFFIX_1 SUFFIX_2 .. SUFFIX_N])
 #
 #         TARGET_NAME - The base name of the user settings
@@ -915,9 +896,11 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                 message(FATAL_ERROR "Invalid source file: ${SRC}")
             endif()
             file(STRINGS ${SRC} SRC_CONTENTS)
+
             foreach(LIBNAME ${ARDLIBS})
                 list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
             endforeach()
+
             foreach(SRC_LINE ${SRC_CONTENTS})
                 if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                     get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
@@ -1843,7 +1826,7 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
         set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
         set(AVRSIZE_FLAGS -C --mcu=\${MCU})
 
-        execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
+        execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE} \${EEPROM_IMAGE}
                         OUTPUT_VARIABLE SIZE_OUTPUT)
 
 
@@ -1882,18 +1865,29 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
         list(LENGTH SIZE_OUTPUT_LINES SIZE_OUTPUT_LENGTH)
         #message(\"\${SIZE_OUTPUT_LINES}\")
         #message(\"\${SIZE_OUTPUT_LENGTH}\")
-        if (\${SIZE_OUTPUT_LENGTH} STREQUAL 7)
-            EXTRACT(SIZE_OUTPUT_LINES 3 PROGRAM_SIZE_ROW)
-            EXTRACT(SIZE_OUTPUT_LINES 5 DATA_SIZE_ROW)
-            PARSE(PROGRAM_SIZE_ROW PROGRAM)
-            PARSE(DATA_SIZE_ROW  DATA)
+        if (\${SIZE_OUTPUT_LENGTH} STREQUAL 14)
+            EXTRACT(SIZE_OUTPUT_LINES 3 FIRMWARE_PROGRAM_SIZE_ROW)
+            EXTRACT(SIZE_OUTPUT_LINES 5 FIRMWARE_DATA_SIZE_ROW)
+            PARSE(FIRMWARE_PROGRAM_SIZE_ROW FIRMWARE_PROGRAM)
+            PARSE(FIRMWARE_DATA_SIZE_ROW  FIRMWARE_DATA)
 
-            set(SIZE_STATUS \"Size: \")
-            set(SIZE_STATUS \"\${SIZE_STATUS} [\${PROGRAM_NAME}: \${PROGRAM_SIZE} \${PROGRAM_SIZE_TYPE} (\${PROGRAM_PERCENT}%)] \")
-            set(SIZE_STATUS \"\${SIZE_STATUS} [\${DATA_NAME}: \${DATA_SIZE} \${DATA_SIZE_TYPE} (\${DATA_PERCENT}%)]\")
-            set(SIZE_STATUS \"\${SIZE_STATUS} on \${MCU}\")
+            set(FIRMWARE_STATUS \"Firmware Size: \")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} [\${FIRMWARE_PROGRAM_NAME}: \${FIRMWARE_PROGRAM_SIZE} \${FIRMWARE_PROGRAM_SIZE_TYPE} (\${FIRMWARE_PROGRAM_PERCENT}%)] \")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} [\${FIRMWARE_DATA_NAME}: \${FIRMWARE_DATA_SIZE} \${FIRMWARE_DATA_SIZE_TYPE} (\${FIRMWARE_DATA_PERCENT}%)]\")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} on \${MCU}\")
 
-            message(\"\${SIZE_STATUS}\\n\")
+            EXTRACT(SIZE_OUTPUT_LINES 10 EEPROM_PROGRAM_SIZE_ROW)
+            EXTRACT(SIZE_OUTPUT_LINES 12 EEPROM_DATA_SIZE_ROW)
+            PARSE(EEPROM_PROGRAM_SIZE_ROW EEPROM_PROGRAM)
+            PARSE(EEPROM_DATA_SIZE_ROW  EEPROM_DATA)
+
+            set(EEPROM_STATUS \"EEPROM   Size: \")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} [\${EEPROM_PROGRAM_NAME}: \${EEPROM_PROGRAM_SIZE} \${EEPROM_PROGRAM_SIZE_TYPE} (\${EEPROM_PROGRAM_PERCENT}%)] \")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} [\${EEPROM_DATA_NAME}: \${EEPROM_DATA_SIZE} \${EEPROM_DATA_SIZE_TYPE} (\${EEPROM_DATA_PERCENT}%)]\")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} on \${MCU}\")
+
+            message(\"\${FIRMWARE_STATUS}\")
+            message(\"\${EEPROM_STATUS}\\n\")
 
             if(\$ENV{VERBOSE})
                 message(\"\${RAW_SIZE_OUTPUT}\\n\")
