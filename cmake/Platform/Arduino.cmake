@@ -10,8 +10,8 @@
 #      [PROGRAMMER programmer_id]
 #      [AFLAGS flags]
 #      [NO_AUTOLIBS]
-#      [MANUAL]
-#      [SIZE_VERBOSE])
+#      [MANUAL])
+#
 #=============================================================================#
 #
 #   generaters firmware and libraries for Arduino devices
@@ -30,7 +30,6 @@
 #      AFLAGS         # Avrdude flags for target
 #      NO_AUTOLIBS    # Disables Arduino library detection
 #      MANUAL         # (Advanced) Only use AVR Libc/Includes
-#      SIZE_VERBOSE   # (Advanced) Show verbose size info
 #
 # Here is a short example for a target named test:
 #    
@@ -97,8 +96,7 @@
 #                          [PORT port]
 #                          [SERIAL serial command]
 #                          [PORGRAMMER programmer_id]
-#                          [AFLAGS avrdude_flags]
-#                          [SIZE_VERBOSE])
+#                          [AFLAGS avrdude_flags])
 #=============================================================================#
 #
 #        name         - The name of the library example        [REQUIRED]
@@ -109,7 +107,6 @@
 #        SERIAL       - Serial command [optional]
 #        PROGRAMMER   - Programmer id (enables programmer support)
 #        AFLAGS       - Avrdude flags for target
-#        SIZE_VERBOSE - (Advanced) Show verbose size info
 #
 # Creates a example from the specified library.
 #
@@ -328,7 +325,7 @@ endfunction()
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS;MANUAL;SIZE_VERBOSE"   # Options
+                              "NO_AUTOLIBS;MANUAL"                # Options
                               "BOARD;PORT;SKETCH;PROGRAMMER"      # One Value Keywords
                               "SERIAL;SRCS;HDRS;LIBS;AFLAGS"      # Multi Value Keywords
                               ${ARGN})
@@ -382,7 +379,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
 
-    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}" "${INPUT_SIZE_VERBOSE}")
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}")
 
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
@@ -400,7 +397,7 @@ endfunction()
 #=============================================================================#
 function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "SIZE_VERBOSE"                           # Options
+                              ""                                       # Options
                               "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
                               "SERIAL;AFLAGS"                          # Multi Value Keywords
                               ${ARGN})
@@ -444,7 +441,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
-    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE "${INPUT_SIZE_VERBOSE}")
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD}  "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE)
 
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
@@ -870,12 +867,11 @@ endfunction()
 #        COMPILE_FLAGS - Compile flags
 #        LINK_FLAGS    - Linker flags
 #        MANUAL - (Advanced) Only use AVR Libc/Includes
-#        SIZE_VERBOSE - (Advanced) Show verbose size info
 #
 # Creates an Arduino firmware target.
 #
 #=============================================================================#
-function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL SIZE_VERBOSE)
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL)
 
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
@@ -905,41 +901,23 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
                         COMMENT "Generating HEX image"
                         VERBATIM)
 
-    if (${SIZE_VERBOSE})
-        # Display target size (verbose)
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                            COMMAND ${CMAKE_COMMAND}
-                            ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
-                                    -DMCU=${${BOARD_ID}.build.mcu}
-                                    -P ${ARDUINO_VERBOSE_SIZE_SCRIPT}
-                            COMMENT "Calculating image size (verbose)"
-                            VERBATIM)
+    # Display target size
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND}
+                        ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
+                                -DMCU=${${BOARD_ID}.build.mcu}
+                                -P ${ARDUINO_SIZE_SCRIPT}
+                        COMMENT "Calculating image size"
+                        VERBATIM)
 
-        # Create ${TARGET_NAME}-size-verbose target
-        add_custom_target(${TARGET_NAME}-size-verbose
-                            COMMAND ${CMAKE_COMMAND}
-                                    -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
-                                    -DMCU=${${BOARD_ID}.build.mcu}
-                                    -P ${ARDUINO_VERBOSE_SIZE_SCRIPT}
-                            DEPENDS ${TARGET_NAME}
-                            COMMENT "Calculating ${TARGET_NAME} image size (verbose)")
-    else()
-        # Display target size
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                            COMMAND ${CMAKE_COMMAND}
-                            ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
-                                    -P ${ARDUINO_SIZE_SCRIPT}
-                            COMMENT "Calculating image size"
-                            VERBATIM)
-
-        # Create ${TARGET_NAME}-size target
-        add_custom_target(${TARGET_NAME}-size
-                            COMMAND ${CMAKE_COMMAND}
-                                    -DFIRMWARE_IMAGE=${TARGET_PATH}.hex
-                                    -P ${ARDUINO_SIZE_SCRIPT}
-                            DEPENDS ${TARGET_NAME}
-                            COMMENT "Calculating ${TARGET_NAME} image size")
-    endif()
+    # Create ${TARGET_NAME}-size target
+    add_custom_target(${TARGET_NAME}-size
+                        COMMAND ${CMAKE_COMMAND}
+                                -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
+                                -DMCU=${${BOARD_ID}.build.mcu}
+                                -P ${ARDUINO_SIZE_SCRIPT}
+                        DEPENDS ${TARGET_NAME}
+                        COMMENT "Calculating ${TARGET_NAME} image size")
 
 endfunction()
 
@@ -1680,51 +1658,74 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
     set(ARDUINO_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSize.cmake)
 
     file(WRITE ${ARDUINO_SIZE_SCRIPT_PATH} "
-    set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
-    set(AVRSIZE_FLAGS --target=ihex -d)
-
-    execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
-                    OUTPUT_VARIABLE SIZE_OUTPUT)
-
-    string(STRIP \"\${SIZE_OUTPUT}\" SIZE_OUTPUT)
-
-    # Convert lines into a list
-    string(REPLACE \"\\n\" \";\" SIZE_OUTPUT \"\${SIZE_OUTPUT}\")
-
-    list(GET SIZE_OUTPUT 1 SIZE_ROW)
-
-    if(SIZE_ROW MATCHES \"[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*([0-9]+)[ \\t]*([0-9a-fA-F]+).*\")
-        message(\"Total size \${CMAKE_MATCH_1} bytes\")
-    endif()")
-
-    set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
-endfunction()
-
-#=============================================================================#
-# [PRIVATE/INTERNAL]
-#
-# setup_arduino_verbose_size_script(OUTPUT_VAR)
-#
-#        OUTPUT_VAR - Output variable that will contain the script path
-#
-# Generates script used to display the firmware size.
-#=============================================================================#
-function(SETUP_ARDUINO_VERBOSE_SIZE_SCRIPT OUTPUT_VAR)
-    set(ARDUINO_VERBOSE_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSizeVerbose.cmake)
-
-    file(WRITE ${ARDUINO_VERBOSE_SIZE_SCRIPT_PATH} "
         set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
         set(AVRSIZE_FLAGS -C --mcu=\${MCU})
 
         execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
                         OUTPUT_VARIABLE SIZE_OUTPUT)
 
-        string(STRIP \"\${SIZE_OUTPUT}\" SIZE_OUTPUT)
-        message(\"\${SIZE_OUTPUT}\")
+
+        string(STRIP \"\${SIZE_OUTPUT}\" RAW_SIZE_OUTPUT)
+
+        # Convert lines into a list
+        string(REPLACE \"\\n\" \";\" SIZE_OUTPUT_LIST \"\${SIZE_OUTPUT}\")
+
+        set(SIZE_OUTPUT_LINES)
+        foreach(LINE \${SIZE_OUTPUT_LIST})
+            if(NOT \"\${LINE}\" STREQUAL \"\")
+                list(APPEND SIZE_OUTPUT_LINES \"\${LINE}\")
+            endif()
+        endforeach()
+
+        function(EXTRACT LIST_NAME INDEX VARIABLE)
+            list(GET \"\${LIST_NAME}\" \${INDEX} RAW_VALUE)
+            string(STRIP \"\${RAW_VALUE}\" VALUE)
+
+            set(\${VARIABLE} \"\${VALUE}\" PARENT_SCOPE)
+        endfunction()
+        function(PARSE INPUT VARIABLE_PREFIX)
+            if(\${INPUT} MATCHES \"([^:]+):[ \\t]*([0-9]+)[ \\t]*([^ \\t]+)[ \\t]*[(]([0-9.]+)%.*\")
+                set(ENTRY_NAME      \${CMAKE_MATCH_1})
+                set(ENTRY_SIZE      \${CMAKE_MATCH_2})
+                set(ENTRY_SIZE_TYPE \${CMAKE_MATCH_3})
+                set(ENTRY_PERCENT   \${CMAKE_MATCH_4})
+            endif()
+
+            set(\${VARIABLE_PREFIX}_NAME      \${ENTRY_NAME}      PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_SIZE      \${ENTRY_SIZE}      PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_SIZE_TYPE \${ENTRY_SIZE_TYPE} PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_PERCENT   \${ENTRY_PERCENT}   PARENT_SCOPE)
+        endfunction()
+
+        list(LENGTH SIZE_OUTPUT_LINES SIZE_OUTPUT_LENGTH)
+        #message(\"\${SIZE_OUTPUT_LINES}\")
+        #message(\"\${SIZE_OUTPUT_LENGTH}\")
+        if (\${SIZE_OUTPUT_LENGTH} STREQUAL 7)
+            EXTRACT(SIZE_OUTPUT_LINES 3 PROGRAM_SIZE_ROW)
+            EXTRACT(SIZE_OUTPUT_LINES 5 DATA_SIZE_ROW)
+            PARSE(PROGRAM_SIZE_ROW PROGRAM)
+            PARSE(DATA_SIZE_ROW  DATA)
+
+            set(SIZE_STATUS \"Size: \")
+            set(SIZE_STATUS \"\${SIZE_STATUS} [\${PROGRAM_NAME}: \${PROGRAM_SIZE} \${PROGRAM_SIZE_TYPE} (\${PROGRAM_PERCENT}%)] \")
+            set(SIZE_STATUS \"\${SIZE_STATUS} [\${DATA_NAME}: \${DATA_SIZE} \${DATA_SIZE_TYPE} (\${DATA_PERCENT}%)]\")
+            set(SIZE_STATUS \"\${SIZE_STATUS} on \${MCU}\")
+
+            message(\"\${SIZE_STATUS}\\n\")
+
+            if(\$ENV{VERBOSE})
+                message(\"\${RAW_SIZE_OUTPUT}\\n\")
+            elseif(\$ENV{VERBOSE_SIZE})
+                message(\"\${RAW_SIZE_OUTPUT}\\n\")
+            endif()
+        else()
+            message(\"\${RAW_SIZE_OUTPUT}\")
+        endif()
     ")
 
-    set(${OUTPUT_VAR} ${ARDUINO_VERBOSE_SIZE_SCRIPT_PATH} PARENT_SCOPE)
+    set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
 endfunction()
+
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
@@ -1977,9 +1978,6 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
-
-    setup_arduino_verbose_size_script(ARDUINO_VERBOSE_SIZE_SCRIPT)
-    set(ARDUINO_VERBOSE_SIZE_SCRIPT ${ARDUINO_VERBOSE_SIZE_SCRIPT} CACHE INTERNAL "Arduino Verbose Size Script")
 
     #print_board_list()
     #print_programmer_list()
