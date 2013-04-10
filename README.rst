@@ -76,6 +76,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Sebastian Herp (`sebastianherp`_)
 * Michael Daffin (`james147`_)
 * Pavel Ilin (`PIlin`_)
+* Igor Mikolic-Torreira (`igormiktor`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -86,7 +87,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _sebastianherp: https://github.com/sebastianherp
 .. _james147: https://github.com/james147
 .. _PIlin: https://github.com/PIlin
-
+.. _igormiktor: https://github.com/igormiktor
 
 License
 -------
