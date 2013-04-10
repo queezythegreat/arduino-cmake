@@ -24,6 +24,7 @@
 #      SRCS           # Sources        [must have SRCS or SKETCH]
 #      HDRS           # Headers 
 #      LIBS           # Libraries to link
+#      ARDLIBS        # Arduino libraries to link (Wire, Servo, SPI, etc)
 #      PORT           # Serial port (enables upload support)
 #      SERIAL         # Serial command for serial target
 #      PROGRAMMER     # Programmer id (enables programmer support)
@@ -51,12 +52,59 @@
 # All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
 #=============================================================================#
+# generate_avr_firmware(name
+#      [BOARD board_id]
+#       SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN]
+#      [PORT  port]
+#      [SERIAL serial_cmd]
+#      [PROGRAMMER programmer_id]
+#      [AFLAGS flags])
+#=============================================================================#
+#
+#   generaters firmware and libraries for AVR devices
+#   it simply calls generate_arduino_firmware() with NO_AUTOLIBS and MANUAL
+#
+# The arguments are as follows:
+#
+#      name           # The name of the firmware target         [REQUIRED]
+#      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
+#      SRCS           # Sources                                 [REQUIRED]
+#      HDRS           # Headers 
+#      LIBS           # Libraries to link
+#      PORT           # Serial port (enables upload support)
+#      SERIAL         # Serial command for serial target
+#      PROGRAMMER     # Programmer id (enables programmer support)
+#      AFLAGS         # Avrdude flags for target
+#
+# Here is a short example for a target named test:
+#    
+#       generate_avr_firmware(
+#           NAME test
+#           SRCS test.cpp 
+#                test2.cpp
+#           HDRS test.h test2.h
+#           BOARD uno)
+#
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_avr_firmware(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
+#
+#=============================================================================#
 # generate_arduino_library(name
 #      [BOARD board_id]
 #      [SRCS  src1 src2 ... srcN]
 #      [HDRS  hdr1 hdr2 ... hdrN]
 #      [LIBS  lib1 lib2 ... libN]
-#      [NO_AUTOLIBS])
+#      [NO_AUTOLIBS]
+#      [MANUAL])
 #=============================================================================#
 #   generaters firmware and libraries for Arduino devices
 #
@@ -68,6 +116,7 @@
 #      HDRS           # Headers 
 #      LIBS           # Libraries to link
 #      NO_AUTOLIBS    # Disables Arduino library detection
+#      MANUAL         # (Advanced) Only use AVR Libc/Includes
 #
 # Here is a short example for a target named test:
 #    
@@ -85,6 +134,43 @@
 #       set(test_BOARD uno)
 #
 #       generate_arduino_library(test)
+#
+# All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
+#
+#=============================================================================#
+# generate_avr_library(name
+#      [BOARD board_id]
+#      [SRCS  src1 src2 ... srcN]
+#      [HDRS  hdr1 hdr2 ... hdrN]
+#      [LIBS  lib1 lib2 ... libN])
+#=============================================================================#
+#   generaters firmware and libraries for AVR devices
+#   it simply calls generate_arduino_library() with NO_AUTOLIBS and MANUAL
+#
+# The arguments are as follows:
+#
+#      name           # The name of the firmware target         [REQUIRED]
+#      BOARD          # Board name (such as uno, mega2560, ...) [REQUIRED]
+#      SRCS           # Sources                                 [REQUIRED]
+#      HDRS           # Headers 
+#      LIBS           # Libraries to link
+#
+# Here is a short example for a target named test:
+#    
+#       generate_avr_library(
+#           NAME test
+#           SRCS test.cpp 
+#                test2.cpp
+#           HDRS test.h test2.h
+#           BOARD uno)
+#
+# Alternatively you can specify the option by variables:
+#
+#       set(test_SRCS test.cpp test2.cpp)
+#       set(test_HDRS test.h test2.h
+#       set(test_BOARD uno)
+#
+#       generate_avr_library(test)
 #
 # All variables need to be prefixed with the target name (${TARGET_NAME}_${OPTION}).
 #
@@ -295,14 +381,14 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
       setup_arduino_core(CORE_LIB ${INPUT_BOARD})
     endif()
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
     if(NOT ${INPUT_NO_AUTOLIBS})
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "" "${LIB_DEP_INCLUDES}" "")
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -322,12 +408,47 @@ endfunction()
 # [PUBLIC/USER]
 # see documentation at top
 #=============================================================================#
+function(GENERATE_AVR_LIBRARY INPUT_NAME)
+    message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS;MANUAL"                  # Options
+                              "BOARD"                               # One Value Keywords
+                              "SRCS;HDRS;LIBS"                      # Multi Value Keywords
+                              ${ARGN})
+ 
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif() 
+    
+    required_variables(VARS INPUT_SRCS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
+   
+    if(INPUT_HDRS)
+        set( INPUT_HDRS "SRCS ${INPUT_HDRS}" )
+    endif()
+    if(INPUT_LIBS)
+        set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
+    endif()
+
+    generate_arduino_library( ${INPUT_NAME} 
+        NO_AUTOLIBS
+        MANUAL
+        BOARD ${INPUT_BOARD}
+        SRCS ${INPUT_SRCS}
+        ${INPUT_HDRS}
+        ${INPUT_LIBS} )
+    
+endfunction()
+
+#=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
 function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
-                              "NO_AUTOLIBS;MANUAL"                # Options
-                              "BOARD;PORT;SKETCH;PROGRAMMER"      # One Value Keywords
-                              "SERIAL;SRCS;HDRS;LIBS;AFLAGS"      # Multi Value Keywords
+                              "NO_AUTOLIBS;MANUAL"                  # Options
+                              "BOARD;PORT;SKETCH;PROGRAMMER"        # One Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
 
     if(NOT INPUT_BOARD)
@@ -368,13 +489,13 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
     if(NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
     endif()
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -389,6 +510,57 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
 
+endfunction()
+
+#=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(GENERATE_AVR_FIRMWARE INPUT_NAME)
+    message(STATUS "Generating ${INPUT_NAME}")
+    parse_generator_arguments(${INPUT_NAME} INPUT
+                              "NO_AUTOLIBS;MANUAL"            # Options
+                              "BOARD;PORT;PROGRAMMER"  # One Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;AFLAGS"  # Multi Value Keywords
+                              ${ARGN})
+ 
+    if(NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif()
+    if(NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif()
+    if(NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif()
+    if(NOT INPUT_PROGRAMMER)
+        set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif()
+    
+    required_variables(VARS INPUT_BOARD INPUT_SRCS MSG "must define for target ${INPUT_NAME}")
+
+    if(INPUT_HDRS)
+        set( INPUT_HDRS "SRCS ${INPUT_HDRS}" )
+    endif()
+    if(INPUT_LIBS)
+        set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
+    endif()
+    if(INPUT_AFLAGS)
+        set( INPUT_AFLAGS "AFLAGS ${INPUT_AFLAGS}" )
+    endif()
+
+    generate_arduino_firmware( ${INPUT_NAME} 
+        NO_AUTOLIBS
+        MANUAL
+        BOARD ${INPUT_BOARD}
+        PORT ${INPUT_PORT}
+        PROGRAMMER ${INPUT_PROGRAMMER}
+        SERIAL ${INPUT_SERIAL}
+        SRCS ${INPUT_SRCS}
+        ${INPUT_HDRS}
+        ${INPUT_LIBS}
+        ${INPUT_AFLAGS} )
+    
 endfunction()
 
 #=============================================================================#
@@ -431,13 +603,13 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
         message(FATAL_ERROR "Missing sources for example, aborting!")
     endif()
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
     set(LIB_DEP_INCLUDES)
     foreach(LIB_DEP ${TARGET_LIBS})
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
-    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${LIB_DEP_INCLUDES}" "")
+    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "" "${LIB_DEP_INCLUDES}" "")
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
     
@@ -699,15 +871,19 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# find_arduino_libraries(VAR_NAME SRCS)
+# find_arduino_libraries(VAR_NAME SRCS ARDLIBS)
 #
 #      VAR_NAME - Variable name which will hold the results
 #      SRCS     - Sources that will be analized
+#      ARDLIBS  - Arduino libraries identified by name (e.g., Wire, SPI, Servo)
 #
 #     returns a list of paths to libraries found.
 #
 #  Finds all Arduino type libraries included in sources. Available libraries
 #  are ${ARDUINO_SDK_PATH}/libraries and ${CMAKE_CURRENT_SOURCE_DIR}.
+#
+#  Also adds Arduino libraries specifically names in ALIBS.  We add ".h" to the 
+#  names and then process them just like the Arduino libraries found in the sources.
 #
 #  A Arduino library is a folder that has the same name as the include header.
 #  For example, if we have a include "#include <LibraryName.h>" then the following
@@ -721,7 +897,7 @@ endfunction()
 #  to be part of that Arduino library.
 #
 #=============================================================================#
-function(find_arduino_libraries VAR_NAME SRCS)
+function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
 
@@ -739,6 +915,9 @@ function(find_arduino_libraries VAR_NAME SRCS)
                 message(FATAL_ERROR "Invalid source file: ${SRC}")
             endif()
             file(STRINGS ${SRC} SRC_CONTENTS)
+            foreach(LIBNAME ${ARDLIBS})
+                list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
+            endforeach()
             foreach(SRC_LINE ${SRC_CONTENTS})
                 if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                     get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
@@ -804,7 +983,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
 
             get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
 
-            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}")
+            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach(LIB_DEP ${LIB_DEPS})
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
@@ -843,9 +1022,9 @@ endfunction()
 # Finds and creates all dependency libraries based on sources.
 #
 #=============================================================================#
-function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS COMPILE_FLAGS LINK_FLAGS)
+function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
-    find_arduino_libraries(TARGET_LIBS "${SRCS}")
+    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
@@ -906,6 +1085,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
                         COMMAND ${CMAKE_COMMAND}
                         ARGS    -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
                                 -DMCU=${${BOARD_ID}.build.mcu}
+                                -DEEPROM_IMAGE=${TARGET_PATH}.eep
                                 -P ${ARDUINO_SIZE_SCRIPT}
                         COMMENT "Calculating image size"
                         VERBATIM)
@@ -915,6 +1095,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
                         COMMAND ${CMAKE_COMMAND}
                                 -DFIRMWARE_IMAGE=${TARGET_PATH}.elf
                                 -DMCU=${${BOARD_ID}.build.mcu}
+                                -DEEPROM_IMAGE=${TARGET_PATH}.eep
                                 -P ${ARDUINO_SIZE_SCRIPT}
                         DEPENDS ${TARGET_NAME}
                         COMMENT "Calculating ${TARGET_NAME} image size")
@@ -973,6 +1154,7 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT AVRDUDE_FLAGS
     endif()
 
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_NAME}.hex")
+    list(APPEND AVRDUDE_ARGS "-Ueeprom:w:${TARGET_NAME}.eep:i")
     add_custom_target(${UPLOAD_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
                      ${AVRDUDE_ARGS}
