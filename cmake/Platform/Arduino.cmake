@@ -226,34 +226,6 @@
 # Print the detected Arduino board settings.
 #
 #=============================================================================#
-# register_hardware_platform(HARDWARE_PLATFORM_PATH)
-#=============================================================================#
-#
-#        HARDWARE_PLATFORM_PATH - Hardware platform path
-#
-# Registers a Hardware Platform path.
-# See: http://code.google.com/p/arduino/wiki/Platforms
-#
-# This enables you to register new types of hardware platforms such as the
-# Sagnuino, without having to copy the files into your Arduion SDK.
-#
-# A Hardware Platform is a directory containing the following:
-#
-#        HARDWARE_PLATFORM_PATH/
-#            |-- bootloaders/
-#            |-- cores/
-#            |-- variants/
-#            |-- boards.txt
-#            `-- programmers.txt
-#            
-#  The board.txt describes the target boards and bootloaders. While
-#  programmers.txt the programmer defintions.
-#
-#  A good example of a Hardware Platform is in the Arduino SDK:
-#
-#        ${ARDUINO_SDK_PATH}/hardware/arduino/
-#
-#=============================================================================#
 # Configuration Options
 #=============================================================================#
 #
