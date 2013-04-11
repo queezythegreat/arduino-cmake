@@ -268,26 +268,6 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# load_board_settings()
-#
-# Load the Arduino SDK board settings from the boards.txt file.
-#
-#=============================================================================#
-function(LOAD_BOARD_SETTINGS)
-    load_arduino_style_settings(ARDUINO_BOARDS "${ARDUINO_BOARDS_PATH}")
-endfunction()
-
-#=============================================================================#
-# [PRIVATE/INTERNAL]
-#
-#=============================================================================#
-function(LOAD_PROGRAMMERS_SETTINGS)
-    load_arduino_style_settings(ARDUINO_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
-endfunction()
-
-#=============================================================================#
-# [PRIVATE/INTERNAL]
-#
 # load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
 #
 #      SETTINGS_LIST - Variable name of settings list
@@ -559,12 +539,6 @@ macro(setup_arduino_sdk)
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
-
-    load_board_settings()
-    load_programmers_settings()
-
-    #print_board_list()
-    #print_programmer_list()
 
     set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
     mark_as_advanced(
