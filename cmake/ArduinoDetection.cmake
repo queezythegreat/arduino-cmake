@@ -12,6 +12,90 @@ include(CMakeParseArguments)
 
 
 #=============================================================================#
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
+    string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
+    GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
+
+    if(PLATFORM)
+        string(TOUPPER ${PLATFORM} PLATFORM)
+        list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
+
+        if (platform_exists EQUAL -1)
+            set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
+            set(ARDUINO_PLATFORMS ${ARDUINO_PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
+
+            find_file(${PLATFORM}_CORES_PATH
+                  NAMES cores
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino core sources.")
+
+            find_file(${PLATFORM}_VARIANTS_PATH
+                  NAMES variants
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino variant sources.")
+
+            find_file(${PLATFORM}_BOOTLOADERS_PATH
+                  NAMES bootloaders
+                  PATHS ${PLATFORM_PATH}
+                  DOC "Path to directory containing the Arduino bootloader images and sources.")
+
+            find_file(${PLATFORM}_PROGRAMMERS_PATH
+                NAMES programmers.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino programmers definition file.")
+
+            find_file(${PLATFORM}_BOARDS_PATH
+                NAMES boards.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino boards definition file.")
+
+            mark_as_advanced(
+                ARDUINO_PLATFORMS
+                ${PLATFORM}_PLATFORM_PATH
+                ${PLATFORM}_CORES_PATH
+                ${PLATFORM}_BOARDS_PATH
+                ${PLATFORM}_PROGRAMMERS_PATH
+                ${PLATFORM}_BOOTLOADERS_PATH
+                ${PLATFORM}_VARIANTS_PATH
+                )
+
+            if(${PLATFORM}_BOARDS_PATH)
+                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
+            endif()
+
+            if(${PLATFORM}_PROGRAMMERS_PATH)
+                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+            endif()
+
+            if(${PLATFORM}_VARIANTS_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_VARIANTS_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(variant ${dir} NAME)
+                        set(VARIANTS ${VARIANTS} ${variant} CACHE INTERNAL "A list of registered variant boards")
+                        set(${variant}.path ${dir} CACHE INTERNAL "The path to the variant ${variant}")
+                    endif()
+                endforeach()
+            endif()
+
+            if(${PLATFORM}_CORES_PATH)
+                file(GLOB sub-dir ${${PLATFORM}_CORES_PATH}/*)
+                foreach(dir ${sub-dir})
+                    if(IS_DIRECTORY ${dir})
+                        get_filename_component(core ${dir} NAME)
+                        set(CORES ${CORES} ${core} CACHE INTERNAL "A list of registered cores")
+                        set(${core}.path ${dir} CACHE INTERNAL "The path to the core ${core}")
+                    endif()
+                endforeach()
+            endif()
+        endif()
+    endif()
+endfunction()
+
+#=============================================================================#
 # [PRIVATE/INTERNAL]
 #
 # required_variables(MSG msg VARS var1 var2 .. varN)
@@ -101,25 +185,85 @@ function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
     set(ARDUINO_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSize.cmake)
 
     file(WRITE ${ARDUINO_SIZE_SCRIPT_PATH} "
-    set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
-    set(AVRSIZE_FLAGS --target=ihex -d)
+        set(AVRSIZE_PROGRAM ${AVRSIZE_PROGRAM})
+        set(AVRSIZE_FLAGS -C --mcu=\${MCU})
 
-    execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE}
-                    OUTPUT_VARIABLE SIZE_OUTPUT)
+        execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE} \${EEPROM_IMAGE}
+                        OUTPUT_VARIABLE SIZE_OUTPUT)
 
-    string(STRIP \"\${SIZE_OUTPUT}\" SIZE_OUTPUT)
 
-    # Convert lines into a list
-    string(REPLACE \"\\n\" \";\" SIZE_OUTPUT \"\${SIZE_OUTPUT}\")
+        string(STRIP \"\${SIZE_OUTPUT}\" RAW_SIZE_OUTPUT)
 
-    list(GET SIZE_OUTPUT 1 SIZE_ROW)
+        # Convert lines into a list
+        string(REPLACE \"\\n\" \";\" SIZE_OUTPUT_LIST \"\${SIZE_OUTPUT}\")
 
-    if(SIZE_ROW MATCHES \"[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*[0-9]+[ \\t]*([0-9]+)[ \\t]*([0-9a-fA-F]+).*\")
-        message(\"Total size \${CMAKE_MATCH_1} bytes\")
-    endif()")
+        set(SIZE_OUTPUT_LINES)
+        foreach(LINE \${SIZE_OUTPUT_LIST})
+            if(NOT \"\${LINE}\" STREQUAL \"\")
+                list(APPEND SIZE_OUTPUT_LINES \"\${LINE}\")
+            endif()
+        endforeach()
+
+        function(EXTRACT LIST_NAME INDEX VARIABLE)
+            list(GET \"\${LIST_NAME}\" \${INDEX} RAW_VALUE)
+            string(STRIP \"\${RAW_VALUE}\" VALUE)
+
+            set(\${VARIABLE} \"\${VALUE}\" PARENT_SCOPE)
+        endfunction()
+        function(PARSE INPUT VARIABLE_PREFIX)
+            if(\${INPUT} MATCHES \"([^:]+):[ \\t]*([0-9]+)[ \\t]*([^ \\t]+)[ \\t]*[(]([0-9.]+)%.*\")
+                set(ENTRY_NAME      \${CMAKE_MATCH_1})
+                set(ENTRY_SIZE      \${CMAKE_MATCH_2})
+                set(ENTRY_SIZE_TYPE \${CMAKE_MATCH_3})
+                set(ENTRY_PERCENT   \${CMAKE_MATCH_4})
+            endif()
+
+            set(\${VARIABLE_PREFIX}_NAME      \${ENTRY_NAME}      PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_SIZE      \${ENTRY_SIZE}      PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_SIZE_TYPE \${ENTRY_SIZE_TYPE} PARENT_SCOPE)
+            set(\${VARIABLE_PREFIX}_PERCENT   \${ENTRY_PERCENT}   PARENT_SCOPE)
+        endfunction()
+
+        list(LENGTH SIZE_OUTPUT_LINES SIZE_OUTPUT_LENGTH)
+        #message(\"\${SIZE_OUTPUT_LINES}\")
+        #message(\"\${SIZE_OUTPUT_LENGTH}\")
+        if (\${SIZE_OUTPUT_LENGTH} STREQUAL 14)
+            EXTRACT(SIZE_OUTPUT_LINES 3 FIRMWARE_PROGRAM_SIZE_ROW)
+            EXTRACT(SIZE_OUTPUT_LINES 5 FIRMWARE_DATA_SIZE_ROW)
+            PARSE(FIRMWARE_PROGRAM_SIZE_ROW FIRMWARE_PROGRAM)
+            PARSE(FIRMWARE_DATA_SIZE_ROW  FIRMWARE_DATA)
+
+            set(FIRMWARE_STATUS \"Firmware Size: \")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} [\${FIRMWARE_PROGRAM_NAME}: \${FIRMWARE_PROGRAM_SIZE} \${FIRMWARE_PROGRAM_SIZE_TYPE} (\${FIRMWARE_PROGRAM_PERCENT}%)] \")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} [\${FIRMWARE_DATA_NAME}: \${FIRMWARE_DATA_SIZE} \${FIRMWARE_DATA_SIZE_TYPE} (\${FIRMWARE_DATA_PERCENT}%)]\")
+            set(FIRMWARE_STATUS \"\${FIRMWARE_STATUS} on \${MCU}\")
+
+            EXTRACT(SIZE_OUTPUT_LINES 10 EEPROM_PROGRAM_SIZE_ROW)
+            EXTRACT(SIZE_OUTPUT_LINES 12 EEPROM_DATA_SIZE_ROW)
+            PARSE(EEPROM_PROGRAM_SIZE_ROW EEPROM_PROGRAM)
+            PARSE(EEPROM_DATA_SIZE_ROW  EEPROM_DATA)
+
+            set(EEPROM_STATUS \"EEPROM   Size: \")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} [\${EEPROM_PROGRAM_NAME}: \${EEPROM_PROGRAM_SIZE} \${EEPROM_PROGRAM_SIZE_TYPE} (\${EEPROM_PROGRAM_PERCENT}%)] \")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} [\${EEPROM_DATA_NAME}: \${EEPROM_DATA_SIZE} \${EEPROM_DATA_SIZE_TYPE} (\${EEPROM_DATA_PERCENT}%)]\")
+            set(EEPROM_STATUS \"\${EEPROM_STATUS} on \${MCU}\")
+
+            message(\"\${FIRMWARE_STATUS}\")
+            message(\"\${EEPROM_STATUS}\\n\")
+
+            if(\$ENV{VERBOSE})
+                message(\"\${RAW_SIZE_OUTPUT}\\n\")
+            elseif(\$ENV{VERBOSE_SIZE})
+                message(\"\${RAW_SIZE_OUTPUT}\\n\")
+            endif()
+        else()
+            message(\"\${RAW_SIZE_OUTPUT}\")
+        endif()
+    ")
 
     set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
 endfunction()
+
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
@@ -370,36 +514,6 @@ macro(setup_arduino_sdk)
     #                       Version specific setup                                #
     #=============================================================================#
 
-    find_file(ARDUINO_CORES_PATH
-              NAMES cores
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino core sources.")
-
-    find_file(ARDUINO_VARIANTS_PATH
-              NAMES variants 
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino variant sources.")
-
-    find_file(ARDUINO_BOOTLOADERS_PATH
-              NAMES bootloaders
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to directory containing the Arduino bootloader images and sources.")
-
-    find_file(ARDUINO_BOARDS_PATH
-              NAMES boards.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino
-              DOC "Path to Arduino boards definition file.")
-
-    find_file(ARDUINO_PROGRAMMERS_PATH
-        NAMES programmers.txt
-        PATHS ${ARDUINO_SDK_PATH}
-        PATH_SUFFIXES hardware/arduino
-        DOC "Path to Arduino programmers definition file.")
-
     list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
     list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
 
@@ -435,11 +549,7 @@ macro(setup_arduino_sdk)
 
     # Ensure that all required paths are found
     required_variables(VARS 
-        ARDUINO_CORES_PATH
-        ARDUINO_BOOTLOADERS_PATH
         ARDUINO_LIBRARIES_PATH
-        ARDUINO_BOARDS_PATH
-        ARDUINO_PROGRAMMERS_PATH
         ARDUINO_VERSION_PATH
         ARDUINO_AVRDUDE_FLAGS
         ARDUINO_AVRDUDE_PROGRAM
@@ -458,12 +568,7 @@ macro(setup_arduino_sdk)
 
     set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
     mark_as_advanced(
-        ARDUINO_CORES_PATH
-        ARDUINO_VARIANTS_PATH
-        ARDUINO_BOOTLOADERS_PATH
         ARDUINO_LIBRARIES_PATH
-        ARDUINO_BOARDS_PATH
-        ARDUINO_PROGRAMMERS_PATH
         ARDUINO_VERSION_PATH
         ARDUINO_AVRDUDE_FLAGS
         ARDUINO_AVRDUDE_PROGRAM
@@ -473,6 +578,8 @@ macro(setup_arduino_sdk)
         AVRSIZE_PROGRAM)
 
     if (ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+        register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
+
         set(CMAKE_C_COMPILER   avr-gcc)
         set(CMAKE_CXX_COMPILER avr-g++)
 
@@ -539,7 +646,9 @@ macro(setup_arduino_sdk)
     if (NOT DEFINED ARDUINO_CMAKE_INFO_MESSAGE)
         set(ARDUINO_CMAKE_INFO_MESSAGE True)
         message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
-        message(STATUS "Arduino SDK package/platform: ${ARDUINO_SDK_PACKAGE}/${ARDUINO_SDK_PLATFORM}")
+        if (NOT ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+            message(STATUS "Arduino SDK package/platform: ${ARDUINO_SDK_PACKAGE}/${ARDUINO_SDK_PLATFORM}")
+        endif()
     endif()
 endmacro()
 
