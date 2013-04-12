@@ -42,14 +42,56 @@ include(CMakeParseArguments)
 #                           User Functions                                    
 #=============================================================================#
 
+# A hardware package is a directory containing one or more directories
+# containing platforms.  A platform defines board definitions and code for a
+# single hardware architecture (for example: arm or avr). The platform
+# directory would contain the following:
+#
+#   * boards.txt       - file containing boards definitions
+#   * cores/           - folder containing one or more folders with the
+#                         implementation of the Arduino API
+#   * platform.txt     - file that contains build process definitions
+#                         (e.g. compiler and command-line arguments)
+#   * programmers.txt  - file with programmer definitions
+#   * system/          - folder containing system libraries (e.g. those
+#                         supplied by the microcontroller manufacturer)
+#   * tools/           - folder containing the toolchain binaries
+#   * variants/        - folder containing one or more folders with code
+#                         specific to particular hardware variations
+#   * bootloaders/     - folder with bootloaders
+#   * libraries/       - folder of architecture specific library
+#                         implementations
+#
+#  For more detailed information:
+#      http://code.google.com/p/arduino/wiki/Platforms1
+#
+function(REGISTER_HARDWARE_PACKAGE PACKAGE_PATH)
+    string(REGEX REPLACE "/$" "" PACKAGE_PATH ${PACKAGE_PATH})
+    get_filename_component(PACKAGE_NAME ${PACKAGE_PATH} NAME)
+
+    if(PACKAGE_NAME)
+        string(TOUPPER ${PACKAGE_NAME} PACKAGE_NAME)
+        list(FIND ARDUINO_PACKAGES ${PACKAGE_NAME} package_exists)
+        if (package_exists EQUAL -1)
+            # Find all sub-directories containing `platform.txt` platform definition.
+            file(GLOB PACKAGE_FILES "${PACKAGE_PATH}/*")
+            foreach(PACKAGE_FILE)
+                if (IS_DIRECTORY "${PACKAGE_FILE}" AND EXISTS "${PACKAGE_FILE}/platform.txt")
+                    # Valid Hardware Platform...
+                    register_hardware_platform("${PACKAGE_NAME}" "${PACKAGE_FILE}")
+                endif()
+            endforeach()
+        endif()
+    endif()
+endfunction()
 
 #=============================================================================#
 # [PUBLIC/USER]
 # see documentation at top
 #=============================================================================#
-function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
+function(REGISTER_HARDWARE_PLATFORM PACKAGE_NAME PLATFORM_PATH)
     string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
-    GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
+    get_filename_component(PLATFORM ${PLATFORM_PATH} NAME)
 
     if(PLATFORM)
         string(TOUPPER ${PLATFORM} PLATFORM)
@@ -595,7 +637,9 @@ macro(setup_arduino_sdk)
         AVRSIZE_PROGRAM)
 
     if (ARDUINO_SDK_VERSION VERSION_LESS 1.5)
-        register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
+        set(ARDUINO_SDK_PACKAGE arduino CACHE STRING "Arduino SDK package.")
+
+        register_hardware_platform(${ARDUINO_SDK_PACKAGE} "${ARDUINO_SDK_PATH}/hardware/arduino/")
 
         set(CMAKE_C_COMPILER   avr-gcc)
         set(CMAKE_CXX_COMPILER avr-g++)
