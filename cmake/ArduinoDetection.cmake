@@ -29,6 +29,7 @@
 #=============================================================================#
 # Author: Tomasz Bogdal (QueezyTheGreat)
 # Home:   https://github.com/queezythegreat/arduino-cmake
+# Version: 1.0.0
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -42,6 +43,8 @@ include(CMakeParseArguments)
 #                           User Functions                                    
 #=============================================================================#
 
+# Registers a hardware package directory.
+#
 # A hardware package is a directory containing one or more directories
 # containing platforms.  A platform defines board definitions and code for a
 # single hardware architecture (for example: arm or avr). The platform
