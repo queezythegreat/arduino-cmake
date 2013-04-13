@@ -160,7 +160,7 @@ function(REGISTER_HARDWARE_PLATFORM PACKAGE_NAME PLATFORM_PATH)
                 )
 
             if(${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH)
-                load_arduino_style_settings(${PLATFORM_NAME}_PLATFORM "${${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH}")
+                load_arduino_settings(${PLATFORM_NAME}_PLATFORM "${${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH}")
                 message("HI ${PLATFORM_NAME}_PLATFORM_PATH: ${${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH}")
                 setup_arduino_platform()
                 # Global
@@ -185,11 +185,11 @@ function(REGISTER_HARDWARE_PLATFORM PACKAGE_NAME PLATFORM_PATH)
             endif()
 
             if(${PLATFORM_NAME}_BOARDS_PATH)
-                load_arduino_style_settings(${PLATFORM_NAME}_BOARDS "${${PLATFORM_NAME}_BOARDS_PATH}")
+                load_arduino_settings(${PLATFORM_NAME}_BOARDS "${${PLATFORM_NAME}_BOARDS_PATH}")
             endif()
 
             if(${PLATFORM_NAME}_PROGRAMMERS_PATH)
-                load_arduino_style_settings(${PLATFORM_NAME}_PROGRAMMERS "${${PLATFORM_NAME}_PROGRAMMERS_PATH}")
+                load_arduino_settings(${PLATFORM_NAME}_PROGRAMMERS "${${PLATFORM_NAME}_PROGRAMMERS_PATH}")
             endif()
 
             if(${PLATFORM_NAME}_VARIANTS_PATH)
@@ -401,7 +401,7 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
+# load_arduino_settings(SETTINGS_LIST SETTINGS_PATH)
 #
 #      SETTINGS_LIST - Variable name of settings list
 #      SETTINGS_PATH - File path of settings file to load.
@@ -445,7 +445,7 @@ endfunction()
 # all settings (for a example see print_board_settings() function).
 #
 #=============================================================================#
-function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
+function(LOAD_ARDUINO_SETTINGS SETTINGS_LIST SETTINGS_PATH)
 
     if(NOT ${SETTINGS_LIST} AND EXISTS ${SETTINGS_PATH})
     file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
