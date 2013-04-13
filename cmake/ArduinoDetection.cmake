@@ -447,6 +447,20 @@ endfunction()
 #=============================================================================#
 function(LOAD_ARDUINO_SETTINGS SETTINGS_LIST SETTINGS_PATH)
 
+    #arduino_settings(LOAD path VAR_NAME)
+    #arduino_settings(LIST some.setting VAR_NAME)
+    #arduino_settings(ADD  some.setting VALUE)
+    #arduino_settings(EXISTS some.setting ITEM)
+    #arduino_settings(REMOVE some.setting ITEM)
+    #arduino_settings(LENGTH some.setting VAR_NAME)
+    #arduino_settings(CONFIGURE string VAR_NAME)
+
+    #cmake_parse_arguments(${INPUT_NAME} INPUT
+    #                          "NO_AUTOLIBS;MANUAL"                  # Options
+    #                          "LOAD;LIST"                           # One Value Keywords
+    #                          "LOAD"                                # Multi Value Keywords
+    #                          ${ARGN})
+
     if(NOT ${SETTINGS_LIST} AND EXISTS ${SETTINGS_PATH})
     file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
 
