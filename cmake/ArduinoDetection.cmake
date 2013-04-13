@@ -94,62 +94,106 @@ endfunction()
 #=============================================================================#
 function(REGISTER_HARDWARE_PLATFORM PACKAGE_NAME PLATFORM_PATH)
     string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
-    get_filename_component(PLATFORM ${PLATFORM_PATH} NAME)
+    get_filename_component(PLATFORM_NAME ${PLATFORM_PATH} NAME)
 
-    if(PLATFORM)
-        string(TOUPPER ${PLATFORM} PLATFORM)
-        list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
+    if(PLATFORM_NAME)
+        string(TOUPPER ${PLATFORM_NAME} PLATFORM_NAME)
+        list(FIND ARDUINO_PLATFORMS ${PLATFORM_NAME} platform_exists)
 
         if (platform_exists EQUAL -1)
-            message(STATUS "Registering Arduino package/platform: ${PACKAGE_NAME}/${PLATFORM}")
-            set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
-            set(ARDUINO_PLATFORMS ${ARDUINO_PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
+            message(STATUS "Registering Arduino package/platform: ${PACKAGE_NAME}/${PLATFORM_NAME}")
+            set(${PLATFORM_NAME}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM_NAME}")
+            set(ARDUINO_PLATFORMS ${ARDUINO_PLATFORMS} ${PLATFORM_NAME} CACHE INTERNAL "A list of registered platforms")
 
-            find_file(${PLATFORM}_CORES_PATH
+            find_file(${PLATFORM_NAME}_CORES_PATH
                   NAMES cores
                   PATHS ${PLATFORM_PATH}
                   DOC "Path to directory containing the Arduino core sources.")
 
-            find_file(${PLATFORM}_VARIANTS_PATH
+            find_file(${PLATFORM_NAME}_VARIANTS_PATH
                   NAMES variants
                   PATHS ${PLATFORM_PATH}
                   DOC "Path to directory containing the Arduino variant sources.")
 
-            find_file(${PLATFORM}_BOOTLOADERS_PATH
+            find_file(${PLATFORM_NAME}_BOOTLOADERS_PATH
                   NAMES bootloaders
                   PATHS ${PLATFORM_PATH}
                   DOC "Path to directory containing the Arduino bootloader images and sources.")
 
-            find_file(${PLATFORM}_PROGRAMMERS_PATH
+            find_file(${PLATFORM_NAME}_PROGRAMMERS_PATH
                 NAMES programmers.txt
                 PATHS ${PLATFORM_PATH}
                 DOC "Path to Arduino programmers definition file.")
 
-            find_file(${PLATFORM}_BOARDS_PATH
+            find_file(${PLATFORM_NAME}_BOARDS_PATH
                 NAMES boards.txt
                 PATHS ${PLATFORM_PATH}
                 DOC "Path to Arduino boards definition file.")
 
+            find_file(${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH
+                NAMES platform.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino platform definition file.")
+
+            find_file(${PLATFORM_NAME}_SYSTEM_PATH
+                NAMES system
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino system directory containing system libraries.")
+
+            find_file(${PLATFORM_NAME}_LIBRARIES_PATH
+                NAMES libraries
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino libraries directory.")
+
             mark_as_advanced(
                 ARDUINO_PLATFORMS
-                ${PLATFORM}_PLATFORM_PATH
-                ${PLATFORM}_CORES_PATH
-                ${PLATFORM}_BOARDS_PATH
-                ${PLATFORM}_PROGRAMMERS_PATH
-                ${PLATFORM}_BOOTLOADERS_PATH
-                ${PLATFORM}_VARIANTS_PATH
+                ${PLATFORM_NAME}_PLATFORM_PATH
+                ${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH
+                ${PLATFORM_NAME}_CORES_PATH
+                ${PLATFORM_NAME}_BOARDS_PATH
+                ${PLATFORM_NAME}_PROGRAMMERS_PATH
+                ${PLATFORM_NAME}_BOOTLOADERS_PATH
+                ${PLATFORM_NAME}_VARIANTS_PATH
+                ${PLATFORM_NAME}_PLATFORM_PATH
+                ${PLATFORM_NAME}_SYSTEM_PATH
+                ${PLATFORM_NAME}_LIBRARIES_PATH
                 )
 
-            if(${PLATFORM}_BOARDS_PATH)
-                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
+            if(${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH)
+                load_arduino_style_settings(${PLATFORM_NAME}_PLATFORM "${${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH}")
+                message("HI ${PLATFORM_NAME}_PLATFORM_PATH: ${${PLATFORM_NAME}_PLATFORM_DEFINITION_PATH}")
+                setup_arduino_platform()
+                # Global
+                #
+                #{runtime.hardware.path}     - the absolute path of the *hardware* folder     
+                #{runtime.ide.path}          - the absolute path of the Arduino IDE folder     
+                #{runtime.ide.version}       - the version number of the Arduino IDE as a number (for example "152" for Arduino IDE 1.5.2)     
+                #{runtime.os}                - the running OS ("linux", "windows", "macosx")    
+
+                # Build
+                #{build.path}              - The path to the temporary folder to store build artifacts
+                #{build.project_name}      - The project name
+
+                #{ide_version}              - the IDE version (ex. "152" for Arduino IDE 1.5.2)
+                #{includes}                 - the list of include paths in the format "-I/include/path -I/another/path...."
+                #{source_file}              - the path to the source file
+                #{object_file}              - the path to the output file
+
+                #{ide_version}              - the IDE version (ex. "152" for Arduino IDE 1.5.2)
+                #{object_file}              - the object file to include in the archive
+                #{archive_file}             - the name of the resulting archive (ex. "core.a")
             endif()
 
-            if(${PLATFORM}_PROGRAMMERS_PATH)
-                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+            if(${PLATFORM_NAME}_BOARDS_PATH)
+                load_arduino_style_settings(${PLATFORM_NAME}_BOARDS "${${PLATFORM_NAME}_BOARDS_PATH}")
             endif()
 
-            if(${PLATFORM}_VARIANTS_PATH)
-                file(GLOB sub-dir ${${PLATFORM}_VARIANTS_PATH}/*)
+            if(${PLATFORM_NAME}_PROGRAMMERS_PATH)
+                load_arduino_style_settings(${PLATFORM_NAME}_PROGRAMMERS "${${PLATFORM_NAME}_PROGRAMMERS_PATH}")
+            endif()
+
+            if(${PLATFORM_NAME}_VARIANTS_PATH)
+                file(GLOB sub-dir ${${PLATFORM_NAME}_VARIANTS_PATH}/*)
                 foreach(dir ${sub-dir})
                     if(IS_DIRECTORY ${dir})
                         get_filename_component(variant ${dir} NAME)
@@ -159,8 +203,8 @@ function(REGISTER_HARDWARE_PLATFORM PACKAGE_NAME PLATFORM_PATH)
                 endforeach()
             endif()
 
-            if(${PLATFORM}_CORES_PATH)
-                file(GLOB sub-dir ${${PLATFORM}_CORES_PATH}/*)
+            if(${PLATFORM_NAME}_CORES_PATH)
+                file(GLOB sub-dir ${${PLATFORM_NAME}_CORES_PATH}/*)
                 foreach(dir ${sub-dir})
                     if(IS_DIRECTORY ${dir})
                         get_filename_component(core ${dir} NAME)
