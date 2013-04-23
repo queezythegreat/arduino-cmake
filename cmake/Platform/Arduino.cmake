@@ -2032,7 +2032,9 @@ endfunction()
 #=============================================================================#
 #                              C Flags                                        
 #=============================================================================#
-set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
+if (NOT DEFINED ARDUINO_C_FLAGS)
+    set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
+endif (NOT DEFINED ARDUINO_C_FLAGS)
 set(CMAKE_C_FLAGS                "-g -Os       ${ARDUINO_C_FLAGS}"    CACHE STRING "")
 set(CMAKE_C_FLAGS_DEBUG          "-g           ${ARDUINO_C_FLAGS}"    CACHE STRING "")
 set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_C_FLAGS}"    CACHE STRING "")
@@ -2042,7 +2044,9 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRI
 #=============================================================================#
 #                             C++ Flags                                       
 #=============================================================================#
-set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
+if (NOT DEFINED ARDUINO_CXX_FLAGS)
+    set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
+endif (NOT DEFINED ARDUINO_CXX_FLAGS)
 set(CMAKE_CXX_FLAGS                "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_DEBUG          "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
