@@ -116,9 +116,10 @@ Contents
    5. `Arduino Library Examples`_
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
-   8. `Advanced Options`_
-   9. `Miscellaneous Functions`_
-   10. `Bundling Arduino CMake`_
+   8. `Pure AVR Development`_
+   9. `Advanced Options`_
+   10. `Miscellaneous Functions`_
+   11. `Bundling Arduino CMake`_
 
 3. `Linux Environment`_
 
@@ -298,6 +299,10 @@ The options are:
 | **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **ARDLIBS**        | Manual list of Arduino type libraries, common use case is when the   |                                    |
+|                    | library header name does not match the librarie's directory name.    |                                    |
+|                    | **ADVANCED OPTION!** Can be used in conjuction with **NO_AUTOLIBS**. |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **AFLAGS**         | avrdude flags for target                                             |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -620,6 +625,90 @@ Once you have enabled programmer support, two new targets are available in the b
 
 If you need to restore the original **Arduino bootloader** onto your Arduino, so that you can use the traditional way of uploading firmware images via the bootloader, use **${TARGET_NAME}-burn-bootloader** to restore it.
 
+
+Pure AVR Development
+~~~~~~~~~~~~~~~~~~~~
+
+For those developers who don't want any Arduino magic, but still want to utilize the hardware platform you are in luck. This section will outline the `generate_avr_firmware()` and `generate_avr_library()` commands, which enables
+you to compile sources for the given Arduino board.
+
+No Arduino Core or Arduino libraries will get generated, this is for manual compilation of sources. These commands are for people that know what they are doing, or have done pure AVR development.
+People starting out, or just familiar with Arduino should not use these commands.
+
+The `generate_avr_firmware()` command::
+
+    generate_avr_firmware(name
+         [BOARD board_id]
+         [SRCS  src1 src2 ... srcN]
+         [HDRS  hdr1 hdr2 ... hdrN]
+         [LIBS  lib1 lib2 ... libN]
+         [PORT  port]
+         [SERIAL serial_cmd]
+         [PROGRAMMER programmer_id]
+         [AFLAGS flags])
+
+This will compile the sources for the specified Arduino board type.
+
+The options:
+
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **Name**           | **Description**                                                      | **Required**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SRCS**           | Source files                                                         | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **HDRS**           | Headers files *(for project based build systems)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **AFLAGS**         | avrdude flags for target                                             |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
+
+
+The `generate_avr_library()` command::
+
+    generate_avr_library(name
+         [BOARD board_id]
+         [SRCS  src1 src2 ... srcN]
+         [HDRS  hdr1 hdr2 ... hdrN]
+         [LIBS  lib1 lib2 ... libN])
+
+This will compile a static library for the specified Arduino board type.
+
+The options:
+
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **Name**           | **Description**                                                      | **Required**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SRCS**           | Source files                                                         | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **HDRS**           | Headers files *(for project based build systems)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
 
 Advanced Options
 ~~~~~~~~~~~~~~~~
