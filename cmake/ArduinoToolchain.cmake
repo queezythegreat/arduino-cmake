@@ -53,7 +53,8 @@ if(NOT ARDUINO_SDK_PATH)
     endforeach()
 
     file(GLOB SDK_PATH_HINTS /usr/share/arduino*
-                             /opt/local/ardiuno*
+                             /opt/local/arduino*
+                             /opt/arduino*
                              /usr/local/share/arduino*)
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
