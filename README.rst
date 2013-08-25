@@ -630,7 +630,7 @@ Pure AVR Development
 ~~~~~~~~~~~~~~~~~~~~
 
 For those developers who don't want any Arduino magic, but still want to utilize the hardware platform you are in luck. This section will outline the `generate_avr_firmware()` and `generate_avr_library()` commands, which enables
-you to compile source for the given Arduino board.
+you to compile sources for the given Arduino board.
 
 No Arduino Core or Arduino libraries will get generated, this is for manual compilation of sources. These commands are for people that know what they are doing, or have done pure AVR development.
 People starting out, or just familiar with Arduino should not use these commands.
@@ -639,7 +639,7 @@ The `generate_avr_firmware()` command::
 
     generate_avr_firmware(name
          [BOARD board_id]
-          SRCS  src1 src2 ... srcN]
+         [SRCS  src1 src2 ... srcN]
          [HDRS  hdr1 hdr2 ... hdrN]
          [LIBS  lib1 lib2 ... libN]
          [PORT  port]
@@ -673,6 +673,12 @@ The options:
 | **AFLAGS**         | avrdude flags for target                                             |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
+
 
 The `generate_avr_library()` command::
 
@@ -698,6 +704,11 @@ The options:
 | **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 
+You can specify the options in two ways, either as the command arguments or as variables. When specifying the options as variables they must be named::
+
+    ${TARGET_NAME}_${OPTION_NAME}
+
+Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
 
 Advanced Options
 ~~~~~~~~~~~~~~~~
