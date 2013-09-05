@@ -491,11 +491,16 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
     foreach(LIB_DEP ${TARGET_LIBS})
+        arduino_debug_msg("Arduino Library: ${LIB_DEP}")
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach()
 
     if(NOT INPUT_NO_AUTOLIBS)
         setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
+        foreach(LIB_INCLUDES ${ALL_LIBS_INCLUDES})
+            arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
+            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
+        endforeach()
     endif()
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
@@ -947,6 +952,7 @@ set(Ethernet_RECURSE True)
 set(SD_RECURSE True)
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
+    set(LIB_INCLUDES)
 
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
@@ -971,11 +977,13 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             foreach(LIB_DEP ${LIB_DEPS})
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
+                list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
             endforeach()
 
             set_target_properties(${TARGET_LIB_NAME} PROPERTIES
-                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} -I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\" ${COMPILE_FLAGS}"
+                COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${LIB_INCLUDES} -I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\" ${COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
+            list(APPEND LIB_INCLUDES "-I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\"")
 
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
@@ -988,7 +996,8 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
     if(LIB_TARGETS)
         list(REMOVE_DUPLICATES LIB_TARGETS)
     endif()
-    set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
+    set(${VAR_NAME}          ${LIB_TARGETS}  PARENT_SCOPE)
+    set(${VAR_NAME}_INCLUDES ${LIB_INCLUDES} PARENT_SCOPE)
 endfunction()
 
 #=============================================================================#
@@ -1007,13 +1016,18 @@ endfunction()
 #=============================================================================#
 function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
     set(LIB_TARGETS)
+    set(LIB_INCLUDES)
+
     find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
+        list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
     endforeach()
-    set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
+
+    set(${VAR_NAME}          ${LIB_TARGETS}  PARENT_SCOPE)
+    set(${VAR_NAME}_INCLUDES ${LIB_INCLUDES} PARENT_SCOPE)
 endfunction()
 
 
