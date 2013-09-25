@@ -16,7 +16,7 @@
 #
 ###########################################################################
 
-set(ARDUINO_DEPENDENCIES ARDUINO_SDK AVR_BINUTILS AVR_GCC AVR_LIBC)
+set(ARDUINO_DEPENDENCIES ARDUINO_SDK AVRDUDE)
 
 #-----------------------------------------------------------------------------
 # WARNING - No change should be required after this comment
@@ -26,7 +26,6 @@ set(ARDUINO_DEPENDENCIES ARDUINO_SDK AVR_BINUTILS AVR_GCC AVR_LIBC)
 #-----------------------------------------------------------------------------
 # Needed to build the arduino sdk sources
 #-----------------------------------------------------------------------------
-find_program(ANT_EXECUTABLE ant)
 find_program(PATCH_EXECUTABLE patch)
 
 # -----------------------------------------------------------------------------
@@ -108,6 +107,8 @@ ExternalProject_Add(ARDUINO-Configure
     -DARDUINO_SDK_VERSION_PATCH:STRING=${ARDUINO_PATCH}
     -DCMAKE_MODULE_PATH:PATH=${ARDUINO_MODULE_PATH}
     -DCMAKE_FIND_ROOT_PATH=${CMAKE_FIND_ROOT_PATH}
+    -DCMAKE_PREFIX_PATH:PATH=${ep_install_dir}
+    -DCMAKE_INCLUDE_PATH:PATH=${ep_install_dir}/etc
     ${ARDUINO_SUPERBUILD_EP_ARGS}
     
   DEPENDS

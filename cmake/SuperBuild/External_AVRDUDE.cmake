@@ -1,6 +1,6 @@
 ###########################################################################
 #
-#  ARDUINO_SDK
+#  AVRDUDE
 #
 ###########################################################################
 
@@ -12,17 +12,17 @@ endif()
 set(${CMAKE_CURRENT_LIST_FILENAME}_FILE_INCLUDED 1)
 
 # Sanity checks
-if(DEFINED ARDUINO_SDK_DIR AND NOT EXISTS ${ARDUINO_SDK_DIR})
-  message(FATAL_ERROR "ARDUINO_SDK_DIR variable is defined but corresponds to non-existing directory")
+if(DEFINED AVRDUDE_DIR AND NOT EXISTS ${AVRDUDE_DIR})
+  message(FATAL_ERROR "AVRDUDE_DIR variable is defined but corresponds to non-existing directory")
 endif()
 
-set(ARDUINO_SDK_DEPENDENCIES "AVR_BINUTILS;AVR_GCC;AVR_LIBC")
+set(AVRDUDE_DEPENDENCIES "")
 
 # Include dependent projects if any
-CheckExternalProjectDependency(ARDUINO_SDK)
-set(proj ARDUINO_SDK)
+CheckExternalProjectDependency(AVRDUDE)
+set(proj AVRDUDE)
 
-if(NOT DEFINED ARDUINO_SDK_DIR)
+if(NOT DEFINED AVRDUDE_DIR)
   # Set CMake OSX variable to pass down the external project
   set(CMAKE_OSX_EXTERNAL_PROJECT_ARGS)
   if(APPLE)
@@ -31,38 +31,29 @@ if(NOT DEFINED ARDUINO_SDK_DIR)
       -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
       -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET})
   endif()
-  
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/SuperBuild/arduino_configure_step.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/arduino_configure_step.cmake @ONLY)
 
-  set(ARDUINO_CONFIGURE_COMMAND
-    ${CMAKE_COMMAND}
-    -P ${CMAKE_CURRENT_BINARY_DIR}/arduino_configure_step.cmake
-    )
-    
+  set(AVR_GCC_DIR ${ep_install_dir}/avr)
+     
   ExternalProject_Add(${proj}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/SuperBuild/${proj}
     BINARY_DIR ${CMAKE_BINARY_DIR}/SuperBuild/${proj}-build
     PREFIX ${proj}${ep_suffix}
-    URL ${ARDUINO_URL}/${ARDUINO_GZ}
-    URL_HASH SHA1=${ARDUINO_SHA1}
+    URL ${AVRDUDE_URL}/${AVRDUDE_GZ}
+    URL_HASH SHA1=${AVRDUDE_SHA1}
     UPDATE_COMMAND ""
-    INSTALL_COMMAND ""
-    CONFIGURE_COMMAND ${ARDUINO_CONFIGURE_COMMAND}
-    BUILD_COMMAND ""
-#     LOG_DOWNLOAD 1
-#     LOG_CONFIGURE 1
-#     LOG_BUILD 1
-#     LOG_INSTALL 1
+    INSTALL_COMMAND make install
+    CONFIGURE_COMMAND ${CMAKE_BINARY_DIR}/SuperBuild/${proj}/configure --prefix=${ep_install_dir}
+    BUILD_COMMAND make
+    LOG_DOWNLOAD 1
+    LOG_CONFIGURE 1
+    LOG_BUILD 1
+    LOG_INSTALL 1
     DEPENDS
-      ${ARDUINO_SDK_DEPENDENCIES}
+      ${AVRDUDE_DEPENDENCIES}
     )
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
   msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
 endif()
-
-list(APPEND ARDUINO_SUPERBUILD_EP_ARGS -DARDUINO_SDK_PATH:PATH=${CMAKE_BINARY_DIR}/SuperBuild/${proj}-build )
-
 

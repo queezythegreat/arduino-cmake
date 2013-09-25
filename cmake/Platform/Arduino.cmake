@@ -2031,11 +2031,6 @@ function(ERROR_FOR_UNPARSED PREFIX)
     endif()
 endfunction()
 
-
-
-
-
-
 #=============================================================================#
 #                              C Flags                                        
 #=============================================================================#
@@ -2155,10 +2150,10 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     if(NOT ARDUINO_SDK_VERSION)
       detect_arduino_version(ARDUINO_SDK_VERSION)
       set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+      set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
+      set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
+      set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
     endif()
-    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
-    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
-    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
 
     if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
          message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")

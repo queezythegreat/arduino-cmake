@@ -31,3 +31,11 @@ set(ARDUINO_URL https://arduino.googlecode.com/files)
 set(ARDUINO_GZ arduino-${ARDUINO_VERSION}-src.tar.gz)
 set(ARDUINO_SHA1 b1b3a99df4f016b7c021173f2d0ced300cb7587c)
 
+set(AVRDUDE_MAJOR 6)
+set(AVRDUDE_MINOR 0)
+set(AVRDUDE_PATCH 1)
+set(AVRDUDE_VERSION ${AVRDUDE_MAJOR}.${AVRDUDE_MINOR}.${AVRDUDE_PATCH})
+set(AVRDUDE_URL http://download.savannah.gnu.org/releases/avrdude)
+set(AVRDUDE_GZ avrdude-${AVRDUDE_VERSION}.tar.gz)
+set(AVRDUDE_SHA1 b0f440f1b1ba3890da6e5b752003ca99e550e3bf)
+
