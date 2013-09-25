@@ -56,14 +56,12 @@ if(NOT DEFINED AVR_GCC_DIR)
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
-  msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
+  EmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
 endif()
 
 list(APPEND ARDUINO_SUPERBUILD_EP_ARGS 
-#   -DAVR_GCC_DIR:PATH=${ep_install_dir}
   -DCMAKE_C_COMPILER=${ep_install_dir}/avr/bin/avr-gcc
   -DCMAKE_CXX_COMPILER=${ep_install_dir}/avr/bin/avr-g++
   )
 
 list(APPEND CMAKE_FIND_ROOT_PATH ${ep_install_dir}/avr)
-list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ep_install_dir}/avr/bin)

@@ -50,17 +50,17 @@ if(NOT DEFINED ARDUINO_SDK_DIR)
     INSTALL_COMMAND ""
     CONFIGURE_COMMAND ${ARDUINO_CONFIGURE_COMMAND}
     BUILD_COMMAND ""
-#     LOG_DOWNLOAD 1
-#     LOG_CONFIGURE 1
-#     LOG_BUILD 1
-#     LOG_INSTALL 1
+    LOG_DOWNLOAD 1
+    LOG_CONFIGURE 1
+    LOG_BUILD 1
+    LOG_INSTALL 1
     DEPENDS
       ${ARDUINO_SDK_DEPENDENCIES}
     )
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
-  msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
+  EmptyExternalProject(${proj} "${ARDUINO_SDK_DEPENDENCIES}")
 endif()
 
 list(APPEND ARDUINO_SUPERBUILD_EP_ARGS -DARDUINO_SDK_PATH:PATH=${CMAKE_BINARY_DIR}/SuperBuild/${proj}-build )
