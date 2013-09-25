@@ -42,7 +42,7 @@ if(NOT DEFINED AVRDUDE_DIR)
     URL_HASH SHA1=${AVRDUDE_SHA1}
     UPDATE_COMMAND ""
     INSTALL_COMMAND make install
-    CONFIGURE_COMMAND ${CMAKE_BINARY_DIR}/SuperBuild/${proj}/configure --prefix=${ep_install_dir}
+    CONFIGURE_COMMAND ${CMAKE_BINARY_DIR}/SuperBuild/${proj}/configure --prefix=${ep_install_dir}/avr
     BUILD_COMMAND make
     LOG_DOWNLOAD 1
     LOG_CONFIGURE 1
@@ -54,6 +54,6 @@ if(NOT DEFINED AVRDUDE_DIR)
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
-  msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
+  EmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
 endif()
 

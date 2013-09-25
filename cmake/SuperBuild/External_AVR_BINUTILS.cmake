@@ -61,9 +61,8 @@ if(NOT DEFINED AVR_BINUTILS_DIR)
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
-  msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
+  EmptyExternalProject(${proj} "${AVR_BINUTILS_DEPENDENCIES}")
 endif()
 
-list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ep_install_dir}/avr/avr/bin ${ep_install_dir}/avr/bin)
-# list(APPEND ARDUINO_SUPERBUILD_EP_ARGS -DAVR_BINUTILS_DIR:PATH=${ep_install_dir} )
+list(APPEND CMAKE_PREFIX_PATH ${ep_install_dir}/avr/avr ${ep_install_dir}/avr)
 

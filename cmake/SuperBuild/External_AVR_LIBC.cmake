@@ -74,9 +74,7 @@ if(NOT DEFINED AVR_LIBC_DIR)
   set(${proj}_DIR ${CMAKE_BINARY_DIR}/${proj}-build)
 
 else()
-  msvMacroEmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
+  EmptyExternalProject(${proj} "${proj_DEPENDENCIES}")
 endif()
 
 list(APPEND CMAKE_FIND_ROOT_PATH ${ep_install_dir}/avr/avr)
-# list(APPEND ARDUINO_SUPERBUILD_EP_ARGS -DAVR_LIBC_DIR:PATH=${ep_install_dir} )
- 
