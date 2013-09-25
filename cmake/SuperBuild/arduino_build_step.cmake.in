@@ -1,3 +1,0 @@
-
-set(ENV{PATH} "@AVR_GCC_DIR@/bin:$ENV{PATH}")
-execute_process(COMMAND @ANT_EXECUTABLE@ run WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/build)

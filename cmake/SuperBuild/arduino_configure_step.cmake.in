@@ -1,3 +1,6 @@
 
-set(ENV{PATH} "@AVR_GCC_DIR@/bin:$ENV{PATH}")
-execute_process(COMMAND @ANT_EXECUTABLE@ WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/hardware @ARDUINO_BINARY_DIR@/SuperBuild/@proj@-build/hardware WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/libraries @ARDUINO_BINARY_DIR@/SuperBuild/@proj@-build/libraries WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@)
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory @ARDUINO_BINARY_DIR@/SuperBuild/@proj@/build/shared/examples @ARDUINO_BINARY_DIR@/SuperBuild/@proj@-build/examples WORKING_DIRECTORY @ARDUINO_BINARY_DIR@/SuperBuild/@proj@)
