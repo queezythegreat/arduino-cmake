@@ -52,10 +52,16 @@ if(NOT ARDUINO_SDK_PATH)
         list(APPEND ARDUINO_PATHS arduino-00${VERSION})
     endforeach()
 
-    file(GLOB SDK_PATH_HINTS /usr/share/arduino*
-                             /opt/local/arduino*
-                             /opt/arduino*
-                             /usr/local/share/arduino*)
+    if(UNIX)
+        file(GLOB SDK_PATH_HINTS /usr/share/arduino*
+            /opt/local/arduino*
+            /opt/arduino*
+            /usr/local/share/arduino*)
+    elseif(WIN32)
+        set(SDK_PATH_HINTS "C:\\Program Files\\Arduino"
+            "C:\\Program Files (x86)\\Arduino"
+            )
+    endif()
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
 endif()
