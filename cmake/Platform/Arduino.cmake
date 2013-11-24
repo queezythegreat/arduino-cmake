@@ -2138,6 +2138,13 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
                       hardware/tools/avr/etc
         DOC "Path to avrdude programmer configuration file.")
 
+    if(NOT CMAKE_OBJCOPY)
+        find_program(AVROBJCOPY_PROGRAM
+                     avr-objcopy)
+        set(ADDITIONAL_REQUIRED_VARS AVROBJCOPY_PROGRAM)
+        set(CMAKE_OBJCOPY ${AVROBJCOPY_PROGRAM})
+    endif(NOT CMAKE_OBJCOPY)
+
     set(ARDUINO_DEFAULT_BOARD uno  CACHE STRING "Default Arduino Board ID when not specified.")
     set(ARDUINO_DEFAULT_PORT       CACHE STRING "Default Arduino port when not specified.")
     set(ARDUINO_DEFAULT_SERIAL     CACHE STRING "Default Arduino Serial command when not specified.")
@@ -2156,6 +2163,7 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         ARDUINO_AVRDUDE_PROGRAM
         ARDUINO_AVRDUDE_CONFIG_PATH
         AVRSIZE_PROGRAM
+        ${ADDITIONAL_REQUIRED_VARS}
         MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
 
     detect_arduino_version(ARDUINO_SDK_VERSION)
