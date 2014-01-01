@@ -980,6 +980,10 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
                 list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
             endforeach()
 
+            if (LIB_INCLUDES)
+                string(REPLACE ";" " " LIB_INCLUDES "${LIB_INCLUDES}")
+            endif()
+
             set_target_properties(${TARGET_LIB_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${LIB_INCLUDES} -I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\" ${COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
