@@ -74,3 +74,7 @@ if(ARDUINO_SDK_PATH)
 else()
     message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
 endif()
+
+# used by CMakeFindBinUtils.cmake to find the remaining binaries
+set( _CMAKE_TOOLCHAIN_PREFIX avr- )
+set( _CMAKE_TOOLCHAIN_LOCATION ${ARDUINO_SDK_PATH}/hardware/tools/avr )
