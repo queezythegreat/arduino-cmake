@@ -69,12 +69,9 @@ find_path(ARDUINO_SDK_PATH
           DOC "Arduino SDK path.")
 
 if(ARDUINO_SDK_PATH)
-    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/bin)
-    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils/bin)
+    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr)
+    list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${ARDUINO_SDK_PATH}/hardware/tools/avr/utils)
 else()
     message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
 endif()
 
-# used by CMakeFindBinUtils.cmake to find the remaining binaries
-set( _CMAKE_TOOLCHAIN_PREFIX avr- )
-set( _CMAKE_TOOLCHAIN_LOCATION ${ARDUINO_SDK_PATH}/hardware/tools/avr )
