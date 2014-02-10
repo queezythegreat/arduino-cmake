@@ -79,6 +79,10 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Pavel Ilin (`PIlin`_)
 * Igor Mikolic-Torreira (`igormiktor`_)
 * Claudio Henrique Fortes Felix (`chffelix`_)
+* Alexandre Tuleu (`atuleu`_)
+* `getSurreal`_
+* Sebastian Zaffarano (`szaffarano`_)
+* `cheshirekow`_
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -91,6 +95,10 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _PIlin: https://github.com/PIlin
 .. _igormiktor: https://github.com/igormiktor
 .. _chffelix: https://github.com/chffelix
+.. _atuleu: https://github.com/atuleu
+.. _getSurreal: https://github.com/getSurreal
+.. _szaffarano: https://github.com/szaffarano
+.. _cheshirekow: https://github.com/cheshirekow
 
 License
 -------
