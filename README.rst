@@ -6,13 +6,13 @@ Arduino is a great development platform, which is easy to use. It has everything
 
 One major drawback of the *Arduino IDE* is that you cannot do anything without it, which for me is a **complete buzz kill**. Thats why I created an alternative build system for the Arduino using CMake.
 
-CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generated the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
+CMake is great cross-platform build system that works on practically any operating system. With it you are not constrained to a single build system. CMake lets you generate the build system that fits your needs, using the tools you like. It can generate any type of build system, from simple Makefiles, to complete projects for Eclipse, Visual Studio, XCode, etc.
 
 The **Arduino CMake** build system integrates tightly with the *Arduino SDK*.
 
 *Arduino SDK* version **0.19** or higher is required.
 
-So if you like to do things from the command line (using make), or to build you're firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
+So if you like to do things from the command line (using make), or to build your firmware where you're in control, or if you would like to use an IDE such as Eclipse, KDevelop, XCode, CodeBlocks or something similar,  then **Arduino CMake** is the system for you.
 
 Features
 --------
@@ -35,7 +35,7 @@ Features
 Feedback
 --------
 
-**Arduino CMake** is hosted on GitHUB and is available at:
+**Arduino CMake** is hosted on GitHub and is available at:
 
 https://github.com/queezythegreat/arduino-cmake
 
@@ -44,7 +44,7 @@ Did you find a bug or would like a specific feature, please report it at:
 https://github.com/queezythegreat/arduino-cmake/issues
 
 If you would like to hack on this project, don't hesitate to fork it on GitHub.
-I will be glad to integrate you'r changes if you send me a ``Pull Request``.
+I will be glad to integrate your changes if you send me a ``Pull Request``.
 
 
 Requirements
@@ -191,16 +191,16 @@ For a more detailed explanation, please read on...
 
 2. Creating a build directory
 
-   The second order of business is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory, than where the sources are. The benefits of this is you don't have any clutter in you source directory and you won't accidentally commit something in, that is auto-generated.
+   The second order of business is creating a build directory. CMake has a great feature called out-of-source builds, what this means is the building is done in a completely separate directory from where the sources are. The benefit of this is you don't have any clutter in you source directory and you won't accidentally commit something that is auto-generated.
 
-   So lets create that build directory::
+   So let's create that build directory::
 
         mkdir build
         cd build
 
 3. Creating the build system
 
-   Now lets create the build system that will create our firmware::
+   Now let's create the build system that will create our firmware::
 
         cmake ..
 
@@ -427,7 +427,7 @@ You can specify the options in two ways, either as the command arguments or as v
 
 Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
 
-Lets define a simple library called ``blink_lib``, with two sources files for the *Arduino Uno*::
+Let's define a simple library called ``blink_lib`` with two sources files for the *Arduino Uno*::
 
     set(blink_lib_SRCS  blink_lib.cpp)
     set(blink_lib_HDRS  blink_lib.h)
@@ -442,7 +442,7 @@ The other way of defining the same thing is::
         HDRS  blink_lib.h
         BOARD uno)
 
-Once that library is defined we can use it in our other firmware images... Lets add ``blink_lib`` to the ``blink`` firmware::
+Once that library is defined we can use it in our other firmware images... Let's add ``blink_lib`` to the ``blink`` firmware::
 
     set(blink_SRCS  blink.cpp)
     set(blink_HDRS  blink.h)
@@ -485,7 +485,7 @@ Any source files contained within that directory is part of the library. Here is
       |-- ExampleLib.cpp
       `-- OtherLibSource.cpp
 
-Now because the power of Arduino lies within those user created libraries, support for them is built right into **Arduino CMake**. The **Arduino SDK** comes with a large number of default libraries, adding new libraries is simple.
+Now because the power of Arduino lies within those user-created libraries, support for them is built right into **Arduino CMake**. The **Arduino SDK** comes with a large number of default libraries and adding new libraries is simple.
 
 To incorporate a library into your firmware, you can do one of three things:
 
@@ -600,7 +600,7 @@ or when configuring the project::
 Programmers
 ~~~~~~~~~~~
 
-**Arduino CMake** fully supports programmers, for burning firmware and bootloader images directly onto the Arduino. 
+**Arduino CMake** fully supports programmers for burning firmware and bootloader images directly onto the Arduino. 
 If you have a programmer that is supported by the *Arduino SDK*, everything should work out of the box.
 As of version 1.0 of the *Arduino SDK*, the following programmers are supported:
 
