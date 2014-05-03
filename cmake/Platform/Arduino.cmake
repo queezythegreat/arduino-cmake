@@ -563,9 +563,9 @@ function(GENERATE_AVR_FIRMWARE INPUT_NAME)
         PROGRAMMER ${INPUT_PROGRAMMER}
         SERIAL ${INPUT_SERIAL}
         SRCS ${INPUT_SRCS}
-        ${INPUT_HDRS}
-        ${INPUT_LIBS}
-        ${INPUT_AFLAGS} )
+        HDRS ${INPUT_HDRS}
+        LIBS ${INPUT_LIBS}
+        AFLAGS ${INPUT_AFLAGS} )
     
 endfunction()
 
