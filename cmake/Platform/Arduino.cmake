@@ -429,6 +429,14 @@ function(GENERATE_AVR_LIBRARY INPUT_NAME)
         set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
     endif()
 
+    if(INPUT_HDRS)
+        list(INSERT INPUT_HDRS 0 "HDRS")
+    endif()
+    if(INPUT_LIBS)
+        list(INSERT INPUT_LIBS 0 "LIBS")
+    endif()
+
+
     generate_arduino_library( ${INPUT_NAME} 
         NO_AUTOLIBS
         MANUAL
@@ -546,13 +554,13 @@ function(GENERATE_AVR_FIRMWARE INPUT_NAME)
     required_variables(VARS INPUT_BOARD INPUT_SRCS MSG "must define for target ${INPUT_NAME}")
 
     if(INPUT_HDRS)
-        set( INPUT_HDRS "SRCS ${INPUT_HDRS}" )
+        list(INSERT INPUT_HDRS 0 "HDRS")
     endif()
     if(INPUT_LIBS)
-        set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
+        list(INSERT INPUT_LIBS 0 "LIBS")
     endif()
     if(INPUT_AFLAGS)
-        set( INPUT_AFLAGS "AFLAGS ${INPUT_AFLAGS}" )
+        list(INSERT INPUT_AFLAGS 0 "AFLAGS")
     endif()
 
     generate_arduino_firmware( ${INPUT_NAME} 
