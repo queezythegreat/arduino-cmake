@@ -429,6 +429,14 @@ function(GENERATE_AVR_LIBRARY INPUT_NAME)
         set( INPUT_LIBS "LIBS ${INPUT_LIBS}" )
     endif()
 
+    if(INPUT_HDRS)
+        list(INSERT INPUT_HDRS 0 "HDRS")
+    endif()
+    if(INPUT_LIBS)
+        list(INSERT INPUT_LIBS 0 "LIBS")
+    endif()
+
+
     generate_arduino_library( ${INPUT_NAME} 
         NO_AUTOLIBS
         MANUAL
