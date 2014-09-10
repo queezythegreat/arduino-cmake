@@ -1075,7 +1075,10 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
     target_link_libraries(${TARGET_NAME} ${ALL_LIBS} "-lc -lm")
 
-    set(TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME})
+    if(NOT EXECUTABLE_OUTPUT_PATH)
+      set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+    set(TARGET_PATH ${EXECUTABLE_OUTPUT_PATH}/${TARGET_NAME})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${CMAKE_OBJCOPY}
                         ARGS     ${ARDUINO_OBJCOPY_EEP_FLAGS}
