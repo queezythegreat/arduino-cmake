@@ -478,7 +478,7 @@ Libraries are one of the more powerful features which the Arduino offers to user
 The structure of these libraries is very simple, which makes them easy to create.
 
 An Arduino library is **any directory which contains a header named after the directory**, simple.
-Any source files contained within that directory is part of the library. Here is a example of library a called ExampleLib::
+Any source files contained within that directory are part of the library. Here is a example of library a called ExampleLib::
 
     ExampleLib/
       |-- ExampleLib.h
