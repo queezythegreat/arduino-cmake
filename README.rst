@@ -85,6 +85,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * `cheshirekow`_
 * Logan Engstrom (`meadowstream`_) 
 * Francisco Ramírez (`franramirez688`_)
+* Brendan Shillingford (`bshillingford`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -103,6 +104,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _cheshirekow: https://github.com/cheshirekow
 .. _meadowstream: https://github.com/meadowstream
 .. _franramirez688: https://github.com/franramirez688
+.. _bshillingford: https://github.com/bshillingford
 
 License
 -------
