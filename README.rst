@@ -83,6 +83,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * `getSurreal`_
 * Sebastian Zaffarano (`szaffarano`_)
 * `cheshirekow`_
+* Logan Engstrom (`meadowstream`_) 
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -99,6 +100,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _getSurreal: https://github.com/getSurreal
 .. _szaffarano: https://github.com/szaffarano
 .. _cheshirekow: https://github.com/cheshirekow
+.. _meadowstream: https://github.com/meadowstream
 
 License
 -------
