@@ -2162,7 +2162,7 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     find_file(ARDUINO_AVRDUDE_CONFIG_PATH
         NAMES avrdude.conf
-        PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
+        PATHS ${ARDUINO_SDK_PATH} /etc/avrdude /etc
         PATH_SUFFIXES hardware/tools
                       hardware/tools/avr/etc
         DOC "Path to avrdude programmer configuration file.")
