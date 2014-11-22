@@ -87,6 +87,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Francisco Ramírez (`franramirez688`_)
 * Brendan Shillingford (`bshillingford`_)
 * Mike Purvis (`mikepurvis`_) 
+* Steffen Hanikel (`hanikesn`_)
 
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
@@ -107,6 +108,7 @@ I would like to thank the following people for contributing to **Arduino CMake**
 .. _franramirez688: https://github.com/franramirez688
 .. _bshillingford: https://github.com/bshillingford
 .. _mikepurvis: https://github.com/mikepurvis
+.. _hanikesn: https://github.com/hanikesn
 
 License
 -------
