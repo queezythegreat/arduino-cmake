@@ -455,7 +455,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
                               "NO_AUTOLIBS;MANUAL"                  # Options
-                              "BOARD;PORT;SKETCH;PROGRAMMER"        # One Value Keywords
+                              "BOARD;PORT;SKETCH;PROGRAMMER;DEFAULT_SERIAL"        # One Value Keywords
                               "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
 
@@ -523,6 +523,19 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
 
+    if(INPUT_DEFAULT_SERIAL)
+        if(NOT DECLARED_DEFAULT_SERIAL)
+            if(NOT TARGET serial)
+                set(DECLARED_DEFAULT_SERIAL "true")
+                setup_default_serial_target("${INPUT_SERIAL}" "${INPUT_PORT}")
+            else()
+                message(WARNING "A target named serial already exists, a default serial target will not be created for ${INPUT_NAME}")
+            endif()
+        else()
+            message(WARNING "A default serial target already exists, one will not be created for ${INPUT_NAME}")
+        endif()
+    endif()
+
 endfunction()
 
 #=============================================================================#
@@ -534,7 +547,7 @@ function(GENERATE_AVR_FIRMWARE INPUT_NAME)
     message(STATUS "Generating ${INPUT_NAME}")
     parse_generator_arguments(${INPUT_NAME} INPUT
                               "NO_AUTOLIBS;MANUAL"            # Options
-                              "BOARD;PORT;PROGRAMMER"  # One Value Keywords
+                              "BOARD;PORT;PROGRAMMER;DEFAULT_SERIAL"  # One Value Keywords
                               "SERIAL;SRCS;HDRS;LIBS;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
  
@@ -570,6 +583,7 @@ function(GENERATE_AVR_FIRMWARE INPUT_NAME)
         PORT ${INPUT_PORT}
         PROGRAMMER ${INPUT_PROGRAMMER}
         SERIAL ${INPUT_SERIAL}
+        DEFAULT_SERIAL ${INPUT_DEFAULT_SERIAL}
         SRCS ${INPUT_SRCS}
         ${INPUT_HDRS}
         ${INPUT_LIBS}
@@ -584,7 +598,7 @@ endfunction()
 function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
                               ""                                       # Options
-                              "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
+                              "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER;DEFAULT_SERIAL"  # One Value Keywords
                               "SERIAL;AFLAGS"                          # Multi Value Keywords
                               ${ARGN})
 
@@ -636,6 +650,20 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     if(INPUT_SERIAL)
         setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
     endif()
+
+    if(INPUT_DEFAULT_SERIAL)
+        if(NOT DECLARED_DEFAULT_SERIAL)
+            if(NOT TARGET serial)
+                set(DECLARED_DEFAULT_SERIAL "true")
+                setup_default_serial_target("${INPUT_SERIAL}" "${INPUT_PORT}")
+            else()
+                message(WARNING "A target named serial already exists, a default serial target will not be created for ${INPUT_NAME}")
+            endif()
+        else()
+            message(WARNING "A default serial target already exists, one will not be created for ${INPUT_NAME}")
+        endif()
+    endif()
+
 endfunction()
 
 #=============================================================================#
@@ -1449,7 +1477,11 @@ function(setup_serial_target TARGET_NAME CMD SERIAL_PORT)
                       COMMAND ${FULL_CMD})
 endfunction()
 
-
+function(setup_default_serial_target CMD SERIAL_PORT)
+    string(CONFIGURE "${CMD}" FULL_CMD @ONLY)
+    add_custom_target(serial
+                      COMMAND ${FULL_CMD})
+endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
