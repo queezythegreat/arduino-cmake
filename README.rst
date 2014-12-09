@@ -744,6 +744,10 @@ The following options control how **Arduino CMake** is configured:
 +---------------------------------+-----------------------------------------------------+
 | **ARDUINO_DEFAULT_BOARD**       | Default Arduino Board ID, when not specified.       |
 +---------------------------------+-----------------------------------------------------+
+| **ARDUINO_CPU**                 | Selected CPU from Arduino 1.5 menu boards. For mega |
+|                                 | board, for example, you have to set atmega2560      |
+|                                 | before including ARDUINO ToolChain                  |
++---------------------------------+-----------------------------------------------------+
 | **ARDUINO_DEFAULT_PORT**        | Default Arduino port, when not specified.           |
 +---------------------------------+-----------------------------------------------------+
 | **ARDUINO_DEFAULT_SERIAL**      | Default Arduino Serial command, when not specified. |
