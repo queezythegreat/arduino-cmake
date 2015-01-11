@@ -1457,7 +1457,7 @@ endfunction()
 #
 #       VAR_NAME - Variable name where the detected version will be saved
 #
-# Detects the Arduino SDK Version based on the revisions.txt file. The
+# Detects the Arduino SDK Version based on the lib/versions.txt file. The
 # following variables will be generated:
 #
 #    ${VAR_NAME}         -> the full version (major.minor.patch)
