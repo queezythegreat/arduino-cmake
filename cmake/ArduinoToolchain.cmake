@@ -70,6 +70,7 @@ find_path(ARDUINO_SDK_PATH
           NAMES lib/version.txt
           PATH_SUFFIXES share/arduino
                         Arduino.app/Contents/Resources/Java/
+                        Arduino.app/Contents/Java/
                         ${ARDUINO_PATHS}
           HINTS ${SDK_PATH_HINTS}
           DOC "Arduino SDK path.")
