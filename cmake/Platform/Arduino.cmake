@@ -657,27 +657,32 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
             find_file(${PLATFORM}_CORES_PATH
                   NAMES cores
                   PATHS ${PLATFORM_PATH}
-                  DOC "Path to directory containing the Arduino core sources.")
+                  DOC "Path to directory containing the Arduino core sources."
+                  NO_SYSTEM_ENVIRONMENT_PATH)
 
             find_file(${PLATFORM}_VARIANTS_PATH
                   NAMES variants
                   PATHS ${PLATFORM_PATH}
-                  DOC "Path to directory containing the Arduino variant sources.")
+                  DOC "Path to directory containing the Arduino variant sources."
+                  NO_SYSTEM_ENVIRONMENT_PATH)
 
             find_file(${PLATFORM}_BOOTLOADERS_PATH
                   NAMES bootloaders
                   PATHS ${PLATFORM_PATH}
-                  DOC "Path to directory containing the Arduino bootloader images and sources.")
+                  DOC "Path to directory containing the Arduino bootloader images and sources."
+                  NO_SYSTEM_ENVIRONMENT_PATH)
 
             find_file(${PLATFORM}_PROGRAMMERS_PATH
                 NAMES programmers.txt
                 PATHS ${PLATFORM_PATH}
-                DOC "Path to Arduino programmers definition file.")
+                DOC "Path to Arduino programmers definition file."
+                NO_SYSTEM_ENVIRONMENT_PATH)
 
             find_file(${PLATFORM}_BOARDS_PATH
                 NAMES boards.txt
                 PATHS ${PLATFORM_PATH}
-                DOC "Path to Arduino boards definition file.")
+                DOC "Path to Arduino boards definition file."
+                NO_SYSTEM_ENVIRONMENT_PATH)
 
             if(${PLATFORM}_BOARDS_PATH)
                 load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
@@ -2140,12 +2145,14 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     find_file(ARDUINO_LIBRARIES_PATH
         NAMES libraries
         PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to directory containing the Arduino libraries.")
+        DOC "Path to directory containing the Arduino libraries."
+        NO_SYSTEM_ENVIRONMENT_PATH)
 
     find_file(ARDUINO_VERSION_PATH
         NAMES lib/version.txt
         PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to Arduino version file.")
+        DOC "Path to Arduino version file."
+        NO_SYSTEM_ENVIRONMENT_PATH)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
         NAMES avrdude
@@ -2165,7 +2172,8 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         PATHS ${ARDUINO_SDK_PATH} /etc/avrdude /etc
         PATH_SUFFIXES hardware/tools
                       hardware/tools/avr/etc
-        DOC "Path to avrdude programmer configuration file.")
+        DOC "Path to avrdude programmer configuration file."
+        NO_SYSTEM_ENVIRONMENT_PATH)
 
     if(NOT CMAKE_OBJCOPY)
         find_program(AVROBJCOPY_PROGRAM
