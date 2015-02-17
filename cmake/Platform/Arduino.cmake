@@ -1528,11 +1528,11 @@ endfunction()
 #      set(uno.build.core "arduino")
 #
 #      set(uno.SETTINGS  name upload build)              # List of settings for uno
-#      set(uno.upload.SUBSETTINGS protocol maximum_size) # List of sub-settings for uno.upload
-#      set(uno.build.SUBSETTINGS mcu core)               # List of sub-settings for uno.build
+#      set(uno.upload.SETTINGS protocol maximum_size) # List of sub-settings for uno.upload
+#      set(uno.build.SETTINGS mcu core)               # List of sub-settings for uno.build
 # 
 #  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry, while
-# ${ENTRY_NAME}.SUBSETTINGS variables lists all settings for a sub-setting of
+# ${ENTRY_NAME}.SETTINGS variables lists all settings for a sub-setting of
 # a entry setting pair.
 #
 #  These variables are generated in order to be able to  programatically traverse
@@ -1542,61 +1542,69 @@ endfunction()
 function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
 
     if(NOT ${SETTINGS_LIST} AND EXISTS ${SETTINGS_PATH})
-    file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
+        file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
 
-    foreach(FILE_ENTRY ${FILE_ENTRIES})
-        if("${FILE_ENTRY}" MATCHES "^[^#]+=.*")
-            string(REGEX MATCH "^[^=]+" SETTING_NAME  ${FILE_ENTRY})
-            string(REGEX MATCH "[^=]+$" SETTING_VALUE ${FILE_ENTRY})
-            string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
-            string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
+        # Parse each line in the file
+        foreach(FILE_ENTRY ${FILE_ENTRIES})
 
-            list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
+            if("${FILE_ENTRY}" MATCHES "^[^#]+=.*")
 
-            # Add entry to settings list if it does not exist
-            list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
-            list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
-            if(ENTRY_NAME_INDEX LESS 0)
-                # Add entry to main list
-                list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
-            endif()
+                # Extract SETTING_NAME=SETTING_VALUE
+                # Extract SETTING_NAME to ENTRY_NAME_TOKENS
+                string(REGEX MATCH "^[^=]+" SETTING_NAME ${FILE_ENTRY})
+                string(LENGTH ${SETTING_NAME} SETTING_NAME_LENGTH)
+                math(EXPR SETTING_NAME_LENGTH ${SETTING_NAME_LENGTH}+1)
+                string(SUBSTRING ${FILE_ENTRY} ${SETTING_NAME_LENGTH} -1 SETTING_VALUE)
+                string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
+                string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
 
-            # Add entry setting to entry settings list if it does not exist
-            set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
-            list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
-            list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
-            if(ENTRY_SETTING_INDEX LESS 0)
-                # Add setting to entry
-                list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
-                set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
-                    CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
-            endif()
-
-            set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
-
-            # Add entry sub-setting to entry sub-settings list if it does not exists
-            if(ENTRY_NAME_TOKENS_LEN GREATER 2)
-                set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
-                list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
-                if(ENTRY_SUBSETTING_INDEX LESS 0)
-                    list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
-                    set(${ENTRY_SUBSETTING_LIST}  ${${ENTRY_SUBSETTING_LIST}}
-                        CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
+                # Append the defined Board name to the SETTINGS_LIST, if not present
+                list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
+                list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
+                list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
+                if(ENTRY_NAME_INDEX LESS 0)
+                    # Add entry to main list
+                    list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
                 endif()
-                set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
+
+                # Add BOARD_ID.PATH.SETTINGS list entries
+                set(FULL_SETTING_NAME "")
+                foreach(TOKEN ${ENTRY_NAME_TOKENS})
+
+                    # Add this token to the {LAST_FULL_PATH}.SETTINGS
+                    if (FULL_SETTING_NAME)
+
+                        # Add setting to entry, if not present
+                        set(ENTRY_SETTING_LIST ${FULL_SETTING_NAME}.SETTINGS)
+                        list(FIND ${ENTRY_SETTING_LIST} ${TOKEN} ENTRY_SETTING_INDEX)
+                        if(ENTRY_SETTING_INDEX LESS 0)
+                            # Add setting to entry
+                            list(APPEND ${ENTRY_SETTING_LIST} ${TOKEN})
+                            set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
+                                CACHE INTERNAL "Arduino ${FULL_SETTING_NAME} Board settings list")
+                        endif()
+
+                    endif()
+
+                    # Append LAST_FULL_PATH
+                    if (FULL_SETTING_NAME)
+                        set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${TOKEN})
+                    else()
+                        set(FULL_SETTING_NAME ${TOKEN})
+                    endif()
+                endforeach()
+
+                # Set the full setting path key/value
+                set(${FULL_SETTING_NAME} ${SETTING_VALUE}
+                    CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
+
             endif()
+        endforeach()
 
-            # Save setting value
-            set(${FULL_SETTING_NAME} ${SETTING_VALUE}
-                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
-            
-
-        endif()
-    endforeach()
-    set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
-        CACHE STRING "List of detected Arduino Board configurations")
-    mark_as_advanced(${SETTINGS_LIST})
+        # Update SETTINGS_LIST with any additional boards
+        set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
+            CACHE STRING "List of detected Arduino Board configurations")
+        mark_as_advanced(${SETTINGS_LIST})
     endif()
 endfunction()
 
@@ -1609,21 +1617,18 @@ endfunction()
 #
 #=============================================================================#
 function(PRINT_SETTINGS ENTRY_NAME)
-    if(${ENTRY_NAME}.SETTINGS)
 
+    # Container match
+    if(${ENTRY_NAME}.SETTINGS)
         foreach(ENTRY_SETTING ${${ENTRY_NAME}.SETTINGS})
-            if(${ENTRY_NAME}.${ENTRY_SETTING})
-                message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}}")
-            endif()
-            if(${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                foreach(ENTRY_SUBSETTING ${${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS})
-                    if(${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING})
-                        message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}}")
-                    endif()
-                endforeach()
-            endif()
-            message(STATUS "")
+            # Recurse deeper
+            print_settings(${ENTRY_NAME}.${ENTRY_SETTING})
         endforeach()
+    endif()
+
+    # Specific entry match
+    if(${ENTRY_NAME})
+        message(STATUS "   ${ENTRY_NAME}=${${ENTRY_NAME}}")
     endif()
 endfunction()
 
