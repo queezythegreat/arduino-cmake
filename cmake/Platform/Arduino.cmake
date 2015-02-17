@@ -1552,7 +1552,9 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
                 # Extract SETTING_NAME=SETTING_VALUE
                 # Extract SETTING_NAME to ENTRY_NAME_TOKENS
                 string(REGEX MATCH "^[^=]+" SETTING_NAME ${FILE_ENTRY})
-                string(REGEX REPLACE "${SETTING_NAME}[=]" "" SETTING_VALUE ${FILE_ENTRY})
+                string(LENGTH ${SETTING_NAME} SETTING_NAME_LENGTH)
+                math(EXPR SETTING_NAME_LENGTH ${SETTING_NAME_LENGTH}+1)
+                string(SUBSTRING ${FILE_ENTRY} ${SETTING_NAME_LENGTH} -1 SETTING_VALUE)
                 string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
                 string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
 
