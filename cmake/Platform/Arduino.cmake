@@ -490,7 +490,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
     endif()
     if(NOT INPUT_LOADER)
-        set(INPUT_LOADER ${ARDUINO_DEFAULT_LOADER})
+        set(INPUT_LOADER "")
     endif()
     if(NOT INPUT_MANUAL)
         set(INPUT_MANUAL FALSE)
@@ -569,7 +569,7 @@ function(GENERATE_AVR_FIRMWARE INPUT_NAME)
         set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
     endif()
     if(NOT INPUT_LOADER)
-            set(INPUT_LOADER ${ARDUINO_DEFAULT_SERIAL})
+            set(INPUT_LOADER "")
         endif()
     if(NOT INPUT_PROGRAMMER)
         set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
@@ -624,7 +624,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
         set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
     endif()
     if(NOT INPUT_LOADER)
-            set(INPUT_LOADER ${ARDUINO_DEFAULT_LOADER})
+            set(INPUT_LOADER "")
         endif()
     if(NOT INPUT_PROGRAMMER)
         set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
@@ -1217,7 +1217,7 @@ endfunction()
 #
 #=============================================================================#
 function(setup_arduino_upload BOARD_ID TARGET_NAME PORT LOADER_ID PROGRAMMER_ID AVRDUDE_FLAGS)
-    setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT} ${LOADER_ID} "${AVRDUDE_FLAGS}")
+    setup_arduino_bootloader_upload(${TARGET_NAME} ${BOARD_ID} ${PORT} "${LOADER_ID}" "${AVRDUDE_FLAGS}")
 
     # Add programmer support if defined
     if(PROGRAMMER_ID AND ${PROGRAMMER_ID}.protocol)
@@ -1260,11 +1260,9 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT LOADER_ID AVR
     set(TARGET_PATH ${EXECUTABLE_OUTPUT_PATH}/${TARGET_NAME})
 
     # Automatic loader determination
-    if (LOADER_ID MATCHES "")
-        if (${BOARD_ID}.upload.protocol MATCHES "halfkay")
-            set(LOADER_ID "halfkay")
-        else()
-            set(LOADER_ID "avrdud")
+    if (NOT LOADER_ID)
+        if (${BOARD_ID}.upload.protocol)
+            set(LOADER_ID ${${BOARD_ID}.upload.protocol})
         endif()
     endif()
 
@@ -2384,6 +2382,8 @@ endif()
 
 # Initialise Teensy
 if(NOT TEENSY_FOUND)
+    register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/teensy/)
+
     find_program(TEENSY_LOADER_PROGRAM
         NAMES teensy_loader_cli
         PATHS ${ARDUINO_SDK_PATH}
