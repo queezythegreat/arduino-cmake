@@ -18,7 +18,7 @@ Features
 --------
 
 * Integrates with *Arduino SDK*
-* Supports all Arduino boards.
+* Supports all Arduino and Teensy boards.
 * Supports Arduino type libraries
 * Automatic detection of Arduino libraries.
 * Generates firmware images.
@@ -135,9 +135,10 @@ Contents
    6. `Compiler and Linker Flags`_
    7. `Programmers`_
    8. `Pure AVR Development`_
-   9. `Advanced Options`_
-   10. `Miscellaneous Functions`_
-   11. `Bundling Arduino CMake`_
+   9. `Teensy Development`_
+   10. `Advanced Options`_
+   11. `Miscellaneous Functions`_
+   12. `Bundling Arduino CMake`_
 
 3. `Linux Environment`_
 
@@ -292,6 +293,7 @@ To create Arduino firmware in CMake you use the ``generate_arduino_firmware`` co
          [LIBS  lib1 lib2 ... libN]
          [PORT  port]
          [SERIAL serial_cmd]
+         [LOADER loader_id]
          [PROGRAMMER programmer_id]
          [AFLAGS flags]
          [NO_AUTOLIBS])
@@ -315,6 +317,8 @@ The options are:
 | **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LOADER**         | Uploader to transfer sketches to the board (defaults to avrdude)     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -532,6 +536,7 @@ Most Arduino libraries have examples bundled with them. If you would like to gen
                              [BOARD  board_id]
                              [PORT port]
                              [SERIAL serial command]
+                             [LOADER loader_id]
                              [PORGRAMMER programmer_id]
                              [AFLAGS avrdude_flags])
 
@@ -550,6 +555,8 @@ The options are:
 | **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LOADER**         | Uploader to transfer sketches to the board (defaults to avrdude)     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -662,6 +669,7 @@ The `generate_avr_firmware()` command::
          [LIBS  lib1 lib2 ... libN]
          [PORT  port]
          [SERIAL serial_cmd]
+         [LOADER loader_id]
          [PROGRAMMER programmer_id]
          [AFLAGS flags])
 
@@ -685,6 +693,8 @@ The options:
 | **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **LOADER**         | Uploader to transfer sketches to the board (defaults to avrdude)     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
@@ -727,6 +737,44 @@ You can specify the options in two ways, either as the command arguments or as v
     ${TARGET_NAME}_${OPTION_NAME}
 
 Where **${TARGET_NAME}** is the name of you target and **${OPTION_NAME}** is the name of the option.
+
+Teensy Development
+~~~~~~~~~~~~~~~~~~
+
+When using a `PJRC Teensy`_ board instead of an Arduino, CMAKE requires some additional configuration to set all available modes.
+
+Ensure you have installed the *Teensy SDK*, which is normally install over the top of the Arduino SDK.
+If you install to another location, ensure arduino-cmake is configured to use that directory for the Arduino SDK:
+    ``set(ARDUINO_SDK_PATH /path/to/the/teensy/sdk)``
+
+Use the ``print_boards_list()`` command to view all available Teensy boards.
+If no Teensy boards are listed, double check your Teensy SDK path settings.
+
+Use ``print_teensy_modes(board_id)`` to list all modes that can be configured for the board.
+
+Use ``print_teensy_modes(board_id MODE mode_id)`` to list all mode options available.
+
+All Teensy board modes must be specified, and can be applied with the following settings:
+
++--------------------------+-----------------------------+
+|  **Name**                | **Description**             |
++--------------------------+-----------------------------+
+| **TEENSY_CPU_F_MODE**    | CPU Frequency / Speed       |
++--------------------------+-----------------------------+
+| **TEENSY_USB_MODE**      | USB Mode (Serial, HID, etc) |
++--------------------------+-----------------------------+
+| **TEENSY_KEYBOARD_MODE** | USB Keyboard Emulation      |
++--------------------------+-----------------------------+
+
+Set these option either before or after the ``project()`` setting like so::
+
+    set(TEENSY_CPU_F_MODE 16)
+    set(TEENSY_USB_MODE serial)
+    set(TEENSY_KEYBOARD_MODE en-us)
+
+The uploader (teensy_loader_cli) will be automatically used instead of avrdude.
+This can be overridden by specifying a LOADER parameter to generate_arduino_firmware:
+    generate_arduino_firmware(target_name LOADER avrdude)
 
 Advanced Options
 ~~~~~~~~~~~~~~~~
@@ -773,6 +821,9 @@ When **Arduino CMake** is configured properly, these options are defined:
 | **ARDUINO_SDK_VERSION_MINOR**   | Minor version of the **Arduino SDK** (ex: 0)        |
 +---------------------------------+-----------------------------------------------------+
 | **ARDUINO_SDK_VERSION_PATCH**   | Patch version of the **Arduino SDK** (ex: 0)        |
++---------------------------------+-----------------------------------------------------+
+| **TEENSY_FOUND**                | Set to True when the **Teensy SDK** is detected     |
+|                                 | and configured.                                     |
 +---------------------------------+-----------------------------------------------------+
 
 
@@ -1207,12 +1258,12 @@ Here are some resources you might find useful in getting started.
 
 2. Arduino:
    
-   * `Getting Started`_ - Introduction to Arduino
+   * `Arduino Getting Started`_ - Introduction to Arduino
    * `Playground`_ - User contributed documentation and help
    * `Arduino Forums`_ - Official forums
    * `Arduino Reference`_ - Official reference manual
 
-.. _Getting Started: http://www.arduino.cc/en/Guide/HomePage
+.. _Arduino Getting Started: http://www.arduino.cc/en/Guide/HomePage
 .. _Playground: http://www.arduino.cc/playground/
 .. _Arduino Reference: http://www.arduino.cc/en/Reference/HomePage
 .. _Arduino Forums: http://www.arduino.cc/forum/
@@ -1228,4 +1279,4 @@ Here are some resources you might find useful in getting started.
 .. _CMake: http://www.cmake.org/cmake/resources/software.html
 .. _CMake Installer: http://www.cmake.org/cmake/resources/software.html
 .. _Arduino SDK: http://www.arduino.cc/en/Main/Software
-
+:: _PJRC Teensy: https://www.pjrc.com/teensy/
