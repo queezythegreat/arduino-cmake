@@ -2,8 +2,8 @@ Arduino Cmake Example Project
 ===============================
 
 Здесь находится проект с примером настроек cmake для работы с arduino.
-Исправно загружается и работает в CLion и Windows, используя в качестве
-toolchain из Arduino IDE 1.6+ и MinGW.
+Исправно загружается и работает в CLion и Windows, используя toolchain 
+из Arduino IDE 1.6+ и MinGW.
 
 Оригинальный код проекта распространяется под лицензией
 Mozilla Public License, v. 2.0 http://mozilla.org/MPL/2.0/
