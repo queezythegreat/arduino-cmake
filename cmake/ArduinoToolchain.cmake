@@ -81,3 +81,8 @@ else()
     message(FATAL_ERROR "Could not find Arduino SDK (set ARDUINO_SDK_PATH)!")
 endif()
 
+set(ARDUINO_CPUMENU)
+if(ARDUINO_CPU)
+    set(ARDUINO_CPUMENU ".menu.cpu.${ARDUINO_CPU}")
+endif(ARDUINO_CPU)
+
