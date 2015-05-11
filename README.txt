@@ -156,7 +156,7 @@ http://habrahabr.ru/post/247017/
 потому что для UNO нет выбора процессоров
     # (закомментировали) set(ARDUINO_CPU 16MHzatmega328)
 
-Подключаем нужно папку, меняем example на robot
+Подключаем нужную папку, меняем example на robot
     # (закомментировали) add_subdirectory(example)
     add_subdirectory(robot)
 
