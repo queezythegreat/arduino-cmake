@@ -2,15 +2,17 @@ Arduino Cmake Example Project
 ===============================
 
 Здесь находится проект с примером настроек cmake для работы с arduino.
-Исправно загружается и работает в CLion и Windows, используя toolchain 
-из Arduino IDE 1.6+ и MinGW.
+Корректно загружается и работает в CLion, используя toolchain 
+из Arduino IDE 1.6+. 
+
+Протестированные настройки работают на Windows и MinGW, но всё так же 
+должно работать на linux и mac со стандартными пакетами cmake/make.
 
 Оригинальный код проекта распространяется под лицензией
 Mozilla Public License, v. 2.0 http://mozilla.org/MPL/2.0/
 
 Список авторов и контрибьюторов оригинального проекта
-описан в оригинальном readme:
-/README.original.rst
+описан в /README.original.rst
 
 Полезные ссылки
 -------------------------------
@@ -59,6 +61,9 @@ http://habrahabr.ru/post/247017/
 -----------------------------------
 1. Установить MinGW (нужно для CLion, добавляет make, g++, cpp)
 
+Этот пункт нужен только для установки на windows. Под другим OS его нужно пропустить 
+и переходить к следующему пункту - "Установка CLion".
+
 1.1. Установить MinGW
     http://sourceforge.net/projects/mingw/files/Installer/
     Тестировалось на версии mingw-get-0.6.2-mingw32-beta-20131004-1
@@ -90,6 +95,10 @@ http://habrahabr.ru/post/247017/
     Дальше сконфигурировать
         - Env: MinGW "c:\mingw"
         - cmake: "bundled cmake"
+
+Пункт MinGW доступен только в windows, поэтому для других OS меню с настройками 
+будет проще, и скорее всего сдесь вообще ничего не придётся менять, и всё будет 
+работать из коробки.
 
 После этого cmake должен правильно собирать проект.
 Всё, что для этого потребуется - это открыть проект в CLion.
@@ -147,6 +156,8 @@ http://habrahabr.ru/post/247017/
 Выбираем правильный вариант процессора для платы
 Это название берётся из файла
     C:\Program Files (x86)\Arduino\hardware\arduino\avr\boards.txt
+Этот пусть для windows, а для других платформ будет другой путь, 
+но похожий на "hardware\arduino\avr\boards.txt".
 
 Пример 1. Для Arduino Pro 16Mhz 5V ATmega 328
 нужно смотреть строчку "pro.menu.cpu.16MHzatmega328=ATmega328 (5V, 16 MHz)"
