@@ -5,6 +5,8 @@
 # Description: Arduino CMake example                                          #
 #                                                                             #
 #=============================================================================#
+# The following line must be place before project(...).
+# If it was not there when first calling cmake, remove all cmake generated file.
 set(CMAKE_TOOLCHAIN_FILE cmake/ArduinoToolchain.cmake) # Arduino Toolchain
 
 
