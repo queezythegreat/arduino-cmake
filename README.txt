@@ -1,6 +1,8 @@
 Arduino Cmake Example Project
 ===============================
 
+English readme: /README.english.rst
+
 Здесь находится проект с примером настроек cmake для работы с arduino.
 Корректно загружается и работает в CLion, используя toolchain 
 из Arduino IDE 1.6+. 
@@ -62,7 +64,7 @@ http://habrahabr.ru/post/247017/
 1. Установить MinGW (нужно для CLion, добавляет make, g++, cpp)
 
 Этот пункт нужен только для установки на windows. Под другим OS его нужно пропустить 
-и переходить к следующему пункту - "Установка CLion".
+и переходить к следующему пункту - "2. Установка Arduino IDE".
 
 1.1. Установить MinGW
     http://sourceforge.net/projects/mingw/files/Installer/
@@ -156,7 +158,7 @@ http://habrahabr.ru/post/247017/
 Выбираем правильный вариант процессора для платы
 Это название берётся из файла
     C:\Program Files (x86)\Arduino\hardware\arduino\avr\boards.txt
-Этот пусть для windows, а для других платформ будет другой путь, 
+Этот путь для windows, а для других платформ будет другой путь, 
 но похожий на "hardware\arduino\avr\boards.txt".
 
 Пример 1. Для Arduino Pro 16Mhz 5V ATmega 328
