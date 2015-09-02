@@ -1,7 +1,7 @@
 Arduino Cmake Example Project
 ===============================
 
-English readme: /README.english.rst
+English readme: /README.english.txt
 
 Здесь находится проект с примером настроек cmake для работы с arduino.
 Корректно загружается и работает в CLion, используя toolchain 
