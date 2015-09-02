@@ -819,7 +819,20 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
         endif()
 
         # output
-        set(COMPILE_FLAGS "-DF_CPU=${${BOARD_ID}${ARDUINO_CPUMENU}.build.f_cpu} -DARDUINO=${ARDUINO_VERSION_DEFINE} -DARDUINO_${${BOARD_ID}.build.board} -DARDUINO_ARCH_AVR -mmcu=${${BOARD_ID}${ARDUINO_CPUMENU}.build.mcu}")
+        set(COMPILE_FLAGS "")
+
+        if(${BOARD_ID}${ARDUINO_CPUMENU}.build.f_cpu)
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -DF_CPU=${${BOARD_ID}${ARDUINO_CPUMENU}.build.f_cpu}")
+        else()
+            if(${BOARD_ID}.build.f_cpu)
+                set(COMPILE_FLAGS "${COMPILE_FLAGS} -DF_CPU=${${BOARD_ID}.build.f_cpu}")
+            else()
+                message(FATAL_ERROR "Can not find f_cpu in boards.txt for Arduino board ID (${BOARD_ID}), aborting.")
+            endif()
+        endif()
+
+        set(COMPILE_FLAGS "${COMPILE_FLAGS} -DARDUINO=${ARDUINO_VERSION_DEFINE} -DARDUINO_${${BOARD_ID}.build.board} -DARDUINO_ARCH_AVR -mmcu=${${BOARD_ID}${ARDUINO_CPUMENU}.build.mcu}")
+
         if(DEFINED ${BOARD_ID}.build.vid)
             set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_VID=${${BOARD_ID}.build.vid}")
         endif()
