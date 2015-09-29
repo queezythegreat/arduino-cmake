@@ -904,7 +904,7 @@ CMake configuration example::
 Linux Serial Terminals
 ~~~~~~~~~~~~~~~~~~~~~~
 
-On Linux a wide range on serial terminal are availabe. Here is a list of a couple:
+On Linux a wide range on serial terminal are available. Here is a list of a couple:
 
 * ``minicom``
 * ``picocom``
