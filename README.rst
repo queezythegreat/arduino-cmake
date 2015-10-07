@@ -320,7 +320,7 @@ The options are:
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **ARDLIBS**        | Manual list of Arduino type libraries, common use case is when the   |                                    |
 |                    | library header name does not match the librarie's directory name.    |                                    |
-|                    | **ADVANCED OPTION!** Can be used in conjuction with **NO_AUTOLIBS**. |                                    |
+|                    | **ADVANCED OPTION!** Can be used in conjunction with **NO_AUTOLIBS**. |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **AFLAGS**         | avrdude flags for target                                             |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
