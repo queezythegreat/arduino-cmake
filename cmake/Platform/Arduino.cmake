@@ -2136,11 +2136,20 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #=============================================================================#
 if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
+    register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/avr)
 
-    find_file(ARDUINO_LIBRARIES_PATH
+    find_file(ARDUINO_LIBRARIES_PATH_DEF
         NAMES libraries
         PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to directory containing the Arduino libraries.")
+        DOC "Path to directory containing the Arduino (default) libraries.")
+    
+	find_file(ARDUINO_LIBRARIES_PATH_PLATFORM
+        NAMES libraries
+        PATHS ${ARDUINO_SDK_PATH}/hardware/arduino/avr/
+        DOC "Path to directory containing the Arduino (plateform specific) libraries.")
+
+	set (ARDUINO_LIBRARIES_PATH "${ARDUINO_LIBRARIES_PATH_DEF};${ARDUINO_LIBRARIES_PATH_PLATFORM}"
+		CACHE STRING "Path to directory containing the Arduino (default) libraries.")
 
     find_file(ARDUINO_VERSION_PATH
         NAMES lib/version.txt
