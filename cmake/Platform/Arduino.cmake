@@ -922,6 +922,8 @@ endfunction()
 #
 #=============================================================================#
 function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
+    get_property(include_dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+    
     set(ARDUINO_LIBS )
     foreach(SRC ${SRCS})
 
@@ -950,7 +952,7 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                     get_property(LIBRARY_SEARCH_PATH
                                  DIRECTORY     # Property Scope
                                  PROPERTY LINK_DIRECTORIES)
-                    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${${ARDUINO_PLATFORM}_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+                    foreach(LIB_SEARCH_PATH ${include_dirs} ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${${ARDUINO_PLATFORM}_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
                         if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                             break()
@@ -959,7 +961,8 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                             break()
                         endif()
-                        if(EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1})
+                        get_source_file_property(_header_generated ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1} GENERATED)
+                        if((EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1}) OR ${_header_generated})
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
                             break()
                         endif()
