@@ -1176,10 +1176,29 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT AVRDUDE_FLAGS
 
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_PATH}.hex")
     list(APPEND AVRDUDE_ARGS "-Ueeprom:w:${TARGET_PATH}.eep:i")
-    add_custom_target(${UPLOAD_TARGET}
-                     ${ARDUINO_AVRDUDE_PROGRAM} 
-                     ${AVRDUDE_ARGS}
-                     DEPENDS ${TARGET_NAME})
+        
+    if(${CMAKE_PROJECT_NAME}_BOARD STREQUAL "yun")    
+        set (RESET_TTY_PYTHON_PROG "import sys\;")
+        set (RESET_TTY_PYTHON_PROG "${RESET_TTY_PYTHON_PROG} import serial\;")
+        set (RESET_TTY_PYTHON_PROG "${RESET_TTY_PYTHON_PROG} import time\;")
+        set (RESET_TTY_PYTHON_PROG "${RESET_TTY_PYTHON_PROG} ser=serial.Serial(\"${PORT}\",1200)\;")
+        set (RESET_TTY_PYTHON_PROG "${RESET_TTY_PYTHON_PROG} ser.close()\;")
+        set (RESET_TTY_PYTHON_PROG "${RESET_TTY_PYTHON_PROG} time.sleep(5)\;")
+        add_custom_target(${UPLOAD_TARGET}
+                COMMAND
+                python -c
+                ${RESET_TTY_PYTHON_PROG}
+                COMMAND
+                ${ARDUINO_AVRDUDE_PROGRAM}
+                ${AVRDUDE_ARGS}
+                DEPENDS ${TARGET_NAME}
+                VERBATIM)
+    else()
+        add_custom_target(${UPLOAD_TARGET}
+                ${ARDUINO_AVRDUDE_PROGRAM}
+                ${AVRDUDE_ARGS}
+                DEPENDS ${TARGET_NAME})
+    endif()
 
     # Global upload target
     if(NOT TARGET upload)
