@@ -488,7 +488,15 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
             get_filename_component(INPUT_SKETCH_PATH "${INPUT_SKETCH}" PATH)
             set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${INPUT_SKETCH_PATH}")
         endif()
-    endif()
+        if(INPUT_NO_AUTOLIBS)
+            if (IS_DIRECTORY "${INPUT_SKETCH}")
+                include_directories(${INPUT_SKETCH})
+            else()
+                get_filename_component(INPUT_SKETCH_PATH "${INPUT_SKETCH}" PATH)
+                include_directories(${INPUT_SKETCH_PATH})
+            endif()
+        endif(INPUT_NO_AUTOLIBS)
+    endif(NOT "${INPUT_SKETCH}" STREQUAL "")
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
@@ -506,7 +514,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
             get_target_property(LIB_INCLUDES ${LIB} INCLUDE_DIRECTORIES)
             arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
         endforeach(LIB ${LIBS})
-    endif()
+    endif(NOT INPUT_NO_AUTOLIBS)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
 
@@ -986,23 +994,22 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach(LIB_DEP ${LIB_DEPS})
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS} ${INCLUDE_PATHS}")
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}" "${INCLUDE_PATHS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
             endforeach()
 
             set_target_properties(${TARGET_LIB_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
-            target_include_directories(${TARGET_NAME}
-             PUBLIC ${LIB_PATH}
-             PUBLIC ${LIB_PATH}/utility)
-             foreach(ARDUINO_INCLUDE_PATH ${ARDUINO_INCLUDE_PATHS})
-                target_include_directories(${TARGET_NAME} PUBLIC ${ARDUINO_INCLUDE_PATH})
-             endforeach(ARDUINO_INCLUDE_PATH ${ARDUINO_INCLUDE_PATHS})
-             foreach(DEP_LIB_SRCS_INCLUDE ${DEP_LIB_SRCS_INCLUDES})
-                target_include_directories(${TARGET_NAME} PUBLIC ${DEP_LIB_SRCS_INCLUDE})
-             endforeach(DEP_LIB_SRCS_INCLUDE ${DEP_LIB_SRCS_INCLUDES})
-
+            target_include_directories(${TARGET_LIB_NAME}
+                PUBLIC ${LIB_PATH}
+                PUBLIC ${LIB_PATH}/utility)
+            foreach(ARDUINO_INCLUDE_PATH ${ARDUINO_INCLUDE_PATHS})
+                target_include_directories(${TARGET_LIB_NAME} PUBLIC ${ARDUINO_INCLUDE_PATH})
+            endforeach(ARDUINO_INCLUDE_PATH ${ARDUINO_INCLUDE_PATHS})
+            foreach(DEP_LIB_SRCS_INCLUDE ${DEP_LIB_SRCS_INCLUDES})
+                target_include_directories(${TARGET_LIB_NAME} PUBLIC ${DEP_LIB_SRCS_INCLUDE})
+            endforeach(DEP_LIB_SRCS_INCLUDE ${DEP_LIB_SRCS_INCLUDES})
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
 
@@ -1038,7 +1045,7 @@ function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LI
     find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS} ${INCLUDE_PATHS}")
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}" "${INCLUDE_PATHS}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
     endforeach()
 
