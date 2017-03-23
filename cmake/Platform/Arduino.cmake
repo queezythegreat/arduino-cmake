@@ -837,7 +837,49 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR INCLUDE_PATHS_VAR BO
     else()
         message(FATAL_ERROR "Invalid Arduino board ID (${BOARD_ID}), aborting.")
     endif()
+
+    set(PREPROCESSOR_SYMBOL)
+    get_preprocessor_symbol(PREPROCESSOR_SYMBOL)
+    if(NOT ${PREPROCESSOR_SYMBOL} STREQUAL "")
+      add_definitions(-D${PREPROCESSOR_SYMBOL})
+    endif(NOT ${PREPROCESSOR_SYMBOL} STREQUAL "")
 endfunction()
+
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
+# get_preprocessor_symbol(COMPILE_FLAGS LINK_FLAGS BOARD_ID MANUAL)
+#
+#       OUT_PREPROCESSOR_SYMBOL -Variable holding preprocessor symbol.
+#
+# Return the [preprocessor symbol matching with mcu](http://www.nongnu.org/avr-libc/user-manual/using_tools.html).
+# 
+#
+#=============================================================================#
+function(get_preprocessor_symbol OUT_PREPROCESSOR_SYMBOL)
+    set(SupportedMcu "")
+    MACRO(INSERT_INTO_MAP _KEY _VALUE)
+        SET("ArchitectureTopreProcessorSymbol_${_KEY}" "${_VALUE}")
+        list(APPEND SupportedMcu ${_KEY})
+    ENDMACRO(INSERT_INTO_MAP)
+    INSERT_INTO_MAP("atmega168" "__AVR_ATmega168__")
+    INSERT_INTO_MAP("atmega168a" "__AVR_ATmega168A__")
+    INSERT_INTO_MAP("atmega168p" "__AVR_ATmega168P__")
+    INSERT_INTO_MAP("atmega168pa" "__AVR_ATmega32U4__")
+    INSERT_INTO_MAP("atmega328" "__AVR_ATmega328__")
+    INSERT_INTO_MAP("atmega328p" "__AVR_ATmega328P__")
+    INSERT_INTO_MAP("atmega2560" "__AVR_ATmega2560__")
+
+    if(DEFINED ArchitectureTopreProcessorSymbol_${${BOARD_ID}.build.mcu})
+        set(PREPROCESSOR ${ArchitectureTopreProcessorSymbol_${${BOARD_ID}.build.mcu}})
+        set(${OUT_PREPROCESSOR_SYMBOL} ${PREPROCESSOR} PARENT_SCOPE)
+    else(DEFINED ArchitectureTopreProcessorSymbol_${${BOARD_ID}.build.mcu})
+        message(WARNING "Unknow mcu, some autocomplettion can miveheabi, supported mcu are:")
+        foreach(M ${SupportedMcu})
+            message(${M})
+        endforeach(M ${SupportedMcu})
+    endif(DEFINED ArchitectureTopreProcessorSymbol_${${BOARD_ID}.build.mcu})
+endfunction(get_preprocessor_symbol OUT_PREPROCESSOR_SYMBOL)
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
