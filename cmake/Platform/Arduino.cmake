@@ -235,7 +235,7 @@
 # See: http://code.google.com/p/arduino/wiki/Platforms
 #
 # This enables you to register new types of hardware platforms such as the
-# Sagnuino, without having to copy the files into your Arduion SDK.
+# Sagnuino, without having to copy the files into your Arduino SDK.
 #
 # A Hardware Platform is a directory containing the following:
 #
@@ -246,7 +246,7 @@
 #            |-- boards.txt
 #            `-- programmers.txt
 #            
-#  The board.txt describes the target boards and bootloaders. While
+#  The boards.txt describes the target boards and bootloaders. While
 #  programmers.txt the programmer defintions.
 #
 #  A good example of a Hardware Platform is in the Arduino SDK:
@@ -646,6 +646,11 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
     string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
     GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
 
+    # platform path changed in versions 1.5 and greater
+    if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0.5)
+        set(PLATFORM_PATH "${PLATFORM_PATH}/avr")
+    endif()
+
     if(PLATFORM)
         string(TOUPPER ${PLATFORM} PLATFORM)
         list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
@@ -678,6 +683,17 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
                 NAMES boards.txt
                 PATHS ${PLATFORM_PATH}
                 DOC "Path to Arduino boards definition file.")
+
+            # some libraries are in platform path in versions 1.5 and greater
+            if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0.5)
+                find_file(${PLATFORM}_PLATFORM_LIBRARIES_PATH
+                    NAMES libraries
+                    PATHS ${PLATFORM_PATH}
+                    DOC "Path to platform directory containing the Arduino libraries.")
+                set(ARDUINO_PLATFORM_LIBRARIES_PATH "${${PLATFORM}_PLATFORM_LIBRARIES_PATH}" PARENT_SCOPE)
+            else()
+                set(ARDUINO_PLATFORM_LIBRARIES_PATH "" PARENT_SCOPE)
+            endif()
 
             if(${PLATFORM}_BOARDS_PATH)
                 load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
@@ -810,7 +826,7 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
             set(COMPILE_FLAGS "${COMPILE_FLAGS} -DUSB_PID=${${BOARD_ID}.build.pid}")
         endif()
         if(NOT MANUAL)
-            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${${BOARD_CORE}.path}\" -I\"${ARDUINO_LIBRARIES_PATH}\"")
+            set(COMPILE_FLAGS "${COMPILE_FLAGS} -I\"${${BOARD_CORE}.path}\" -I\"${ARDUINO_LIBRARIES_PATH}\" -I\"${ARDUINO_PLATFORM_LIBRARIES_PATH}\" ")
         endif()
         set(LINK_FLAGS "-mmcu=${${BOARD_ID}.build.mcu}")
         if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0 OR ARDUINO_SDK_VERSION VERSION_EQUAL 1.0)
@@ -920,7 +936,7 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                     get_property(LIBRARY_SEARCH_PATH
                                  DIRECTORY     # Property Scope
                                  PROPERTY LINK_DIRECTORIES)
-                    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+                    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
                         if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                             break()
@@ -1258,7 +1274,30 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRD
         return()
     endif()
 
-    foreach( ITEM unlock_bits high_fuses low_fuses path file)
+    # boards.txt file format changed in version 1.5 and greater
+    if(ARDUINO_SDK_VERSION VERSION_GREATER 1.0.5)
+
+##
+##
+##
+# TODO : manage menus
+##
+##
+##
+        # look at bootloader.file
+        if(NOT ${BOARD_ID}.bootloader.file)
+            message("Missing ${BOARD_ID}.bootloader.file, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+            return()
+        endif()
+        # build bootloader.path from bootloader.file...
+        string(REGEX MATCH "(.+/)*" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.file})
+        string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.path})
+        # and fix bootloader.file
+        string(REGEX MATCH "/.(.+)$" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
+	string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
+    endif()
+
+    foreach(ITEM unlock_bits high_fuses low_fuses path file)
         if(NOT ${BOARD_ID}.bootloader.${ITEM})
             message("Missing ${BOARD_ID}.bootloader.${ITEM}, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
             return()
@@ -1675,7 +1714,7 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     get_property(LIBRARY_SEARCH_PATH
                  DIRECTORY     # Property Scope
                  PROPERTY LINK_DIRECTORIES)
-    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+    foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
         if(EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             break()
@@ -2068,10 +2107,6 @@ function(ERROR_FOR_UNPARSED PREFIX)
 endfunction()
 
 
-
-
-
-
 #=============================================================================#
 #                              C Flags                                        
 #=============================================================================#
@@ -2135,17 +2170,31 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #                          Initialization                                     
 #=============================================================================#
 if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
+
+    find_file(ARDUINO_VERSION_PATH
+        NAMES lib/version.txt
+        PATHS ${ARDUINO_SDK_PATH}
+        DOC "Path to Arduino version file.")
+
+    # get version first (some stuff depends on versions)
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
+    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
+    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
+
+    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
+         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
+    endif()
+
+    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+
     register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
 
     find_file(ARDUINO_LIBRARIES_PATH
         NAMES libraries
         PATHS ${ARDUINO_SDK_PATH}
         DOC "Path to directory containing the Arduino libraries.")
-
-    find_file(ARDUINO_VERSION_PATH
-        NAMES lib/version.txt
-        PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to Arduino version file.")
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
         NAMES avrdude
@@ -2194,18 +2243,6 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         AVRSIZE_PROGRAM
         ${ADDITIONAL_REQUIRED_VARS}
         MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
-
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
-    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
-    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
-    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
-
-    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
-         message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
-    endif()
-
-    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
