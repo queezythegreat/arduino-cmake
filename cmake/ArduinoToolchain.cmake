@@ -32,6 +32,35 @@ elseif(WIN32)
     include(Platform/WindowsPaths)
 endif()
 
+#=============================================================================#
+#              Toolchain file variable scope workaround                       #
+#=============================================================================#
+foreach(VAR
+        ARDUINO_SDK_PATH
+        ARDUINO_AVRDUDE_CONFIG_PATH
+        ARDUINO_AVRDUDE_FLAGS
+        ARDUINO_AVRDUDE_PROGRAM
+        ARDUINO_BOARDS_PATH
+        ARDUINO_BOOTLOADERS_PATH
+        ARDUINO_CORES_PATH
+        ARDUINO_LIBRARIES_PATH
+        ARDUINO_OBJCOPY_EEP_FLAGS
+        ARDUINO_OBJCOPY_HEX_FLAGS
+        ARDUINO_PLATFORMS
+        ARDUINO_PROGRAMMERS_PATH
+        ARDUINO_VARIANTS_PATH
+        ARDUINO_VERSION_PATH
+        AVRSIZE_PROGRAM)
+    if(${VAR})
+        # Environment variables are always preserved.
+        set(ENV{_ARDUINO_CMAKE_WORKAROUND_${VAR}} "${${VAR}}")
+    else()
+        if($ENV{_ARDUINO_CMAKE_WORKAROUND_${VAR}})
+            set(${VAR} "$ENV{_ARDUINO_CMAKE_WORKAROUND_${VAR}}")
+            message(DEBUG "RESTORED ${VAR} from env: ${${VAR}}")
+        endif()
+    endif()
+endforeach()
 
 #=============================================================================#
 #                         Detect Arduino SDK                                  #
@@ -64,6 +93,10 @@ if(NOT ARDUINO_SDK_PATH)
     endif()
     list(SORT SDK_PATH_HINTS)
     list(REVERSE SDK_PATH_HINTS)
+
+    if(DEFINED ENV{ARDUINO_SDK_PATH})
+        list(APPEND SDK_PATH_HINTS $ENV{ARDUINO_SDK_PATH})
+    endif()
 endif()
 
 find_path(ARDUINO_SDK_PATH
