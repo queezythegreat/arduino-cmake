@@ -951,7 +951,7 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
                             break()
                         endif()
-                        if(EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1}/src)
+                        if(EXISTS ${LIB_SEARCH_PATH}/src/${CMAKE_MATCH_1})
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
                             break()
                         endif()
@@ -992,8 +992,11 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
     set(LIB_TARGETS)
     set(LIB_INCLUDES)
 
-    get_filename_component(LIB_NAME ${LIB_PATH} NAME)
+    string(REGEX REPLACE "/src/?$" "" LIB_PATH_STRIPPED ${LIB_PATH})
+    get_filename_component(LIB_NAME ${LIB_PATH_STRIPPED} NAME)
+
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
+
     if(NOT TARGET ${TARGET_LIB_NAME})
         string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
 
@@ -1027,6 +1030,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
             list(APPEND LIB_INCLUDES "-I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\"")
 
+            list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
 
