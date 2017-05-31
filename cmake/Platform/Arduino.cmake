@@ -1613,21 +1613,42 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
 
                 # Add entry setting to entry settings list if it does not exist
                 set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
-                list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
-                list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
-                if (ENTRY_SETTING_INDEX LESS 0)
-                    # Add setting to entry
-                    list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
-                    set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
-                            CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
+
+                # Arduino 1.6 versions or greater
+                if (${ARDUINO_SDK_VERSION} VERSION_GREATER 1.5.0)
+
+                    # menu.cpu.architecture settings
+                    if (ENTRY_NAME_TOKENS_LEN GREATER 5)
+                        list(GET ENTRY_NAME_TOKENS 3 CPU_ARCH)
+                        list(GET ENTRY_NAME_TOKENS 4 ENTRY_SETTING)
+                        set(ENTRY_SETTING menu.cpu.${CPU_ARCH}.${ENTRY_SETTING})
+                    else ()
+                        list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
+                    endif ()
+
+                else ()
+
+                    list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
+                    if (ENTRY_SETTING_INDEX LESS 0)
+                        # Add setting to entry
+                        list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
+                        set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
+                                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
+                    endif ()
+
                 endif ()
 
                 set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
 
                 # Add entry sub-setting to entry sub-settings list if it does not exists
-                if (ENTRY_NAME_TOKENS_LEN GREATER 2)
+                if (${ENTRY_NAME_TOKENS_LEN} GREATER 2)
+
                     set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                    list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                    if (ENTRY_NAME_TOKENS_LEN GREATER 5)
+                        list(GET ENTRY_NAME_TOKENS 5 ENTRY_SUBSETTING)
+                    else ()
+                        list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                    endif ()
                     list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
                     if (ENTRY_SUBSETTING_INDEX LESS 0)
                         list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
@@ -1635,12 +1656,12 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
                                 CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
                     endif ()
                     set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
+
                 endif ()
 
                 # Save setting value
                 set(${FULL_SETTING_NAME} ${SETTING_VALUE}
                         CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
-
 
             endif ()
         endforeach ()
