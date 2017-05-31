@@ -648,6 +648,7 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
     endif ()
 
     if (PLATFORM)
+        # Avoid defining a platform multiple times if it has already been defined before
         string(TOUPPER ${PLATFORM} PLATFORM)
         list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
 
