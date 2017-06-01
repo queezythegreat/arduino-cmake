@@ -1614,61 +1614,63 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
                 # Add entry setting to entry settings list if it does not exist
                 set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
 
-                # Arduino 1.6 versions or greater
-                if (${ARDUINO_SDK_VERSION} VERSION_GREATER 1.5.0)
-
-                    # menu.cpu.architecture settings
-                    if (ENTRY_NAME_TOKENS_LEN GREATER 5)
-                        list(GET ENTRY_NAME_TOKENS 3 CPU_ARCH)
-                        list(GET ENTRY_NAME_TOKENS 4 ENTRY_SETTING)
-                        set(ENTRY_SETTING menu.cpu.${CPU_ARCH}.${ENTRY_SETTING})
-                    else ()
-                        list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
-                    endif ()
-
+                # menu.cpu.architecture settings
+                if (ENTRY_NAME_TOKENS_LEN GREATER 5)
+                    list(GET ENTRY_NAME_TOKENS 3 CPU_ARCH)
+                    list(GET ENTRY_NAME_TOKENS 4 ENTRY_SETTING)
+                    set(ENTRY_SETTING menu.cpu.${CPU_ARCH}.${ENTRY_SETTING})
                 else ()
-
-                    list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
-                    if (ENTRY_SETTING_INDEX LESS 0)
-                        # Add setting to entry
-                        list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
-                        set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
-                                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
-                    endif ()
-
+                    list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
                 endif ()
 
-                set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
-
-                # Add entry sub-setting to entry sub-settings list if it does not exists
-                if (${ENTRY_NAME_TOKENS_LEN} GREATER 2)
-
-                    set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                    if (ENTRY_NAME_TOKENS_LEN GREATER 5)
-                        list(GET ENTRY_NAME_TOKENS 5 ENTRY_SUBSETTING)
-                    else ()
-                        list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
-                    endif ()
-                    list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
-                    if (ENTRY_SUBSETTING_INDEX LESS 0)
-                        list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
-                        set(${ENTRY_SUBSETTING_LIST} ${${ENTRY_SUBSETTING_LIST}}
-                                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
-                    endif ()
-                    set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
-
+                list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
+                if (ENTRY_SETTING_INDEX LESS 0)
+                    # Add setting to entry
+                    list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
+                    set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
+                            CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
                 endif ()
 
-                # Save setting value
-                set(${FULL_SETTING_NAME} ${SETTING_VALUE}
-                        CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
+            set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
+
+            # Add entry sub-setting to entry sub-settings list if it does not exists
+            if (ENTRY_NAME_TOKENS_LEN GREATER 2)
+
+                set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
+                if (ENTRY_NAME_TOKENS_LEN GREATER 5)
+                    list(GET ENTRY_NAME_TOKENS 5 ENTRY_SUBSETTING)
+                elseif (ENTRY_NAME_TOKENS_LEN GREATER 3)
+                    # Search for special cpu sub-settings
+                    list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                    string(TOLOWER ${ENTRY_SUBSETTING} ENTRY_SUBSETTING)
+                    if ("${ENTRY_SUBSETTING}" STREQUAL "cpu")
+                        # cpu setting found, determine architecture
+                        list(GET ENTRY_NAME_TOKENS 3 ENTRY_SUBSETTING)
+                        set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.CPUS)
+                    endif ()
+                else ()
+                    list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                endif ()
+                list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
+                if (ENTRY_SUBSETTING_INDEX LESS 0)
+                    list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
+                    set(${ENTRY_SUBSETTING_LIST} ${${ENTRY_SUBSETTING_LIST}}
+                            CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
+                endif ()
+                set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
 
             endif ()
-        endforeach ()
-        set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
-                CACHE STRING "List of detected Arduino Board configurations")
-        mark_as_advanced(${SETTINGS_LIST})
+
+            # Save setting value
+            set(${FULL_SETTING_NAME} ${SETTING_VALUE}
+                    CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
+
     endif ()
+endforeach ()
+set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
+CACHE STRING "List of detected Arduino Board configurations")
+mark_as_advanced(${SETTINGS_LIST})
+endif ()
 endfunction()
 
 #=============================================================================#
@@ -1680,22 +1682,22 @@ endfunction()
 #
 #=============================================================================#
 function(PRINT_SETTINGS ENTRY_NAME)
-    if (${ENTRY_NAME}.SETTINGS)
+if (${ENTRY_NAME}.SETTINGS)
 
-        foreach (ENTRY_SETTING ${${ENTRY_NAME}.SETTINGS})
-            if (${ENTRY_NAME}.${ENTRY_SETTING})
-                message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}}")
-            endif ()
-            if (${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                foreach (ENTRY_SUBSETTING ${${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS})
-                    if (${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING})
-                        message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}}")
-                    endif ()
-                endforeach ()
-            endif ()
-            message(STATUS "")
-        endforeach ()
-    endif ()
+foreach (ENTRY_SETTING ${${ENTRY_NAME}.SETTINGS})
+if (${ENTRY_NAME}.${ENTRY_SETTING})
+message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}}")
+endif ()
+if (${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
+foreach (ENTRY_SUBSETTING ${${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS})
+if (${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING})
+message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}}")
+endif ()
+endforeach ()
+endif ()
+message(STATUS "")
+endforeach ()
+endif ()
 endfunction()
 
 #=============================================================================#
@@ -1708,24 +1710,24 @@ endfunction()
 # Print list settings and names (see load_arduino_syle_settings()).
 #=============================================================================#
 function(PRINT_LIST SETTINGS_LIST)
-    if (${SETTINGS_LIST})
-        set(MAX_LENGTH 0)
-        foreach (ENTRY_NAME ${${SETTINGS_LIST}})
-            string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
-            if (CURRENT_LENGTH GREATER MAX_LENGTH)
-                set(MAX_LENGTH ${CURRENT_LENGTH})
-            endif ()
-        endforeach ()
-        foreach (ENTRY_NAME ${${SETTINGS_LIST}})
-            string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
-            math(EXPR PADDING_LENGTH "${MAX_LENGTH}-${CURRENT_LENGTH}")
-            set(PADDING "")
-            foreach (X RANGE ${PADDING_LENGTH})
-                set(PADDING "${PADDING} ")
-            endforeach ()
-            message(STATUS "   ${PADDING}${ENTRY_NAME}: ${${ENTRY_NAME}.name}")
-        endforeach ()
-    endif ()
+if (${SETTINGS_LIST})
+set(MAX_LENGTH 0)
+foreach (ENTRY_NAME ${${SETTINGS_LIST}})
+string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
+if (CURRENT_LENGTH GREATER MAX_LENGTH)
+set(MAX_LENGTH ${CURRENT_LENGTH})
+endif ()
+endforeach ()
+foreach (ENTRY_NAME ${${SETTINGS_LIST}})
+string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
+math(EXPR PADDING_LENGTH "${MAX_LENGTH}-${CURRENT_LENGTH}")
+set(PADDING "")
+foreach (X RANGE ${PADDING_LENGTH})
+set(PADDING "${PADDING} ")
+endforeach ()
+message(STATUS "   ${PADDING}${ENTRY_NAME}: ${${ENTRY_NAME}.name}")
+endforeach ()
+endif ()
 endfunction()
 
 #=============================================================================#
@@ -1741,24 +1743,24 @@ endfunction()
 # Creates a Arduino example from a the specified library.
 #=============================================================================#
 function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
-    set(EXAMPLE_SKETCH_PATH)
+set(EXAMPLE_SKETCH_PATH)
 
-    get_property(LIBRARY_SEARCH_PATH
-            DIRECTORY     # Property Scope
-            PROPERTY LINK_DIRECTORIES)
-    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
-        if (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
-            set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
-            break()
-        endif ()
-    endforeach ()
+get_property(LIBRARY_SEARCH_PATH
+DIRECTORY     # Property Scope
+PROPERTY LINK_DIRECTORIES)
+foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+if (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
+set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
+break()
+endif ()
+endforeach ()
 
-    if (EXAMPLE_SKETCH_PATH)
-        setup_arduino_sketch(${TARGET_NAME} ${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
-        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
-    else ()
-        message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME} from library ${LIBRARY_NAME}")
-    endif ()
+if (EXAMPLE_SKETCH_PATH)
+setup_arduino_sketch(${TARGET_NAME} ${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
+set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+else ()
+message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME} from library ${LIBRARY_NAME}")
+endif ()
 endfunction()
 
 #=============================================================================#
@@ -1773,51 +1775,51 @@ endfunction()
 # Generates C++ sources from Arduino Sketch.
 #=============================================================================#
 function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
-    get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
-    get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
+get_filename_component(SKETCH_NAME "${SKETCH_PATH}" NAME)
+get_filename_component(SKETCH_PATH "${SKETCH_PATH}" ABSOLUTE)
 
-    if (EXISTS "${SKETCH_PATH}")
-        set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SKETCH_NAME}.cpp)
+if (EXISTS "${SKETCH_PATH}")
+set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SKETCH_NAME}.cpp)
 
-        if (IS_DIRECTORY "${SKETCH_PATH}")
-            # Sketch directory specified, try to find main sketch...
-            set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
+if (IS_DIRECTORY "${SKETCH_PATH}")
+# Sketch directory specified, try to find main sketch...
+set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
 
-            if (EXISTS "${MAIN_SKETCH}.pde")
-                set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
-            elseif (EXISTS "${MAIN_SKETCH}.ino")
-                set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
-            else ()
-                message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}! Please specify the main sketch file path instead of directory.")
-            endif ()
-        else ()
-            # Sektch file specified, assuming parent directory as sketch directory
-            set(MAIN_SKETCH ${SKETCH_PATH})
-            get_filename_component(SKETCH_PATH "${SKETCH_PATH}" PATH)
-        endif ()
-        arduino_debug_msg("sketch: ${MAIN_SKETCH}")
+if (EXISTS "${MAIN_SKETCH}.pde")
+set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
+elseif (EXISTS "${MAIN_SKETCH}.ino")
+set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
+else ()
+message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}! Please specify the main sketch file path instead of directory.")
+endif ()
+else ()
+# Sektch file specified, assuming parent directory as sketch directory
+set(MAIN_SKETCH ${SKETCH_PATH})
+get_filename_component(SKETCH_PATH "${SKETCH_PATH}" PATH)
+endif ()
+arduino_debug_msg("sketch: ${MAIN_SKETCH}")
 
-        # Find all sketch files
-        file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
-        list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
-        list(SORT SKETCH_SOURCES)
+# Find all sketch files
+file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
+list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
+list(SORT SKETCH_SOURCES)
 
-        generate_cpp_from_sketch("${MAIN_SKETCH}" "${SKETCH_SOURCES}" "${SKETCH_CPP}")
+generate_cpp_from_sketch("${MAIN_SKETCH}" "${SKETCH_SOURCES}" "${SKETCH_CPP}")
 
-        # Regenerate build system if sketch changes
-        add_custom_command(OUTPUT ${SKETCH_CPP}
-                COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                DEPENDS ${MAIN_SKETCH} ${SKETCH_SOURCES}
-                COMMENT "Regnerating ${SKETCH_NAME} Sketch")
-        set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED TRUE)
-        # Mark file that it exists for find_file
-        set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED_SKETCH TRUE)
+# Regenerate build system if sketch changes
+add_custom_command(OUTPUT ${SKETCH_CPP}
+COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+DEPENDS ${MAIN_SKETCH} ${SKETCH_SOURCES}
+COMMENT "Regnerating ${SKETCH_NAME} Sketch")
+set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED TRUE)
+# Mark file that it exists for find_file
+set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED_SKETCH TRUE)
 
-        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
-    else ()
-        message(FATAL_ERROR "Sketch does not exist: ${SKETCH_PATH}")
-    endif ()
+set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+else ()
+message(FATAL_ERROR "Sketch does not exist: ${SKETCH_PATH}")
+endif ()
 endfunction()
 
 
@@ -1833,95 +1835,95 @@ endfunction()
 # Generate C++ source file from Arduino sketch files.
 #=============================================================================#
 function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
-    file(WRITE ${SKETCH_CPP} "// automatically generated by arduino-cmake\n")
-    file(READ ${MAIN_SKETCH_PATH} MAIN_SKETCH)
+file(WRITE ${SKETCH_CPP} "// automatically generated by arduino-cmake\n")
+file(READ ${MAIN_SKETCH_PATH} MAIN_SKETCH)
 
-    # remove comments
-    remove_comments(MAIN_SKETCH MAIN_SKETCH_NO_COMMENTS)
+# remove comments
+remove_comments(MAIN_SKETCH MAIN_SKETCH_NO_COMMENTS)
 
-    # find first statement
-    string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH_NO_COMMENTS}")
-    string(FIND "${MAIN_SKETCH}" "${FIRST_STATEMENT}" HEAD_LENGTH)
-    if ("${HEAD_LENGTH}" STREQUAL "-1")
-        set(HEAD_LENGTH 0)
-    endif ()
-    #message(STATUS "FIRST STATEMENT: ${FIRST_STATEMENT}")
-    #message(STATUS "FIRST STATEMENT POSITION: ${HEAD_LENGTH}")
-    string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
+# find first statement
+string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH_NO_COMMENTS}")
+string(FIND "${MAIN_SKETCH}" "${FIRST_STATEMENT}" HEAD_LENGTH)
+if ("${HEAD_LENGTH}" STREQUAL "-1")
+set(HEAD_LENGTH 0)
+endif ()
+#message(STATUS "FIRST STATEMENT: ${FIRST_STATEMENT}")
+#message(STATUS "FIRST STATEMENT POSITION: ${HEAD_LENGTH}")
+string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
 
-    string(SUBSTRING "${MAIN_SKETCH}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
-    #arduino_debug_msg("SKETCH_HEAD:\n${SKETCH_HEAD}")
+string(SUBSTRING "${MAIN_SKETCH}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
+#arduino_debug_msg("SKETCH_HEAD:\n${SKETCH_HEAD}")
 
-    # find the body of the main pde
-    math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${HEAD_LENGTH}")
-    string(SUBSTRING "${MAIN_SKETCH}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
-    #arduino_debug_msg("BODY:\n${SKETCH_BODY}")
+# find the body of the main pde
+math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${HEAD_LENGTH}")
+string(SUBSTRING "${MAIN_SKETCH}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
+#arduino_debug_msg("BODY:\n${SKETCH_BODY}")
 
-    # write the file head
-    file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
+# write the file head
+file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
 
-    # Count head line offset (for GCC error reporting)
-    file(STRINGS ${SKETCH_CPP} SKETCH_HEAD_LINES)
-    list(LENGTH SKETCH_HEAD_LINES SKETCH_HEAD_LINES_COUNT)
-    math(EXPR SKETCH_HEAD_OFFSET "${SKETCH_HEAD_LINES_COUNT}+2")
+# Count head line offset (for GCC error reporting)
+file(STRINGS ${SKETCH_CPP} SKETCH_HEAD_LINES)
+list(LENGTH SKETCH_HEAD_LINES SKETCH_HEAD_LINES_COUNT)
+math(EXPR SKETCH_HEAD_OFFSET "${SKETCH_HEAD_LINES_COUNT}+2")
 
-    # add arduino include header
-    #file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
-    file(APPEND ${SKETCH_CPP} "\n#line ${SKETCH_HEAD_OFFSET} \"${SKETCH_CPP}\"\n")
-    if (ARDUINO_SDK_VERSION VERSION_LESS 1.0)
-        file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
-    else ()
-        file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
-    endif ()
+# add arduino include header
+#file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
+file(APPEND ${SKETCH_CPP} "\n#line ${SKETCH_HEAD_OFFSET} \"${SKETCH_CPP}\"\n")
+if (ARDUINO_SDK_VERSION VERSION_LESS 1.0)
+file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
+else ()
+file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
+endif ()
 
-    # add function prototypes
-    foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
-        arduino_debug_msg("Sketch: ${SKETCH_SOURCE_PATH}")
-        file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        remove_comments(SKETCH_SOURCE SKETCH_SOURCE)
+# add function prototypes
+foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
+arduino_debug_msg("Sketch: ${SKETCH_SOURCE_PATH}")
+file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+remove_comments(SKETCH_SOURCE SKETCH_SOURCE)
 
-        set(ALPHA "a-zA-Z")
-        set(NUM "0-9")
-        set(ALPHANUM "${ALPHA}${NUM}")
-        set(WORD "_${ALPHANUM}")
-        set(LINE_START "(^|[\n])")
-        set(QUALIFIERS "[ \t]*([${ALPHA}]+[ ])*")
-        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])+")
-        set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
-        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
-        set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
-        set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
+set(ALPHA "a-zA-Z")
+set(NUM "0-9")
+set(ALPHANUM "${ALPHA}${NUM}")
+set(WORD "_${ALPHANUM}")
+set(LINE_START "(^|[\n])")
+set(QUALIFIERS "[ \t]*([${ALPHA}]+[ ])*")
+set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])+")
+set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
+set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
+set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
+set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
 
-        string(REGEX MATCHALL "${PROTOTYPE_PATTERN}" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
+string(REGEX MATCHALL "${PROTOTYPE_PATTERN}" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
 
-        # Write function prototypes
-        file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
-        foreach (SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})
-            string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            arduino_debug_msg("\tprototype: ${SKETCH_PROTOTYPE};")
-            # " else if(var == other) {" shoudn't be listed as prototype
-            if (NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
-                file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
-            else ()
-                arduino_debug_msg("\trejected prototype: ${SKETCH_PROTOTYPE};")
-            endif ()
-            file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
-        endforeach ()
-        file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
-    endforeach ()
+# Write function prototypes
+file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
+foreach (SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})
+string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+arduino_debug_msg("\tprototype: ${SKETCH_PROTOTYPE};")
+# " else if(var == other) {" shoudn't be listed as prototype
+if (NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
+file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
+else ()
+arduino_debug_msg("\trejected prototype: ${SKETCH_PROTOTYPE};")
+endif ()
+file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
+endforeach ()
+file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
+endforeach ()
 
-    # Write Sketch CPP source
-    get_num_lines("${SKETCH_HEAD}" HEAD_NUM_LINES)
-    file(APPEND ${SKETCH_CPP} "#line ${HEAD_NUM_LINES} \"${MAIN_SKETCH_PATH}\"\n")
-    file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
-    foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
-        file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        file(APPEND ${SKETCH_CPP} "\n//=== START : ${SKETCH_SOURCE_PATH}\n")
-        file(APPEND ${SKETCH_CPP} "#line 1 \"${SKETCH_SOURCE_PATH}\"\n")
-        file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
-        file(APPEND ${SKETCH_CPP} "\n//=== END : ${SKETCH_SOURCE_PATH}\n")
-    endforeach ()
+# Write Sketch CPP source
+get_num_lines("${SKETCH_HEAD}" HEAD_NUM_LINES)
+file(APPEND ${SKETCH_CPP} "#line ${HEAD_NUM_LINES} \"${MAIN_SKETCH_PATH}\"\n")
+file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
+foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
+file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
+file(APPEND ${SKETCH_CPP} "\n//=== START : ${SKETCH_SOURCE_PATH}\n")
+file(APPEND ${SKETCH_CPP} "#line 1 \"${SKETCH_SOURCE_PATH}\"\n")
+file(APPEND ${SKETCH_CPP} "${SKETCH_SOURCE}")
+file(APPEND ${SKETCH_CPP} "\n//=== END : ${SKETCH_SOURCE_PATH}\n")
+endforeach ()
 endfunction()
 
 #=============================================================================#
@@ -1934,10 +1936,10 @@ endfunction()
 # Generates script used to display the firmware size.
 #=============================================================================#
 function(SETUP_ARDUINO_SIZE_SCRIPT OUTPUT_VAR)
-    set(ARDUINO_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSize.cmake)
+set(ARDUINO_SIZE_SCRIPT_PATH ${CMAKE_BINARY_DIR}/CMakeFiles/FirmwareSize.cmake)
 
-    file(WRITE ${ARDUINO_SIZE_SCRIPT_PATH}
-            "set(AVRSIZE_PROGRAM \"${AVRSIZE_PROGRAM}\")
+file(WRITE ${ARDUINO_SIZE_SCRIPT_PATH}
+"set(AVRSIZE_PROGRAM \"${AVRSIZE_PROGRAM}\")
 set(AVRSIZE_FLAGS -C --mcu=\${MCU})
 execute_process(COMMAND \${AVRSIZE_PROGRAM} \${AVRSIZE_FLAGS} \${FIRMWARE_IMAGE} \${EEPROM_IMAGE}
 OUTPUT_VARIABLE SIZE_OUTPUT)
@@ -2012,7 +2014,7 @@ else()
     message(\"\${RAW_SIZE_OUTPUT}\")
 endif()")
 
-    set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
+set(${OUTPUT_VAR} ${ARDUINO_SIZE_SCRIPT_PATH} PARENT_SCOPE)
 endfunction()
 
 
@@ -2024,7 +2026,7 @@ endfunction()
 # Enables Arduino module debugging.
 #=============================================================================#
 function(ARDUINO_DEBUG_ON)
-    set(ARDUINO_DEBUG True PARENT_SCOPE)
+set(ARDUINO_DEBUG True PARENT_SCOPE)
 endfunction()
 
 
@@ -2036,7 +2038,7 @@ endfunction()
 # Disables Arduino module debugging.
 #=============================================================================#
 function(ARDUINO_DEBUG_OFF)
-    set(ARDUINO_DEBUG False PARENT_SCOPE)
+set(ARDUINO_DEBUG False PARENT_SCOPE)
 endfunction()
 
 
@@ -2051,9 +2053,9 @@ endfunction()
 # use arduino_debug_on() and to disable use arduino_debug_off().
 #=============================================================================#
 function(ARDUINO_DEBUG_MSG MSG)
-    if (ARDUINO_DEBUG)
-        message("## ${MSG}")
-    endif ()
+if (ARDUINO_DEBUG)
+message("## ${MSG}")
+endif ()
 endfunction()
 
 #=============================================================================#
@@ -2067,21 +2069,21 @@ endfunction()
 # Removes all comments from the source code.
 #=============================================================================#
 function(REMOVE_COMMENTS SRC_VAR OUT_VAR)
-    string(REGEX REPLACE "[\\./\\\\]" "_" FILE "${NAME}")
+string(REGEX REPLACE "[\\./\\\\]" "_" FILE "${NAME}")
 
-    set(SRC ${${SRC_VAR}})
+set(SRC ${${SRC_VAR}})
 
-    #message(STATUS "removing comments from: ${FILE}")
-    #file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_pre_remove_comments.txt" ${SRC})
-    #message(STATUS "\n${SRC}")
+#message(STATUS "removing comments from: ${FILE}")
+#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_pre_remove_comments.txt" ${SRC})
+#message(STATUS "\n${SRC}")
 
-    # remove all comments
-    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" OUT "${SRC}")
+# remove all comments
+string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" OUT "${SRC}")
 
-    #file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
-    #message(STATUS "\n${SRC}")
+#file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
+#message(STATUS "\n${SRC}")
 
-    set(${OUT_VAR} ${OUT} PARENT_SCOPE)
+set(${OUT_VAR} ${OUT} PARENT_SCOPE)
 
 endfunction()
 
@@ -2096,9 +2098,9 @@ endfunction()
 # Counts the line number of the document.
 #=============================================================================#
 function(GET_NUM_LINES DOCUMENT OUTPUT_VAR)
-    string(REGEX MATCHALL "[\n]" MATCH_LIST "${DOCUMENT}")
-    list(LENGTH MATCH_LIST NUM)
-    set(${OUTPUT_VAR} ${NUM} PARENT_SCOPE)
+string(REGEX MATCHALL "[\n]" MATCH_LIST "${DOCUMENT}")
+list(LENGTH MATCH_LIST NUM)
+set(${OUTPUT_VAR} ${NUM} PARENT_SCOPE)
 endfunction()
 
 #=============================================================================#
@@ -2112,13 +2114,13 @@ endfunction()
 # Ensure the specified variables are not empty, otherwise a fatal error is emmited.
 #=============================================================================#
 function(REQUIRED_VARIABLES)
-    cmake_parse_arguments(INPUT "" "MSG" "VARS" ${ARGN})
-    error_for_unparsed(INPUT)
-    foreach (VAR ${INPUT_VARS})
-        if ("${${VAR}}" STREQUAL "")
-            message(FATAL_ERROR "${VAR} not set: ${INPUT_MSG}")
-        endif ()
-    endforeach ()
+cmake_parse_arguments(INPUT "" "MSG" "VARS" ${ARGN})
+error_for_unparsed(INPUT)
+foreach (VAR ${INPUT_VARS})
+if ("${${VAR}}" STREQUAL "")
+message(FATAL_ERROR "${VAR} not set: ${INPUT_MSG}")
+endif ()
+endforeach ()
 endfunction()
 
 #=============================================================================#
@@ -2131,10 +2133,10 @@ endfunction()
 # Emit fatal error if there are unparsed argument from cmake_parse_arguments().
 #=============================================================================#
 function(ERROR_FOR_UNPARSED PREFIX)
-    set(ARGS "${${PREFIX}_UNPARSED_ARGUMENTS}")
-    if (NOT ("${ARGS}" STREQUAL ""))
-        message(FATAL_ERROR "unparsed argument: ${ARGS}")
-    endif ()
+set(ARGS "${${PREFIX}_UNPARSED_ARGUMENTS}")
+if (NOT ("${ARGS}" STREQUAL ""))
+message(FATAL_ERROR "unparsed argument: ${ARGS}")
+endif ()
 endfunction()
 
 
@@ -2142,7 +2144,7 @@ endfunction()
 #                              C Flags                                        
 #=============================================================================#
 if (NOT DEFINED ARDUINO_C_FLAGS)
-    set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
+set(ARDUINO_C_FLAGS "-mcall-prologues -ffunction-sections -fdata-sections")
 endif (NOT DEFINED ARDUINO_C_FLAGS)
 set(CMAKE_C_FLAGS "-g -Os       ${ARDUINO_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS_DEBUG "-g           ${ARDUINO_C_FLAGS}" CACHE STRING "")
@@ -2154,7 +2156,7 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g       -w ${ARDUINO_C_FLAGS}" CACHE STRI
 #                             C++ Flags                                       
 #=============================================================================#
 if (NOT DEFINED ARDUINO_CXX_FLAGS)
-    set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
+set(ARDUINO_CXX_FLAGS "${ARDUINO_C_FLAGS} -fno-exceptions")
 endif (NOT DEFINED ARDUINO_CXX_FLAGS)
 set(CMAKE_CXX_FLAGS "-g -Os       ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_DEBUG "-g           ${ARDUINO_CXX_FLAGS}" CACHE STRING "")
@@ -2193,7 +2195,7 @@ set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO "${ARDUINO_LINKER_FLAGS}" CACHE STR
 #                         Arduino Settings                                    
 #=============================================================================#
 set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load
-        --no-change-warnings --change-section-lma .eeprom=0 CACHE STRING "")
+--no-change-warnings --change-section-lma .eeprom=0 CACHE STRING "")
 set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom CACHE STRING "")
 set(ARDUINO_AVRDUDE_FLAGS -V CACHE STRING "")
 
@@ -2202,99 +2204,99 @@ set(ARDUINO_AVRDUDE_FLAGS -V CACHE STRING "")
 #=============================================================================#
 if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
-    find_file(ARDUINO_VERSION_PATH
-            NAMES lib/version.txt
-            PATHS ${ARDUINO_SDK_PATH}
-            DOC "Path to Arduino version file.")
+find_file(ARDUINO_VERSION_PATH
+NAMES lib/version.txt
+PATHS ${ARDUINO_SDK_PATH}
+DOC "Path to Arduino version file.")
 
-    # get version first (some stuff depends on versions)
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
-    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
-    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
-    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
+# get version first (some stuff depends on versions)
+detect_arduino_version(ARDUINO_SDK_VERSION)
+set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
+set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
+set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
 
-    if (ARDUINO_SDK_VERSION VERSION_LESS 0.19)
-        message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
-    endif ()
+if (ARDUINO_SDK_VERSION VERSION_LESS 0.19)
+message(FATAL_ERROR "Unsupported Arduino SDK (require verion 0.19 or higher)")
+endif ()
 
-    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
 
-    register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
+register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
 
-    find_file(ARDUINO_LIBRARIES_PATH
-            NAMES libraries
-            PATHS ${ARDUINO_SDK_PATH}
-            DOC "Path to directory containing the Arduino libraries.")
+find_file(ARDUINO_LIBRARIES_PATH
+NAMES libraries
+PATHS ${ARDUINO_SDK_PATH}
+DOC "Path to directory containing the Arduino libraries.")
 
-    find_program(ARDUINO_AVRDUDE_PROGRAM
-            NAMES avrdude
-            PATHS ${ARDUINO_SDK_PATH}
-            PATH_SUFFIXES hardware/tools hardware/tools/avr/bin
-            NO_DEFAULT_PATH)
+find_program(ARDUINO_AVRDUDE_PROGRAM
+NAMES avrdude
+PATHS ${ARDUINO_SDK_PATH}
+PATH_SUFFIXES hardware/tools hardware/tools/avr/bin
+NO_DEFAULT_PATH)
 
-    find_program(ARDUINO_AVRDUDE_PROGRAM
-            NAMES avrdude
-            DOC "Path to avrdude programmer binary.")
+find_program(ARDUINO_AVRDUDE_PROGRAM
+NAMES avrdude
+DOC "Path to avrdude programmer binary.")
 
-    find_program(AVRSIZE_PROGRAM
-            NAMES avr-size)
+find_program(AVRSIZE_PROGRAM
+NAMES avr-size)
 
-    find_file(ARDUINO_AVRDUDE_CONFIG_PATH
-            NAMES avrdude.conf
-            PATHS ${ARDUINO_SDK_PATH} /etc/avrdude /etc
-            PATH_SUFFIXES hardware/tools
-            hardware/tools/avr/etc
-            DOC "Path to avrdude programmer configuration file.")
+find_file(ARDUINO_AVRDUDE_CONFIG_PATH
+NAMES avrdude.conf
+PATHS ${ARDUINO_SDK_PATH} /etc/avrdude /etc
+PATH_SUFFIXES hardware/tools
+hardware/tools/avr/etc
+DOC "Path to avrdude programmer configuration file.")
 
-    if (NOT CMAKE_OBJCOPY)
-        find_program(AVROBJCOPY_PROGRAM
-                avr-objcopy)
-        set(ADDITIONAL_REQUIRED_VARS AVROBJCOPY_PROGRAM)
-        set(CMAKE_OBJCOPY ${AVROBJCOPY_PROGRAM})
-    endif (NOT CMAKE_OBJCOPY)
+if (NOT CMAKE_OBJCOPY)
+find_program(AVROBJCOPY_PROGRAM
+avr-objcopy)
+set(ADDITIONAL_REQUIRED_VARS AVROBJCOPY_PROGRAM)
+set(CMAKE_OBJCOPY ${AVROBJCOPY_PROGRAM})
+endif (NOT CMAKE_OBJCOPY)
 
-    set(ARDUINO_DEFAULT_BOARD uno CACHE STRING "Default Arduino Board ID when not specified.")
-    set(ARDUINO_DEFAULT_PORT CACHE STRING "Default Arduino port when not specified.")
-    set(ARDUINO_DEFAULT_SERIAL CACHE STRING "Default Arduino Serial command when not specified.")
-    set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
+set(ARDUINO_DEFAULT_BOARD uno CACHE STRING "Default Arduino Board ID when not specified.")
+set(ARDUINO_DEFAULT_PORT CACHE STRING "Default Arduino port when not specified.")
+set(ARDUINO_DEFAULT_SERIAL CACHE STRING "Default Arduino Serial command when not specified.")
+set(ARDUINO_DEFAULT_PROGRAMMER CACHE STRING "Default Arduino Programmer ID when not specified.")
 
-    # Ensure that all required paths are found
-    required_variables(VARS
-            ARDUINO_PLATFORMS
-            ARDUINO_CORES_PATH
-            ARDUINO_BOOTLOADERS_PATH
-            ARDUINO_LIBRARIES_PATH
-            ARDUINO_BOARDS_PATH
-            ARDUINO_PROGRAMMERS_PATH
-            ARDUINO_VERSION_PATH
-            ARDUINO_AVRDUDE_FLAGS
-            ARDUINO_AVRDUDE_PROGRAM
-            ARDUINO_AVRDUDE_CONFIG_PATH
-            AVRSIZE_PROGRAM
-            ${ADDITIONAL_REQUIRED_VARS}
-            MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
+# Ensure that all required paths are found
+required_variables(VARS
+ARDUINO_PLATFORMS
+ARDUINO_CORES_PATH
+ARDUINO_BOOTLOADERS_PATH
+ARDUINO_LIBRARIES_PATH
+ARDUINO_BOARDS_PATH
+ARDUINO_PROGRAMMERS_PATH
+ARDUINO_VERSION_PATH
+ARDUINO_AVRDUDE_FLAGS
+ARDUINO_AVRDUDE_PROGRAM
+ARDUINO_AVRDUDE_CONFIG_PATH
+AVRSIZE_PROGRAM
+${ADDITIONAL_REQUIRED_VARS}
+MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
 
-    setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
-    set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
+setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
+set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
 
-    #print_board_list()
-    #print_programmer_list()
+#print_board_list()
+#print_programmer_list()
 
-    set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
-    mark_as_advanced(
-            ARDUINO_CORES_PATH
-            ARDUINO_VARIANTS_PATH
-            ARDUINO_BOOTLOADERS_PATH
-            ARDUINO_LIBRARIES_PATH
-            ARDUINO_BOARDS_PATH
-            ARDUINO_PROGRAMMERS_PATH
-            ARDUINO_VERSION_PATH
-            ARDUINO_AVRDUDE_FLAGS
-            ARDUINO_AVRDUDE_PROGRAM
-            ARDUINO_AVRDUDE_CONFIG_PATH
-            ARDUINO_OBJCOPY_EEP_FLAGS
-            ARDUINO_OBJCOPY_HEX_FLAGS
-            AVRSIZE_PROGRAM)
+set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
+mark_as_advanced(
+ARDUINO_CORES_PATH
+ARDUINO_VARIANTS_PATH
+ARDUINO_BOOTLOADERS_PATH
+ARDUINO_LIBRARIES_PATH
+ARDUINO_BOARDS_PATH
+ARDUINO_PROGRAMMERS_PATH
+ARDUINO_VERSION_PATH
+ARDUINO_AVRDUDE_FLAGS
+ARDUINO_AVRDUDE_PROGRAM
+ARDUINO_AVRDUDE_CONFIG_PATH
+ARDUINO_OBJCOPY_EEP_FLAGS
+ARDUINO_OBJCOPY_HEX_FLAGS
+AVRSIZE_PROGRAM)
 endif ()
 
