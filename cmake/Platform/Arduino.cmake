@@ -1580,7 +1580,19 @@ endfunction()
 #      set(uno.SETTINGS  name upload build)              # List of settings for uno
 #      set(uno.upload.SUBSETTINGS protocol maximum_size) # List of sub-settings for uno.upload
 #      set(uno.build.SUBSETTINGS mcu core)               # List of sub-settings for uno.build
-# 
+#
+# Note that Arduino 1.6 SDK or greater treats most of the settings differently for some boards,
+# by grouping them into menus which differentiate on their cpu architecture.
+#
+# For example, the settings declared earlier for "regular" SDKs
+# would be declared as such in 1.6:
+#
+#      mega.name=Arduino Uno
+#      mega.menu.cpu.atmega2560.upload.protocol=wiring
+#      mega.menu.cpu.atmega2560.upload.maximum_size=253952
+#      mega.menu.cpu.atmega2560.build.mcu=atmega2560
+#      mega.build.core=arduino
+#
 #  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry, while
 # ${ENTRY_NAME}.SUBSETTINGS variables lists all settings for a sub-setting of
 # a entry setting pair.
