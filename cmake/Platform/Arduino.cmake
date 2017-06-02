@@ -780,6 +780,10 @@ macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
     load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
 endmacro()
 
+macro(GET_MCU FULL_MCU_NAME OUTPUT_VAR)
+    string(REGEX MATCH "^.+[^p]" ${OUTPUT_VAR} "FULL_MCU_NAME" PARENT_SCOPE)
+endmacro()
+
 
 #=============================================================================#
 #                           Load Functions
@@ -1326,33 +1330,40 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRD
         return()
     endif ()
 
-    # boards.txt file format changed in version 1.5 and greater
-    if (ARDUINO_SDK_VERSION VERSION_GREATER 1.0.5)
-
-        ##
-        ##
-        ##
-        # TODO : manage menus
-        ##
-        ##
-        ##
-        # look at bootloader.file
-        if (NOT ${BOARD_ID}.bootloader.file)
-            message("Missing ${BOARD_ID}.bootloader.file, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-            return()
+    # look at bootloader.file
+    set(BOOTLOADER_FOUND True)
+    if (NOT ${BOARD_ID}.bootloader.file)
+        set(BOOTLOADER_FOUND False)
+        # Bootloader is probably defined in the 'menu' settings of the Arduino 1.6 SDK
+        if (${BOARD_ID}.build.mcu)
+            GET_MCU(${${BOARD_ID}.build.mcu} BOARD_MCU)
+            if (NOT ${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.file)
+                message("Missing ${BOARD_ID}.bootloader.file, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+                return()
+            endif ()
+            set(BOOTLOADER_FOUND True)
+            set(${BOARD_ID}.bootloader.file ${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.file)
         endif ()
-        # build bootloader.path from bootloader.file...
-        string(REGEX MATCH "(.+/)*" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.file})
-        string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.path})
-        # and fix bootloader.file
-        string(REGEX MATCH "/.(.+)$" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
-        string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
     endif ()
+
+    if (NOT ${BOOTLOADER_FOUND})
+        return()
+    endif ()
+
+    # build bootloader.path from bootloader.file...
+    string(REGEX MATCH "(.+/)*" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.file})
+    string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.path ${${BOARD_ID}.bootloader.path})
+    # and fix bootloader.file
+    string(REGEX MATCH "/.(.+)$" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
+    string(REGEX REPLACE "/" "" ${BOARD_ID}.bootloader.file ${${BOARD_ID}.bootloader.file})
 
     foreach (ITEM unlock_bits high_fuses low_fuses path file)
         if (NOT ${BOARD_ID}.bootloader.${ITEM})
-            message("Missing ${BOARD_ID}.bootloader.${ITEM}, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
-            return()
+            # Try the 'menu' settings of the Arduino 1.6 SDK
+            if (NOT ${BOARD_ID}.menu.cpu.{BOARD_MCU}.bootloader.${ITEM})
+                message("Missing ${BOARD_ID}.bootloader.${ITEM}, not creating bootloader burn target ${BOOTLOADER_TARGET}.")
+                return()
+            endif ()
         endif ()
     endforeach ()
 
@@ -1366,19 +1377,42 @@ function(setup_arduino_bootloader_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRD
     list(APPEND AVRDUDE_ARGS "-e")
 
     # Set unlock bits and fuses (because chip is going to be erased)
-    list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.unlock_bits}:m")
+
+    if (${BOARD_ID}.bootloader.unlock_bits)
+        list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.unlock_bits}:m")
+    else ()
+        # Arduino 1.6 SDK
+        list(APPEND AVRDUDE_ARGS
+                "-Ulock:w:${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.unlock_bits}:m")
+    endif ()
+
     if (${BOARD_ID}.bootloader.extended_fuses)
         list(APPEND AVRDUDE_ARGS "-Uefuse:w:${${BOARD_ID}.bootloader.extended_fuses}:m")
+    elseif (${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.extended_fuses})
+        list(APPEND AVRDUDE_ARGS
+                "-Uefuse:w:${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.extended_fuses}:m")
     endif ()
-    list(APPEND AVRDUDE_ARGS
-            "-Uhfuse:w:${${BOARD_ID}.bootloader.high_fuses}:m"
-            "-Ulfuse:w:${${BOARD_ID}.bootloader.low_fuses}:m")
+    if (${BOARD_ID}.bootloader.high_fuses)
+        list(APPEND AVRDUDE_ARGS
+                "-Uhfuse:w:${${BOARD_ID}.bootloader.high_fuses}:m"
+                "-Ulfuse:w:${${BOARD_ID}.bootloader.low_fuses}:m")
+    else ()
+        list(APPEND AVRDUDE_ARGS
+                "-Uhfuse:w:${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.high_fuses}:m"
+                "-Ulfuse:w:${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.low_fuses}:m")
+    endif ()
 
     # Set bootloader image
     list(APPEND AVRDUDE_ARGS "-Uflash:w:${${BOARD_ID}.bootloader.file}:i")
 
     # Set lockbits
-    list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.lock_bits}:m")
+    if (${BOARD_ID}.bootloader.lock_bits)
+        list(APPEND AVRDUDE_ARGS "-Ulock:w:${${BOARD_ID}.bootloader.lock_bits}:m")
+    else ()
+        list(APPEND AVRDUDE_ARGS
+                "-Ulock:w:${${BOARD_ID}.menu.cpu.${BOARD_MCU}.bootloader.lock_bits}:m")
+    endif ()
+
 
     # Create burn bootloader target
     add_custom_target(${BOOTLOADER_TARGET}
@@ -1485,7 +1519,7 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
         list(FIND ${BOARD_ID}.SETTINGS menu MENU_SETTINGS)
         # Determine upload speed based on the defined cpu architecture (mcu)
         if (${BOARD_ID}.build.mcu)
-            string(REGEX MATCH "^.+[^p]" BOARD_MCU "${${BOARD_ID}.build.mcu}")
+            GET_MCU(${${BOARD_ID}.build.mcu} BOARD_MCU)
             list(FIND ${BOARD_ID}.menu.CPUS ${BOARD_MCU} BOARD_MCU_INDEX)
             if (BOARD_MCU_INDEX GREATER_EQUAL 0) # Matching mcu is found
                 set(UPLOAD_SPEED ${${BOARD_ID}.menu.cpu.${BOARD_MCU}.upload.speed})
@@ -1495,8 +1529,8 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
 
     list(APPEND AVRDUDE_ARGS
             "-b${UPLOAD_SPEED}"     # Baud rate
-            "-P${PORT}"                         # Serial port
-            "-D"                                # Dont erase
+            "-P${PORT}"             # Serial port
+            "-D"                    # Dont erase
             )
 
     list(APPEND AVRDUDE_ARGS ${AVRDUDE_FLAGS})
