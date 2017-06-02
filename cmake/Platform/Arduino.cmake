@@ -1476,9 +1476,21 @@ function(setup_arduino_bootloader_args BOARD_ID TARGET_NAME PORT AVRDUDE_FLAGS O
         list(APPEND AVRDUDE_ARGS "-c${${BOARD_ID}.upload.protocol}")
     endif ()
 
-    set(UPLOAD_SPEED "19200")
+    set(UPLOAD_SPEED "19200") # Set a default speed
     if (${BOARD_ID}.upload.speed)
         set(UPLOAD_SPEED ${${BOARD_ID}.upload.speed})
+    else ()
+        # Speed wasn't manually set, and is not defined in the simple board settings
+        # The only option left is to search in the 'menu' settings of the Arduino 1.6 SDK
+        list(FIND ${BOARD_ID}.SETTINGS menu MENU_SETTINGS)
+        # Determine upload speed based on the defined cpu architecture (mcu)
+        if (${BOARD_ID}.build.mcu)
+            string(REGEX MATCH "^.+[^p]" BOARD_MCU "${${BOARD_ID}.build.mcu}")
+            list(FIND ${BOARD_ID}.menu.CPUS ${BOARD_MCU} BOARD_MCU_INDEX)
+            if (BOARD_MCU_INDEX GREATER_EQUAL 0) # Matching mcu is found
+                set(UPLOAD_SPEED ${${BOARD_ID}.menu.cpu.${BOARD_MCU}.upload.speed})
+            endif ()
+        endif ()
     endif ()
 
     list(APPEND AVRDUDE_ARGS
