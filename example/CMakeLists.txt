@@ -20,6 +20,13 @@ generate_arduino_example(wire_example
 #
 #generate_arduino_example(wire_example)
 
+#====================================================================#
+# Original blink example (from Arduino SDK examples)
+#====================================================================#
+GENERATE_ARDUINO_EXAMPLE(blink_example
+        LIBRARY 01.Basics
+        EXAMPLE Blink
+        BOARD uno)
 
 #====================================================================#
 # Original blink sketch (from Arduino SDK examples)

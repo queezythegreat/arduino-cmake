@@ -1568,7 +1568,7 @@ endfunction()
 #      EXAMPLE_NAME - Example name
 #      OUTPUT_VAR   - Variable name to save sketch path.
 #
-# Creates a Arduino example from a the specified library.
+# Creates a Arduino example from the specified library.
 #=============================================================================#
 function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     set(EXAMPLE_SKETCH_PATH)
@@ -1576,9 +1576,15 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     get_property(LIBRARY_SEARCH_PATH
             DIRECTORY     # Property Scope
             PROPERTY LINK_DIRECTORIES)
-    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH}
+            ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_LIBRARIES_PATH}
+            ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
         if (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
+            break()
+        elseif (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/${EXAMPLE_NAME}")
+            set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/${EXAMPLE_NAME}")
             break()
         endif ()
     endforeach ()
@@ -2369,6 +2375,12 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
 
     register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
+
+    find_file(ARDUINO_EXAMPLES_PATH
+            NAMES examples
+            PATHS ${ARDUINO_SDK_PATH}
+            DOC "Path to directory containg the Arduino bult-in examples."
+            NO_DEFAULT_PATH)
 
     find_file(ARDUINO_LIBRARIES_PATH
             NAMES libraries
