@@ -9,7 +9,7 @@ set(ARDUINO_DEFAULT_PORT /dev/ttyUSB0) # Default Port, when not specified
 #====================================================================#
 # master_writer example from Wire library
 #====================================================================#
-generate_arduino_example(wire_example
+GENERATE_ARDUINO_LIBRARY_EXAMPLE(wire_example
         LIBRARY Wire
         EXAMPLE master_writer
         BOARD uno)
@@ -24,7 +24,6 @@ generate_arduino_example(wire_example
 # Original blink example (from Arduino SDK examples)
 #====================================================================#
 GENERATE_ARDUINO_EXAMPLE(blink_example
-        LIBRARY 01.Basics
         EXAMPLE Blink
         BOARD uno)
 
