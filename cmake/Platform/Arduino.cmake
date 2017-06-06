@@ -720,6 +720,10 @@ endfunction()
 
 
 #=============================================================================#
+#                           Other Functions
+#=============================================================================#
+
+#=============================================================================#
 # REGISTER_HARDWARE_PLATFORM
 # [PUBLIC/USER]
 # see documentation at top
@@ -1062,19 +1066,31 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
     endif ()
 endfunction()
 
-function(load_arduino_examples)
+#=============================================================================#
+# load_arduino_examples
+# [PRIVATE/INTERNAL]
+#
+# load_arduino_examples()
+#
+#  Loads all of Arduino's built-in examples categories, listing it by their names
+#  without the index prefix ('01.Basics' becomes 'Basics').
+#  This list is saved in a cached variable named 'ARDUINO_EXAMPLES_CATEGORIES'.
+#
+#=============================================================================#
+function(load_arduino_examples_categories)
     file(GLOB EXAMPLE_CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
-    foreach (EXAMPLE ${EXAMPLE_CATEGORIES})
+    foreach (CATEGORY ${EXAMPLE_CATEGORIES})
         if (NOT EXAMPLE_CATEGORY_INDEX_LENGTH)
-            string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${EXAMPLE})
+            string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${CATEGORY})
             list(LENGTH CATEGORY_INDEX INDEX_LENGTH)
             set(EXAMPLE_CATEGORY_INDEX_LENGTH ${INDEX_LENGTH} CACHE INTERNAL
                     "Number of digits preceeding an example's category path")
         endif ()
-        string(REGEX MATCH "[A-Z][a-z](.*)" PARSED_EXAMPLE ${EXAMPLE})
-        list(APPEND EXAMPLES "${PARSED_EXAMPLE}")
+        string(REGEX MATCH "[A-Z][a-z](.*)" PARSED_CATEGORY ${CATEGORY})
+        list(APPEND CATEGORIES "${PARSED_CATEGORY}")
     endforeach ()
-    set(ARDUINO_EXAMPLES ${EXAMPLES} CACHE INTERNAL "List of built-in Arduino examples")
+    set(ARDUINO_EXAMPLES_CATEGORIES ${EXAMPLES} CACHE INTERNAL
+            "List of the categories of the built-in Arduino examples")
 endfunction()
 
 
@@ -1691,7 +1707,7 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
 
     if (CATEGORY_NAME)
 
-        list(FIND ARDUINO_EXAMPLES ${CATEGORY_NAME} CATEGORY_INDEX)
+        list(FIND ARDUINO_EXAMPLES_CATEGORIES ${CATEGORY_NAME} CATEGORY_INDEX)
         if (${CATEGORY_INDEX} LESS 0)
             message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
             return()
@@ -2589,7 +2605,7 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     endif (NOT CMAKE_OBJCOPY)
 
     if (EXISTS "${ARDUINO_EXAMPLES_PATH}")
-        load_arduino_examples()
+        load_arduino_examples_categories()
     endif ()
 
     set(ARDUINO_DEFAULT_BOARD uno CACHE STRING "Default Arduino Board ID when not specified.")
