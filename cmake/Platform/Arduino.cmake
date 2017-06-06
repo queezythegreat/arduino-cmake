@@ -842,8 +842,42 @@ macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
     load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
 endmacro()
 
+#=============================================================================#
+# get_mcu
+# [PRIVATE/INTERNAL]
+#
+# get_mcu(FULL_MCU_NAME, OUTPUT_VAR)
+#
+#         FULL_MCU_NAME - Board's full mcu name, including a trailing 'p' if present
+#         OUTPUT_VAR - String value in which a regex match will be stored
+#
+# Matches the board's mcu without leading or trailing characters that would rather mess
+# further processing that requires the board's mcu.
+#
+#=============================================================================#
 macro(GET_MCU FULL_MCU_NAME OUTPUT_VAR)
     string(REGEX MATCH "^.+[^p]" ${OUTPUT_VAR} "FULL_MCU_NAME" PARENT_SCOPE)
+endmacro()
+
+#=============================================================================#
+# increment_example_category_index
+# [PRIVATE/INTERNAL]
+#
+# increment_example_category_index(OUTPUT_VAR)
+#
+#         OUTPUT_VAR - A number representing an example's category prefix
+#
+# Increments the given number by one, taking into consideration the number notation
+# which is defined (Some SDK's or OSs use a leading '0' in single-digit numbers.
+#
+#=============================================================================#
+macro(INCREMENT_EXAMPLE_CATEGORY_INDEX OUTPUT_VAR)
+    math(EXPR INC_INDEX "${OUTPUT_VAR}+1")
+    if (EXAMPLE_CATEGORY_INDEX_LENGTH GREATER 1 AND INC_INDEX LESS 10)
+        set(OUTPUT_VAR 0${INC_INDEX} PARENT_SCOPE)
+    else ()
+        set(OUTPUT_VAR ${INC_INDEX} PARENT_SCOPE)
+    endif ()
 endmacro()
 
 
@@ -1031,7 +1065,13 @@ endfunction()
 function(load_arduino_examples)
     file(GLOB EXAMPLE_CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
     foreach (EXAMPLE ${EXAMPLE_CATEGORIES})
-        string(REGEX MATCH "[A-Z][a-z](.*)" PARSED_EXAMPLE "${EXAMPLE}")
+        if (NOT EXAMPLE_CATEGORY_INDEX_LENGTH)
+            string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${EXAMPLE})
+            list(LENGTH CATEGORY_INDEX INDEX_LENGTH)
+            set(EXAMPLE_CATEGORY_INDEX_LENGTH ${INDEX_LENGTH} CACHE INTERNAL
+                    "Number of digits preceeding an example's category path")
+        endif ()
+        string(REGEX MATCH "[A-Z][a-z](.*)" PARSED_EXAMPLE ${EXAMPLE})
         list(APPEND EXAMPLES "${PARSED_EXAMPLE}")
     endforeach ()
     set(ARDUINO_EXAMPLES ${EXAMPLES} CACHE INTERNAL "List of built-in Arduino examples")
@@ -1651,17 +1691,12 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
 
     if (CATEGORY_NAME)
 
-        #[[if (NOT (${CATEGORY_NAME} IN_LIST ARDUINO_EXAMPLES))
-            message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
-            return()
-        endif ()]]
         list(FIND ARDUINO_EXAMPLES ${CATEGORY_NAME} CATEGORY_INDEX)
         if (${CATEGORY_INDEX} LESS 0)
             message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
             return()
         endif ()
-        math(EXPR INC_INDEX "${CATEGORY_INDEX}+1")
-        set(CATEGORY_NAME_PREFIX "0${INC_INDEX}")
+        INCREMENT_EXAMPLE_CATEGORY_INDEX(CATEGORY_INDEX)
         set(CATEGORY_NAME ${CATEGORY_NAME_PREFIX}.${CATEGORY_NAME})
         file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}
                 ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/*)
