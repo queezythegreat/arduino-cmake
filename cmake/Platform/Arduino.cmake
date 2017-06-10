@@ -513,14 +513,13 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" ${INPUT_ARDLIBS})
     foreach (LIB_DEP ${TARGET_LIBS})
-        arduino_debug_msg("Arduino Library: ${LIB_DEP}")
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach ()
 
     if (NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${TARGET_LIBS}" "${LIB_DEP_INCLUDES}" "")
         foreach (LIB_INCLUDES ${ALL_LIBS_INCLUDES})
             arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
             set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
@@ -1153,13 +1152,11 @@ endfunction()
 set(Wire_RECURSE True)
 set(Ethernet_RECURSE True)
 set(SD_RECURSE True)
+
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
-    set(LIB_TARGETS)
-    set(LIB_INCLUDES)
 
     string(REGEX REPLACE "/src/?$" "" LIB_PATH_STRIPPED ${LIB_PATH})
     get_filename_component(LIB_NAME ${LIB_PATH_STRIPPED} NAME)
-
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
 
     if (NOT TARGET ${TARGET_LIB_NAME})
@@ -1181,7 +1178,8 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach (LIB_DEP ${LIB_DEPS})
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP}
+                        "${COMPILE_FLAGS}" "${LINK_FLAGS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
                 list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
             endforeach ()
@@ -1195,7 +1193,9 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
                     LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
             list(APPEND LIB_INCLUDES "-I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\"")
 
-            list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
+            if (LIB_TARGETS)
+                list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
+            endif ()
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
 
@@ -1227,13 +1227,11 @@ endfunction()
 #
 #=============================================================================#
 function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
-    set(LIB_TARGETS)
-    set(LIB_INCLUDES)
-
-    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
-    foreach (TARGET_LIB ${TARGET_LIBS})
+    #find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
+    foreach (TARGET_LIB ${ARDLIBS})
         # Create static library instead of returning sources
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}
+                "${COMPILE_FLAGS}" "${LINK_FLAGS}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
         list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
     endforeach ()
@@ -1975,60 +1973,85 @@ endfunction()
 #=============================================================================#
 function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
     set(ARDUINO_LIBS)
-    foreach (SRC ${SRCS})
 
-        # Skipping generated files. They are, probably, not exist yet.
-        # TODO: Maybe it's possible to skip only really nonexisting files,
-        # but then it wiil be less deterministic.
-        get_source_file_property(_srcfile_generated ${SRC} GENERATED)
-        # Workaround for sketches, which are marked as generated
-        get_source_file_property(_sketch_generated ${SRC} GENERATED_SKETCH)
+    if (ARDLIBS) # Libraries are known in advance, just find their absoltue paths
+        foreach (LIB ${ARDLIBS})
+            get_property(LIBRARY_SEARCH_PATH
+                    DIRECTORY     # Property Scope
+                    PROPERTY LINK_DIRECTORIES)
 
-        if (NOT ${_srcfile_generated} OR ${_sketch_generated})
-            if (NOT (EXISTS ${SRC} OR
-                    EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
-                    EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
-                message(FATAL_ERROR "Invalid source file: ${SRC}")
-            endif ()
-            file(STRINGS ${SRC} SRC_CONTENTS)
+            foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH}
+                    ${ARDUINO_LIBRARIES_PATH}
+                    ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
 
-            foreach (LIBNAME ${ARDLIBS})
-                list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
-            endforeach ()
-
-            foreach (SRC_LINE ${SRC_CONTENTS})
-                if ("${SRC_LINE}" MATCHES "^[ \t]*#[ \t]*include[ \t]*[<\"]([^>\"]*)[>\"]")
-                    get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                    get_property(LIBRARY_SEARCH_PATH
-                            DIRECTORY     # Property Scope
-                            PROPERTY LINK_DIRECTORIES)
-                    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
-                        if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
-                            break()
-                        endif ()
-                        if (EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
-                            break()
-                        endif ()
-
-                        # Some libraries like Wire and SPI require building from source
-                        if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
-                            break()
-                        endif ()
-                        if (EXISTS ${LIB_SEARCH_PATH}/src/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
-                            break()
-                        endif ()
-                    endforeach ()
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB})
+                    break()
                 endif ()
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
+                    break()
+                endif ()
+
+                # Some libraries like Wire and SPI require building from source
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/src/${LIB}.h)
+                    message(STATUS "avr library found: ${LIB}")
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB}/src)
+                    break()
+                endif ()
+                if (EXISTS ${LIB_SEARCH_PATH}/src/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
+                    break()
+                endif ()
+
             endforeach ()
-        endif ()
-    endforeach ()
+        endforeach ()
+
+    else ()
+        #[[foreach (SRC ${SRCS})
+
+            # Skipping generated files. They are, probably, not exist yet.
+            # TODO: Maybe it's possible to skip only really nonexisting files,
+            # but then it wiil be less deterministic.
+            get_source_file_property(_srcfile_generated ${SRC} GENERATED)
+            # Workaround for sketches, which are marked as generated
+            get_source_file_property(_sketch_generated ${SRC} GENERATED_SKETCH)
+
+            message(STATUS "Searching libs for ${SRC}")
+
+            if (NOT ${_srcfile_generated} OR ${_sketch_generated})
+                if (NOT (EXISTS ${SRC} OR
+                        EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
+                        EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
+                    message(FATAL_ERROR "Invalid source file: ${SRC}")
+                endif ()
+                file(STRINGS ${SRC} SRC_CONTENTS)
+
+                foreach (LIBNAME ${ARDLIBS})
+                    list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
+                endforeach ()
+
+                foreach (SRC_LINE ${SRC_CONTENTS})
+
+                    if ("${SRC_LINE}" MATCHES "^[ \t]*#[ \t]*include[ \t]*[<\"]([^>\"]*)[>\"]")
+
+                        get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
+
+
+                    endif ()
+
+                endforeach ()
+
+            endif ()
+        endforeach ()]]
+
+    endif ()
+
     if (ARDUINO_LIBS)
         list(REMOVE_DUPLICATES ARDUINO_LIBS)
     endif ()
+    message(STATUS "Arduino Libs: ${ARDUINO_LIBS}")
     set(${VAR_NAME} ${ARDUINO_LIBS} PARENT_SCOPE)
 endfunction()
 
