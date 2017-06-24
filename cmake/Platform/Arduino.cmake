@@ -1087,6 +1087,7 @@ function(load_arduino_examples_categories)
                     "Number of digits preceeding an example's category path")
         endif ()
         string(REGEX MATCH "[^0-9.]+$" PARSED_CATEGORY ${CATEGORY})
+        string(TOLOWER ${PARSED_CATEGORY} PARSED_CATEGORY)
         list(APPEND CATEGORIES "${PARSED_CATEGORY}")
     endforeach ()
     set(ARDUINO_EXAMPLES_CATEGORIES ${CATEGORIES} CACHE INTERNAL
@@ -1705,8 +1706,12 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
         list(GET OPTIONAL_ARGUMENTS 0 CATEGORY_NAME)
     endif ()
 
+    # Case-insensitive support
+    string(TOLOWER ${EXAMPLE_NAME} EXAMPLE_NAME)
+
     if (CATEGORY_NAME)
 
+        string(TOLOWER ${CATEGORY_NAME} CATEGORY_NAME)
         list(FIND ARDUINO_EXAMPLES_CATEGORIES ${CATEGORY_NAME} CATEGORY_INDEX)
         if (${CATEGORY_INDEX} LESS 0)
             message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
@@ -1717,6 +1722,7 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
         file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}
                 ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/*)
         foreach (EXAMPLE_PATH ${EXAMPLES})
+            string(TOLOWER ${EXAMPLE_PATH} EXAMPLE_PATH)
             if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
                 set(EXAMPLE_SKETCH_PATH
                         "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/${EXAMPLE_NAME}")
@@ -1731,6 +1737,7 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
             file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}
                     ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/*)
             foreach (EXAMPLE_PATH ${EXAMPLES})
+                string(TOLOWER ${EXAMPLE_PATH} EXAMPLE_PATH)
                 if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
                     set(EXAMPLE_SKETCH_PATH
                             "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/${EXAMPLE_NAME}")
