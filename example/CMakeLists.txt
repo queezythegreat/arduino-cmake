@@ -2,7 +2,7 @@
 # can be used. For a detailed explenation of all the options please
 # reade README.rst.
 
-set(ARDUINO_DEFAULT_BOARD diecimila) # Default Board ID, when not specified
+set(ARDUINO_DEFAULT_BOARD uno) # Default Board ID, when not specified
 set(ARDUINO_DEFAULT_PORT /dev/ttyUSB0) # Default Port, when not specified
 ARDUINO_DEBUG_ON()
 
@@ -100,6 +100,21 @@ generate_arduino_firmware(blink
 # Alternative: by variables
 #set(blink_SRCS blink.cpp)
 #set(blink_LIBS blink_lib)
+#set(blink_BOARD uno)
+#
+#generate_arduino_firmware(blink)
+
+#====================================================================#
+# Avr library linkage without copying lib to local directory
+#====================================================================#
+GENERATE_ARDUINO_FIRMWARE(serial_lib
+        SRCS serial.cpp
+        ARDLIBS SoftwareSerial
+        BOARD uno)
+
+# Alternative: by variables
+#set(blink_SRCS serial.cpp)
+#set(blink_ARDLIBS SoftwareSerial)
 #set(blink_BOARD uno)
 #
 #generate_arduino_firmware(blink)
