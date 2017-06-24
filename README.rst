@@ -19,29 +19,35 @@ Features
 
 * Integrates with *Arduino SDK*
 * Supports all Arduino boards.
-* Supports Arduino type libraries
+* Supports Arduino type libraries.
 * Automatic detection of Arduino libraries.
 * Generates firmware images.
+* Generates built-in examples.
 * Generates libraries.
 * Sketch support.
 * Upload support.
 * Hardware Platform support.
 * Programmer support (with bootloader upload).
 * Supports multiple build system types (Makefiles, Eclipse, KDevelop, CodeBlocks, XCode, etc).
-* Cross-platform: Windows, Linux, Mac
-* Extensible build system, thanks to CMake
+* Cross-platform: Windows, Linux, Mac.
+* Extensible build system, thanks to CMake.
 
 
 Feedback
 --------
 
-**Arduino CMake** is hosted on GitHub and is available at:
+**Arduino CMake** is hosted on GitHub and is available on multiple forks (At the time of writing up to **156(!)**), 
+with the most advanced and maintainable being the following:
+
+https://github.com/JonasProgrammer/arduino-cmake/
+
+However, the original repository deserves its honor, therefore a direct link to it is provided as well:
 
 https://github.com/queezythegreat/arduino-cmake
 
 Did you find a bug or would like a specific feature, please report it at:
 
-https://github.com/queezythegreat/arduino-cmake/issues
+https://github.com/JonasProgrammer/arduino-cmake/issues
 
 If you would like to hack on this project, don't hesitate to fork it on GitHub.
 I will be glad to integrate your changes if you send me a ``Pull Request``.
@@ -68,6 +74,8 @@ Contributors
 
 I would like to thank the following people for contributing to **Arduino CMake**:
 
+* Jonas (`JonasProgrammer`_)
+* MrPointer (`MrPointer`_)
 * Marc Plano-Lesay (`Kernald`_)
 * James Goppert (`jgoppert`_)
 * Matt Tyler (`matt-tyler`_)
@@ -89,6 +97,8 @@ I would like to thank the following people for contributing to **Arduino CMake**
 * Mike Purvis (`mikepurvis`_) 
 * Steffen Hanikel (`hanikesn`_)
 
+.. _JonasProgrammer: https://github.com/JonasProgrammer
+.. _MrPointer: https://github.com/MrPointer
 .. _Kernald: https://github.com/Kernald
 .. _jgoppert: https://github.com/jgoppert
 .. _matt-tyler: https://github.com/matt-tyler
@@ -127,17 +137,18 @@ Contents
 1. `Getting Started`_
 2. `Using Arduino CMake`_
 
-   1. `Creating firmware images`_
-   2. `Creating libraries`_
+   1. `Creating Firmware Images`_
+   2. `Creating Libraries`_
    3. `Arduino Sketches`_
-   4. `Arduino Libraries`_
-   5. `Arduino Library Examples`_
-   6. `Compiler and Linker Flags`_
-   7. `Programmers`_
-   8. `Pure AVR Development`_
-   9. `Advanced Options`_
-   10. `Miscellaneous Functions`_
-   11. `Bundling Arduino CMake`_
+   4. `Arduino Built-in Examples`_
+   5. `Arduino Libraries`_
+   6. `Arduino Library Examples`_
+   7. `Compiler and Linker Flags`_
+   8. `Programmers`_
+   9. `Pure AVR Development`_
+   10. `Advanced Options`_
+   11. `Miscellaneous Functions`_
+   12. `Bundling Arduino CMake`_
 
 3. `Linux Environment`_
 
@@ -278,7 +289,7 @@ You can also specify it at build configuration time::
         cmake -DCMAKE_TOOLCHAIN_FILE=../path/to/toolchain/file.cmake PATH_TO_SOURCE_DIR
 
 
-Creating firmware images
+Creating Firmware Images
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once you have the **Arduino CMake** loaded you can start defining firmware images.
@@ -401,7 +412,7 @@ This will create a target named ``${TARGET_NAME}-serial`` (in this example: blin
 
 
 
-Creating libraries
+Creating Libraries
 ~~~~~~~~~~~~~~~~~~
 
 Creating libraries is very similar to defining a firmware image, except we use the ``generate_arduino_library`` command. This command creates static libraries, and are not to be confused with `Arduino Libraries`_. The full command syntax::
@@ -464,7 +475,6 @@ Once that library is defined we can use it in our other firmware images... Let's
 CMake has automatic dependency tracking, so when you build the ``blink`` target, ``blink_lib`` will automatically get built, in the right order.
 
 
-
 Arduino Sketches
 ~~~~~~~~~~~~~~~~
 
@@ -480,6 +490,72 @@ This will build the **blink** example from the **Arduino SDK**.
 Note: When specifying the sketch directory path, arduino-cmake is expecting to find a sketch file named after the directory (with a extension of .pde or .ino).
 
 You can also specify the path to the main sketch file, then the parent directory of that sketch will be search for additional sketch files.
+
+Arduino Built-in Examples
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Arduino SDK comes with a handful of code examples, providing an easy setup for simple operations.
+Since there are many examples, they were categorized, making each example be under a certain category.
+Each example consists of at least one source file, named after the example and has the *.ino* or *.pde* extension, and sits under a directory which is also named after the example.
+Each category is a directory named after it, having all its examples as sub-directories, named after them.
+One such example is ``Blink``, probrably the most popular one as well. It's located under the ``Basics`` category and has a source file named ``Blink.ino``.
+
+**Arduino CMake** has the abillity to automatically generate these examples, simply by passing their name and optionally their category, as some sort of an optimization. **It supports case-insensitive names**
+If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. The syntax of the command is::
+
+    generate_arduino_example(target_name
+                             EXAMPLE example_name
+                             [CATEGORY] category_name
+                             [BOARD  board_id]
+                             [PORT port]
+                             [SERIAL serial command]
+                             [PORGRAMMER programmer_id]
+                             [AFLAGS avrdude_flags])
+
+The options are:
+
+
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **Name**           | **Description**                                                      | **Required**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **EXAMPLE**        | Example name.                                                        | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **BOARD**          | Board ID *(such as uno, mega2560, ...)*                              | **REQUIRED**                       |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **CATEGORY**       | Category name.                                                       |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PORT**           | Serial port, for upload and serial targets (see `Upload Firmware`_)  |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **SERIAL**         | Serial command for serial target (see `Serial Terminal`_)            |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **PROGRAMMER**     | Programmer ID, enables programmer burning (see `Programmers`_).      |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+| **AFLAGS**         | avrdude flags for target                                             |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
+
+To generate a target for the **blink** example from the **Basics** category for the **Uno** board::
+
+    generate_arduino_example(blink_example
+                             CATEGORY Basics
+                             EXAMPLE Blink
+                             BOARD uno
+                             PORT  /dev/ttyUSB0)
+
+You can also rewrite the previous like so::
+
+    set(blink_example_CATEGORY Basics)
+    set(blink_example_EXAMPLE Blink)
+    set(blink_example_BOARD uno)
+    set(blink_example_PORT /dev/ttyUSB0)
+
+    generate_arduino_example(blink_example)
+
+The previous example will generate the following two target::
+
+    blink_example
+    blink_example-upload
+    
+**Note:** The above example will work perfectly fine even if the ``Basics`` category hadn't been passed.
 
 Arduino Libraries
 ~~~~~~~~~~~~~~~~~
@@ -524,9 +600,9 @@ Arduino Libraries are not to be confused with normal static libraries (for exmap
 Arduino Library Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_example` command. The syntax of the command is::
+Most Arduino libraries have examples bundled with them. If you would like to generate and upload some of those examples you can use the `generate_arduino_library_example` command. The syntax of the command is::
 
-    generate_arduino_example(target_name
+    generate_arduino_library_example(target_name
                              LIBRARY library_name
                              EXAMPLE example_name
                              [BOARD  board_id]
@@ -558,7 +634,7 @@ The options are:
 
 To generate a target for the **master_writer** example from the **Wire** library for the **Uno**::
 
-    generate_arduino_example(wire_example
+    generate_arduino_library_example(wire_example
                              LIBRARY Wire
                              EXAMPLE master_writer
                              BOARD uno
@@ -571,7 +647,7 @@ You can also rewrite the previous like so::
     set(wire_example_BOARD uno)
     set(wire_example_PORT /dev/ttyUSB0)
 
-    generate_arduino_example(wire_example)
+    generate_arduino_library_example(wire_example)
 
 The previous example will generate the following two target::
 
@@ -1228,4 +1304,3 @@ Here are some resources you might find useful in getting started.
 .. _CMake: http://www.cmake.org/cmake/resources/software.html
 .. _CMake Installer: http://www.cmake.org/cmake/resources/software.html
 .. _Arduino SDK: http://www.arduino.cc/en/Main/Software
-
