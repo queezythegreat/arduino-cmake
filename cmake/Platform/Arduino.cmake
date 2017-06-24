@@ -876,11 +876,11 @@ endmacro()
 #
 #=============================================================================#
 macro(INCREMENT_EXAMPLE_CATEGORY_INDEX OUTPUT_VAR)
-    math(EXPR INC_INDEX "${OUTPUT_VAR}+1")
+    math(EXPR INC_INDEX "${${OUTPUT_VAR}}+1")
     if (EXAMPLE_CATEGORY_INDEX_LENGTH GREATER 1 AND INC_INDEX LESS 10)
-        set(OUTPUT_VAR 0${INC_INDEX} PARENT_SCOPE)
+        set(${OUTPUT_VAR} "0${INC_INDEX}")
     else ()
-        set(OUTPUT_VAR ${INC_INDEX} PARENT_SCOPE)
+        set(${OUTPUT_VAR} ${INC_INDEX})
     endif ()
 endmacro()
 
@@ -1082,14 +1082,14 @@ function(load_arduino_examples_categories)
     foreach (CATEGORY ${EXAMPLE_CATEGORIES})
         if (NOT EXAMPLE_CATEGORY_INDEX_LENGTH)
             string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${CATEGORY})
-            list(LENGTH CATEGORY_INDEX INDEX_LENGTH)
+            string(LENGTH ${CATEGORY_INDEX} INDEX_LENGTH)
             set(EXAMPLE_CATEGORY_INDEX_LENGTH ${INDEX_LENGTH} CACHE INTERNAL
                     "Number of digits preceeding an example's category path")
         endif ()
-        string(REGEX MATCH "[A-Z][a-z](.*)" PARSED_CATEGORY ${CATEGORY})
+        string(REGEX MATCH "[^0-9.]+$" PARSED_CATEGORY ${CATEGORY})
         list(APPEND CATEGORIES "${PARSED_CATEGORY}")
     endforeach ()
-    set(ARDUINO_EXAMPLES_CATEGORIES ${EXAMPLES} CACHE INTERNAL
+    set(ARDUINO_EXAMPLES_CATEGORIES ${CATEGORIES} CACHE INTERNAL
             "List of the categories of the built-in Arduino examples")
 endfunction()
 
@@ -1713,7 +1713,7 @@ function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
             return()
         endif ()
         INCREMENT_EXAMPLE_CATEGORY_INDEX(CATEGORY_INDEX)
-        set(CATEGORY_NAME ${CATEGORY_NAME_PREFIX}.${CATEGORY_NAME})
+        set(CATEGORY_NAME ${CATEGORY_INDEX}.${CATEGORY_NAME})
         file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}
                 ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/*)
         foreach (EXAMPLE_PATH ${EXAMPLES})
@@ -2568,7 +2568,7 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
     find_file(ARDUINO_EXAMPLES_PATH
             NAMES examples
             PATHS ${ARDUINO_SDK_PATH}
-            DOC "Path to directory containg the Arduino bult-in examples."
+            DOC "Path to directory containg the Arduino built-in examples."
             NO_DEFAULT_PATH)
 
     find_file(ARDUINO_LIBRARIES_PATH
