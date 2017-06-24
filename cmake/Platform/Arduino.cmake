@@ -515,12 +515,11 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
     foreach (LIB_DEP ${TARGET_LIBS})
-        arduino_debug_msg("Arduino Library: ${LIB_DEP}")
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
     endforeach ()
 
     if (NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${TARGET_LIBS}" "${LIB_DEP_INCLUDES}" "")
         foreach (LIB_INCLUDES ${ALL_LIBS_INCLUDES})
             arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
             set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
@@ -602,7 +601,7 @@ endfunction()
 function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
             ""                                       # Options
-            "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
+            "CATEGORY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
             "SERIAL;AFLAGS"                          # Multi Value Keywords
             ${ARGN})
 
@@ -619,7 +618,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     if (NOT INPUT_PROGRAMMER)
         set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
     endif ()
-    required_variables(VARS INPUT_LIBRARY INPUT_EXAMPLE INPUT_BOARD
+    required_variables(VARS INPUT_EXAMPLE INPUT_BOARD
             MSG "must define for target ${INPUT_NAME}")
 
     message(STATUS "Generating ${INPUT_NAME}")
@@ -629,7 +628,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
 
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
-    setup_arduino_example("${INPUT_NAME}" "${INPUT_LIBRARY}" "${INPUT_EXAMPLE}" ALL_SRCS)
+    SETUP_ARDUINO_EXAMPLE("${INPUT_NAME}" "${INPUT_EXAMPLE}" ALL_SRCS "${INPUT_CATEGORY}")
 
     if (NOT ALL_SRCS)
         message(FATAL_ERROR "Missing sources for example, aborting!")
@@ -656,6 +655,75 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     endif ()
 endfunction()
 
+#=============================================================================#
+# GENERATE_ARDUINO_LIBRARY_EXAMPLE
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(GENERATE_ARDUINO_LIBRARY_EXAMPLE INPUT_NAME)
+    parse_generator_arguments(${INPUT_NAME} INPUT
+            ""                                       # Options
+            "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
+            "SERIAL;AFLAGS"                          # Multi Value Keywords
+            ${ARGN})
+
+    if (NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif ()
+    if (NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif ()
+    if (NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif ()
+    if (NOT INPUT_PROGRAMMER)
+        set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif ()
+    required_variables(VARS INPUT_LIBRARY INPUT_EXAMPLE INPUT_BOARD
+            MSG "must define for target ${INPUT_NAME}")
+
+    message(STATUS "Generating ${INPUT_NAME}")
+
+    set(ALL_LIBS)
+    set(ALL_SRCS)
+
+    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+
+    find_arduino_libraries(TARGET_LIBS "" "${INPUT_LIBRARY}")
+    set(LIB_DEP_INCLUDES)
+    foreach (LIB_DEP ${TARGET_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
+    endforeach ()
+
+    SETUP_ARDUINO_LIBRARY_EXAMPLE("${INPUT_NAME}" "${INPUT_LIBRARY}"
+            "${INPUT_EXAMPLE}" ALL_SRCS)
+
+    if (NOT ALL_SRCS)
+        message(FATAL_ERROR "Missing sources for example, aborting!")
+    endif ()
+
+    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "${TARGET_LIBS}"
+            "${LIB_DEP_INCLUDES}" "")
+
+    list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
+
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}"
+            "${LIB_DEP_INCLUDES}" "" FALSE)
+
+    if (INPUT_PORT)
+        setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT}
+                "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
+    endif ()
+
+    if (INPUT_SERIAL)
+        setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
+    endif ()
+endfunction()
+
+
+#=============================================================================#
+#                           Other Functions
+#=============================================================================#
 
 #=============================================================================#
 # REGISTER_HARDWARE_PLATFORM
@@ -780,8 +848,42 @@ macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
     load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
 endmacro()
 
+#=============================================================================#
+# get_mcu
+# [PRIVATE/INTERNAL]
+#
+# get_mcu(FULL_MCU_NAME, OUTPUT_VAR)
+#
+#         FULL_MCU_NAME - Board's full mcu name, including a trailing 'p' if present
+#         OUTPUT_VAR - String value in which a regex match will be stored
+#
+# Matches the board's mcu without leading or trailing characters that would rather mess
+# further processing that requires the board's mcu.
+#
+#=============================================================================#
 macro(GET_MCU FULL_MCU_NAME OUTPUT_VAR)
     string(REGEX MATCH "^.+[^p]" ${OUTPUT_VAR} "FULL_MCU_NAME" PARENT_SCOPE)
+endmacro()
+
+#=============================================================================#
+# increment_example_category_index
+# [PRIVATE/INTERNAL]
+#
+# increment_example_category_index(OUTPUT_VAR)
+#
+#         OUTPUT_VAR - A number representing an example's category prefix
+#
+# Increments the given number by one, taking into consideration the number notation
+# which is defined (Some SDK's or OSs use a leading '0' in single-digit numbers.
+#
+#=============================================================================#
+macro(INCREMENT_EXAMPLE_CATEGORY_INDEX OUTPUT_VAR)
+    math(EXPR INC_INDEX "${${OUTPUT_VAR}}+1")
+    if (EXAMPLE_CATEGORY_INDEX_LENGTH GREATER 1 AND INC_INDEX LESS 10)
+        set(${OUTPUT_VAR} "0${INC_INDEX}")
+    else ()
+        set(${OUTPUT_VAR} ${INC_INDEX})
+    endif ()
 endmacro()
 
 
@@ -966,6 +1068,34 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
     endif ()
 endfunction()
 
+#=============================================================================#
+# load_arduino_examples
+# [PRIVATE/INTERNAL]
+#
+# load_arduino_examples()
+#
+#  Loads all of Arduino's built-in examples categories, listing it by their names
+#  without the index prefix ('01.Basics' becomes 'Basics').
+#  This list is saved in a cached variable named 'ARDUINO_EXAMPLES_CATEGORIES'.
+#
+#=============================================================================#
+function(load_arduino_examples_categories)
+    file(GLOB EXAMPLE_CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
+    foreach (CATEGORY ${EXAMPLE_CATEGORIES})
+        if (NOT EXAMPLE_CATEGORY_INDEX_LENGTH)
+            string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${CATEGORY})
+            string(LENGTH ${CATEGORY_INDEX} INDEX_LENGTH)
+            set(EXAMPLE_CATEGORY_INDEX_LENGTH ${INDEX_LENGTH} CACHE INTERNAL
+                    "Number of digits preceeding an example's category path")
+        endif ()
+        string(REGEX MATCH "[^0-9.]+$" PARSED_CATEGORY ${CATEGORY})
+        string(TOLOWER ${PARSED_CATEGORY} PARSED_CATEGORY)
+        list(APPEND CATEGORIES "${PARSED_CATEGORY}")
+    endforeach ()
+    set(ARDUINO_EXAMPLES_CATEGORIES ${CATEGORIES} CACHE INTERNAL
+            "List of the categories of the built-in Arduino examples")
+endfunction()
+
 
 #=============================================================================#
 #                          Setup Functions
@@ -1026,13 +1156,11 @@ endfunction()
 set(Wire_RECURSE True)
 set(Ethernet_RECURSE True)
 set(SD_RECURSE True)
+
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
-    set(LIB_TARGETS)
-    set(LIB_INCLUDES)
 
     string(REGEX REPLACE "/src/?$" "" LIB_PATH_STRIPPED ${LIB_PATH})
     get_filename_component(LIB_NAME ${LIB_PATH_STRIPPED} NAME)
-
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
 
     if (NOT TARGET ${TARGET_LIB_NAME})
@@ -1054,7 +1182,8 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach (LIB_DEP ${LIB_DEPS})
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP}
+                        "${COMPILE_FLAGS}" "${LINK_FLAGS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
                 list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
             endforeach ()
@@ -1068,7 +1197,9 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
                     LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
             list(APPEND LIB_INCLUDES "-I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\"")
 
-            list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
+            if (LIB_TARGETS)
+                list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
+            endif ()
             target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
 
@@ -1100,13 +1231,10 @@ endfunction()
 #
 #=============================================================================#
 function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
-    set(LIB_TARGETS)
-    set(LIB_INCLUDES)
-
-    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
-    foreach (TARGET_LIB ${TARGET_LIBS})
+    foreach (TARGET_LIB ${ARDLIBS})
         # Create static library instead of returning sources
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}
+                "${COMPILE_FLAGS}" "${LINK_FLAGS}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
         list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
     endforeach ()
@@ -1132,9 +1260,11 @@ endfunction()
 # Creates an Arduino firmware target.
 #
 #=============================================================================#
-function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL)
+function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS
+        COMPILE_FLAGS LINK_FLAGS MANUAL)
 
-    add_executable(${TARGET_NAME} ${ALL_SRCS})
+    string(STRIP "${ALL_SRCS}" ALL_SRCS)
+    add_executable(${TARGET_NAME} "${ALL_SRCS}")
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
     get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} ${MANUAL})
@@ -1561,22 +1691,96 @@ endfunction()
 # setup_arduino_example
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_example(TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+# setup_arduino_example(TARGET_NAME EXAMPLE_NAME OUTPUT_VAR [CATEGORY_NAME])
+#
+#      TARGET_NAME  - Target name
+#      EXAMPLE_NAME - Example name
+#      OUTPUT_VAR   - Variable name to save sketch path.
+#      [CATEGORY_NAME] - Optional name of the example's parent category, such as 'Basics' is for 'Blink'.
+#
+# Creates an Arduino example from the built-in categories.
+#=============================================================================#
+function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
+
+    set(OPTIONAL_ARGUMENTS ${ARGN})
+    list(LENGTH OPTIONAL_ARGUMENTS ARGC)
+    if (${ARGC} GREATER 0)
+        list(GET OPTIONAL_ARGUMENTS 0 CATEGORY_NAME)
+    endif ()
+
+    # Case-insensitive support
+    string(TOLOWER ${EXAMPLE_NAME} EXAMPLE_NAME)
+
+    if (CATEGORY_NAME)
+
+        string(TOLOWER ${CATEGORY_NAME} CATEGORY_NAME)
+        list(FIND ARDUINO_EXAMPLES_CATEGORIES ${CATEGORY_NAME} CATEGORY_INDEX)
+        if (${CATEGORY_INDEX} LESS 0)
+            message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
+            return()
+        endif ()
+        INCREMENT_EXAMPLE_CATEGORY_INDEX(CATEGORY_INDEX)
+        set(CATEGORY_NAME ${CATEGORY_INDEX}.${CATEGORY_NAME})
+        file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}
+                ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/*)
+        foreach (EXAMPLE_PATH ${EXAMPLES})
+            string(TOLOWER ${EXAMPLE_PATH} EXAMPLE_PATH)
+            if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
+                set(EXAMPLE_SKETCH_PATH
+                        "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/${EXAMPLE_NAME}")
+                break()
+            endif ()
+        endforeach ()
+
+    else ()
+
+        file(GLOB CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
+        foreach (CATEGORY_PATH ${CATEGORIES})
+            file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}
+                    ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/*)
+            foreach (EXAMPLE_PATH ${EXAMPLES})
+                string(TOLOWER ${EXAMPLE_PATH} EXAMPLE_PATH)
+                if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
+                    set(EXAMPLE_SKETCH_PATH
+                            "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/${EXAMPLE_NAME}")
+                    break()
+                endif ()
+            endforeach ()
+        endforeach ()
+
+    endif ()
+
+    if (EXAMPLE_SKETCH_PATH)
+        setup_arduino_sketch(${TARGET_NAME} ${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
+        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+    else ()
+        message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME}")
+    endif ()
+
+endfunction()
+
+#=============================================================================#
+# setup_arduino_library_example
+# [PRIVATE/INTERNAL]
+#
+# setup_arduino_library_example(TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
 #
 #      TARGET_NAME  - Target name
 #      LIBRARY_NAME - Library name
 #      EXAMPLE_NAME - Example name
 #      OUTPUT_VAR   - Variable name to save sketch path.
 #
-# Creates a Arduino example from a the specified library.
+# Creates a Arduino example from the specified library.
 #=============================================================================#
-function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+function(SETUP_ARDUINO_LIBRARY_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     set(EXAMPLE_SKETCH_PATH)
 
     get_property(LIBRARY_SEARCH_PATH
             DIRECTORY     # Property Scope
             PROPERTY LINK_DIRECTORIES)
-    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH}
+            ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
         if (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             break()
@@ -1610,30 +1814,19 @@ function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
     if (EXISTS "${SKETCH_PATH}")
         set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SKETCH_NAME}.cpp)
 
-        if (IS_DIRECTORY "${SKETCH_PATH}")
-            # Sketch directory specified, try to find main sketch...
-            set(MAIN_SKETCH ${SKETCH_PATH}/${SKETCH_NAME})
-
-            if (EXISTS "${MAIN_SKETCH}.pde")
-                set(MAIN_SKETCH "${MAIN_SKETCH}.pde")
-            elseif (EXISTS "${MAIN_SKETCH}.ino")
-                set(MAIN_SKETCH "${MAIN_SKETCH}.ino")
-            else ()
-                message(FATAL_ERROR "Could not find main sketch (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}! Please specify the main sketch file path instead of directory.")
-            endif ()
-        else ()
-            # Sektch file specified, assuming parent directory as sketch directory
-            set(MAIN_SKETCH ${SKETCH_PATH})
-            get_filename_component(SKETCH_PATH "${SKETCH_PATH}" PATH)
-        endif ()
-        arduino_debug_msg("sketch: ${MAIN_SKETCH}")
-
         # Find all sketch files
         file(GLOB SKETCH_SOURCES ${SKETCH_PATH}/*.pde ${SKETCH_PATH}/*.ino)
-        list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
+        list(LENGTH SKETCH_SOURCES NUMBER_OF_SOURCES)
+        if (NUMBER_OF_SOURCES LESS 0) # Sketch sources not found
+            message(FATAL_ERROR "Could not find sketch
+            (${SKETCH_NAME}.pde or ${SKETCH_NAME}.ino) at ${SKETCH_PATH}!
+            Please specify the main sketch file path instead of directory.")
+        endif ()
         list(SORT SKETCH_SOURCES)
+        message(STATUS "SKETCH_SOURCES: ${SKETCH_SOURCES}")
 
-        generate_cpp_from_sketch("${MAIN_SKETCH}" "${SKETCH_SOURCES}" "${SKETCH_CPP}")
+        #generate_cpp_from_sketch("" "${SKETCH_SOURCES}" "${SKETCH_CPP}")
+        generate_sketch_cpp(${SKETCH_SOURCES} ${SKETCH_CPP})
 
         # Regenerate build system if sketch changes
         add_custom_command(OUTPUT ${SKETCH_CPP}
@@ -1645,7 +1838,7 @@ function(SETUP_ARDUINO_SKETCH TARGET_NAME SKETCH_PATH OUTPUT_VAR)
         # Mark file that it exists for find_file
         set_source_files_properties(${SKETCH_CPP} PROPERTIES GENERATED_SKETCH TRUE)
 
-        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+        set(${OUTPUT_VAR} ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
     else ()
         message(FATAL_ERROR "Sketch does not exist: ${SKETCH_PATH}")
     endif ()
@@ -1780,57 +1973,102 @@ endfunction()
 #=============================================================================#
 function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
     set(ARDUINO_LIBS)
-    foreach (SRC ${SRCS})
 
-        # Skipping generated files. They are, probably, not exist yet.
-        # TODO: Maybe it's possible to skip only really nonexisting files,
-        # but then it wiil be less deterministic.
-        get_source_file_property(_srcfile_generated ${SRC} GENERATED)
-        # Workaround for sketches, which are marked as generated
-        get_source_file_property(_sketch_generated ${SRC} GENERATED_SKETCH)
+    if (ARDLIBS) # Libraries are known in advance, just find their absoltue paths
 
-        if (NOT ${_srcfile_generated} OR ${_sketch_generated})
-            if (NOT (EXISTS ${SRC} OR
-                    EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
-                    EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
-                message(FATAL_ERROR "Invalid source file: ${SRC}")
-            endif ()
-            file(STRINGS ${SRC} SRC_CONTENTS)
+        foreach (LIB ${ARDLIBS})
+            get_property(LIBRARY_SEARCH_PATH
+                    DIRECTORY     # Property Scope
+                    PROPERTY LINK_DIRECTORIES)
 
-            foreach (LIBNAME ${ARDLIBS})
-                list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
-            endforeach ()
+            foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH}
+                    ${ARDUINO_LIBRARIES_PATH}
+                    ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
 
-            foreach (SRC_LINE ${SRC_CONTENTS})
-                if ("${SRC_LINE}" MATCHES "^[ \t]*#[ \t]*include[ \t]*[<\"]([^>\"]*)[>\"]")
-                    get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                    get_property(LIBRARY_SEARCH_PATH
-                            DIRECTORY     # Property Scope
-                            PROPERTY LINK_DIRECTORIES)
-                    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
-                        if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
-                            break()
-                        endif ()
-                        if (EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
-                            break()
-                        endif ()
-
-                        # Some libraries like Wire and SPI require building from source
-                        if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
-                            break()
-                        endif ()
-                        if (EXISTS ${LIB_SEARCH_PATH}/src/${CMAKE_MATCH_1})
-                            list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
-                            break()
-                        endif ()
-                    endforeach ()
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB})
+                    break()
                 endif ()
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
+                    break()
+                endif ()
+
+                # Some libraries like Wire and SPI require building from source
+                if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/src/${LIB}.h)
+                    message(STATUS "avr library found: ${LIB}")
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB}/src)
+                    break()
+                endif ()
+                if (EXISTS ${LIB_SEARCH_PATH}/src/${LIB}.h)
+                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
+                    break()
+                endif ()
+
             endforeach ()
-        endif ()
-    endforeach ()
+        endforeach ()
+
+    else ()
+
+        foreach (SRC ${SRCS})
+
+            # Skipping generated files. They are, probably, not exist yet.
+            # TODO: Maybe it's possible to skip only really nonexisting files,
+            # but then it wiil be less deterministic.
+            get_source_file_property(_srcfile_generated ${SRC} GENERATED)
+            # Workaround for sketches, which are marked as generated
+            get_source_file_property(_sketch_generated ${SRC} GENERATED_SKETCH)
+
+            if (NOT ${_srcfile_generated} OR ${_sketch_generated})
+                if (NOT (EXISTS ${SRC} OR
+                        EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} OR
+                        EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${SRC}))
+                    message(FATAL_ERROR "Invalid source file: ${SRC}")
+                endif ()
+                file(STRINGS ${SRC} SRC_CONTENTS)
+
+                foreach (LIBNAME ${ARDLIBS})
+                    list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
+                endforeach ()
+
+                foreach (SRC_LINE ${SRC_CONTENTS})
+                    if ("${SRC_LINE}" MATCHES
+                            "^[ \t]*#[ \t]*include[ \t]*[<\"]([^>\"]*)[>\"]")
+
+                        get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
+                        get_property(LIBRARY_SEARCH_PATH
+                                DIRECTORY     # Property Scope
+                                PROPERTY LINK_DIRECTORIES)
+                        foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+                            if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
+                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
+                                break()
+                            endif ()
+                            if (EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1})
+                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
+                                break()
+                            endif ()
+
+                            # Some libraries like Wire and SPI require building from source
+                            if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src/${CMAKE_MATCH_1})
+                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
+                                break()
+                            endif ()
+                            if (EXISTS ${LIB_SEARCH_PATH}/src/${CMAKE_MATCH_1})
+                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
+                                break()
+                            endif ()
+                        endforeach ()
+
+                    endif ()
+                endforeach ()
+
+            endif ()
+        endforeach ()
+
+    endif ()
+
     if (ARDUINO_LIBS)
         list(REMOVE_DUPLICATES ARDUINO_LIBS)
     endif ()
@@ -1869,6 +2107,60 @@ function(find_sources VAR_NAME LIB_PATH RECURSE)
     if (LIB_FILES)
         set(${VAR_NAME} ${LIB_FILES} PARENT_SCOPE)
     endif ()
+endfunction()
+
+#=============================================================================#
+# find_prototypes
+# [PRIVATE/INTERNAL]
+#
+# find_sources(VAR_NAME LIB_PATH RECURSE)
+#
+#        SEARCH_SOURCES - List of source files to search prototypes in
+#        OUTPUT_VAR - Output variable that will contain the list of found prototypes
+#
+# Find all function prototypes in the given source files
+#
+#=============================================================================#
+function(find_prototypes SEARCH_SOURCES OUTPUT_VAR)
+
+    if (ARGC GREATER 2)
+        list(GET ARGN 0 PROTOTYPE_PATTERN)
+    else ()
+        set(ALPHA "a-zA-Z")
+        set(NUM "0-9")
+        set(ALPHANUM "${ALPHA}${NUM}")
+        set(WORD "_${ALPHANUM}")
+        set(LINE_START "(^|[\n])")
+        set(QUALIFIERS "[ \t]*([${ALPHA}]+[ ])*")
+        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])+")
+        set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
+        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
+        set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
+        set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
+    endif ()
+
+    find_sources(SEARCH_SOURCES ${SEARCH_SOURCES} False)
+    foreach (SOURCE ${SEARCH_SOURCES})
+        ARDUINO_DEBUG_MSG("Prototype search source: ${SOURCE}")
+        file(READ ${SOURCE} SOURCE)
+        remove_comments(SOURCE SOURCE)
+        string(REGEX MATCHALL ${PROTOTYPE_PATTERN} SOURCE_PROTOTYPES ${SOURCE})
+        ARDUINO_DEBUG_MSG("Prototypes: ${SOURCE_PROTOTYPES}")
+        foreach (PROTOTYPE ${SOURCE_PROTOTYPES})
+            string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+            string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
+            # " else if(var == other) {" shoudn't be listed as prototype
+            if (NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
+                list(APPEND PROTOTYPES "${SKETCH_PROTOTYPE}")
+            else ()
+                arduino_debug_msg("\trejected prototype: ${PROTOTYPE};")
+            endif ()
+        endforeach ()
+    endforeach ()
+
+    list(REMOVE_DUPLICATES PROTOTYPES)
+    set(${OUTPUT_VAR} ${PROTOTYPES} PARENT_SCOPE)
+
 endfunction()
 
 
@@ -2048,41 +2340,37 @@ function(detect_arduino_version VAR_NAME)
 endfunction()
 
 #=============================================================================#
-# generate_cpp_from_sketch
+# generate_sketch_cpp
 # [PRIVATE/INTERNAL]
 #
-# generate_cpp_from_sketch(MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
+# generate_sketch_cpp(MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
 #
-#         MAIN_SKETCH_PATH - Main sketch file path
 #         SKETCH_SOURCES   - Setch source paths
 #         SKETCH_CPP       - Name of file to generate
 #
 # Generate C++ source file from Arduino sketch files.
 #=============================================================================#
-function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
+function(generate_sketch_cpp SKETCH_SOURCES SKETCH_CPP)
     file(WRITE ${SKETCH_CPP} "// automatically generated by arduino-cmake\n")
-    file(READ ${MAIN_SKETCH_PATH} MAIN_SKETCH)
+    list(GET SKETCH_SOURCES 0 MAIN_SKETCH)
+    file(READ ${MAIN_SKETCH} MAIN_SKETCH_CONTENT)
 
     # remove comments
-    remove_comments(MAIN_SKETCH MAIN_SKETCH_NO_COMMENTS)
+    remove_comments(MAIN_SKETCH_CONTENT MAIN_SKETCH_NO_COMMENTS)
 
     # find first statement
     string(REGEX MATCH "[\n][_a-zA-Z0-9]+[^\n]*" FIRST_STATEMENT "${MAIN_SKETCH_NO_COMMENTS}")
-    string(FIND "${MAIN_SKETCH}" "${FIRST_STATEMENT}" HEAD_LENGTH)
+    string(FIND "${MAIN_SKETCH_CONTENT}" "${FIRST_STATEMENT}" HEAD_LENGTH)
     if ("${HEAD_LENGTH}" STREQUAL "-1")
         set(HEAD_LENGTH 0)
     endif ()
-    #message(STATUS "FIRST STATEMENT: ${FIRST_STATEMENT}")
-    #message(STATUS "FIRST STATEMENT POSITION: ${HEAD_LENGTH}")
-    string(LENGTH "${MAIN_SKETCH}" MAIN_SKETCH_LENGTH)
+    string(LENGTH "${MAIN_SKETCH_CONTENT}" MAIN_SKETCH_LENGTH)
 
-    string(SUBSTRING "${MAIN_SKETCH}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
-    #arduino_debug_msg("SKETCH_HEAD:\n${SKETCH_HEAD}")
+    string(SUBSTRING "${MAIN_SKETCH_CONTENT}" 0 ${HEAD_LENGTH} SKETCH_HEAD)
 
     # find the body of the main pde
     math(EXPR BODY_LENGTH "${MAIN_SKETCH_LENGTH}-${HEAD_LENGTH}")
-    string(SUBSTRING "${MAIN_SKETCH}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
-    #arduino_debug_msg("BODY:\n${SKETCH_BODY}")
+    string(SUBSTRING "${MAIN_SKETCH_CONTENT}" "${HEAD_LENGTH}+1" "${BODY_LENGTH}-1" SKETCH_BODY)
 
     # write the file head
     file(APPEND ${SKETCH_CPP} "#line 1 \"${MAIN_SKETCH_PATH}\"\n${SKETCH_HEAD}")
@@ -2093,7 +2381,6 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
     math(EXPR SKETCH_HEAD_OFFSET "${SKETCH_HEAD_LINES_COUNT}+2")
 
     # add arduino include header
-    #file(APPEND ${SKETCH_CPP} "\n#line 1 \"autogenerated\"\n")
     file(APPEND ${SKETCH_CPP} "\n#line ${SKETCH_HEAD_OFFSET} \"${SKETCH_CPP}\"\n")
     if (ARDUINO_SDK_VERSION VERSION_LESS 1.0)
         file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"\n")
@@ -2101,47 +2388,10 @@ function(GENERATE_CPP_FROM_SKETCH MAIN_SKETCH_PATH SKETCH_SOURCES SKETCH_CPP)
         file(APPEND ${SKETCH_CPP} "#include \"Arduino.h\"\n")
     endif ()
 
-    # add function prototypes
-    foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES} ${MAIN_SKETCH_PATH})
-        arduino_debug_msg("Sketch: ${SKETCH_SOURCE_PATH}")
-        file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
-        remove_comments(SKETCH_SOURCE SKETCH_SOURCE)
-
-        set(ALPHA "a-zA-Z")
-        set(NUM "0-9")
-        set(ALPHANUM "${ALPHA}${NUM}")
-        set(WORD "_${ALPHANUM}")
-        set(LINE_START "(^|[\n])")
-        set(QUALIFIERS "[ \t]*([${ALPHA}]+[ ])*")
-        set(TYPE "[${WORD}]+([ ]*[\n][\t]*|[ ])+")
-        set(FNAME "[${WORD}]+[ ]?[\n]?[\t]*[ ]*")
-        set(FARGS "[(]([\t]*[ ]*[*&]?[ ]?[${WORD}](\\[([${NUM}]+)?\\])*[,]?[ ]*[\n]?)*([,]?[ ]*[\n]?)?[)]")
-        set(BODY_START "([ ]*[\n][\t]*|[ ]|[\n])*{")
-        set(PROTOTYPE_PATTERN "${LINE_START}${QUALIFIERS}${TYPE}${FNAME}${FARGS}${BODY_START}")
-
-        string(REGEX MATCHALL "${PROTOTYPE_PATTERN}" SKETCH_PROTOTYPES "${SKETCH_SOURCE}")
-
-        # Write function prototypes
-        file(APPEND ${SKETCH_CPP} "\n//=== START Forward: ${SKETCH_SOURCE_PATH}\n")
-        foreach (SKETCH_PROTOTYPE ${SKETCH_PROTOTYPES})
-            string(REPLACE "\n" " " SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            string(REPLACE "{" "" SKETCH_PROTOTYPE "${SKETCH_PROTOTYPE}")
-            arduino_debug_msg("\tprototype: ${SKETCH_PROTOTYPE};")
-            # " else if(var == other) {" shoudn't be listed as prototype
-            if (NOT SKETCH_PROTOTYPE MATCHES "(if[ ]?[\n]?[\t]*[ ]*[)])")
-                file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
-            else ()
-                arduino_debug_msg("\trejected prototype: ${SKETCH_PROTOTYPE};")
-            endif ()
-            file(APPEND ${SKETCH_CPP} "${SKETCH_PROTOTYPE};\n")
-        endforeach ()
-        file(APPEND ${SKETCH_CPP} "//=== END Forward: ${SKETCH_SOURCE_PATH}\n")
-    endforeach ()
-
-    # Write Sketch CPP source
     get_num_lines("${SKETCH_HEAD}" HEAD_NUM_LINES)
     file(APPEND ${SKETCH_CPP} "#line ${HEAD_NUM_LINES} \"${MAIN_SKETCH_PATH}\"\n")
     file(APPEND ${SKETCH_CPP} "\n${SKETCH_BODY}")
+    list(REMOVE_ITEM SKETCH_SOURCES ${MAIN_SKETCH})
     foreach (SKETCH_SOURCE_PATH ${SKETCH_SOURCES})
         file(READ ${SKETCH_SOURCE_PATH} SKETCH_SOURCE)
         file(APPEND ${SKETCH_CPP} "\n//=== START : ${SKETCH_SOURCE_PATH}\n")
@@ -2172,7 +2422,8 @@ function(REMOVE_COMMENTS SRC_VAR OUT_VAR)
     #message(STATUS "\n${SRC}")
 
     # remove all comments
-    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])" "" OUT "${SRC}")
+    string(REGEX REPLACE "([/][/][^\n]*)|([/][\\*]([^\\*]|([\\*]+[^/\\*]))*[\\*]+[/])"
+            "" OUT "${SRC}")
 
     #file(WRITE "${CMAKE_BINARY_DIR}/${FILE}_post_remove_comments.txt" ${SRC})
     #message(STATUS "\n${SRC}")
@@ -2370,10 +2621,17 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
 
+    find_file(ARDUINO_EXAMPLES_PATH
+            NAMES examples
+            PATHS ${ARDUINO_SDK_PATH}
+            DOC "Path to directory containg the Arduino built-in examples."
+            NO_DEFAULT_PATH)
+
     find_file(ARDUINO_LIBRARIES_PATH
             NAMES libraries
             PATHS ${ARDUINO_SDK_PATH}
-            DOC "Path to directory containing the Arduino libraries.")
+            DOC "Path to directory containing the Arduino libraries."
+            NO_DEFAULT_PATH)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
             NAMES avrdude
@@ -2395,12 +2653,32 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
             hardware/tools/avr/etc
             DOC "Path to avrdude programmer configuration file.")
 
+    if (ARDUINO_SDK_VERSION VERSION_LESS 1.0.0)
+        find_file(ARDUINO_PLATFORM_HEADER_FILE_PATH
+                NAMES WProgram.h
+                PATHS ${ARDUINO_SDK_PATH}
+                PATH_SUFFIXES hardware/arduino/avr/cores/arduino
+                DOC "Path to Arduino platform's main header file"
+                NO_DEFAULT_PATH)
+    else ()
+        find_file(ARDUINO_PLATFORM_HEADER_FILE_PATH
+                NAMES Arduino.h
+                PATHS ${ARDUINO_SDK_PATH}
+                PATH_SUFFIXES hardware/arduino/avr/cores/arduino
+                DOC "Path to Arduino platform's main header file"
+                NO_DEFAULT_PATH)
+    endif ()
+
     if (NOT CMAKE_OBJCOPY)
         find_program(AVROBJCOPY_PROGRAM
                 avr-objcopy)
         set(ADDITIONAL_REQUIRED_VARS AVROBJCOPY_PROGRAM)
         set(CMAKE_OBJCOPY ${AVROBJCOPY_PROGRAM})
     endif (NOT CMAKE_OBJCOPY)
+
+    if (EXISTS "${ARDUINO_EXAMPLES_PATH}")
+        load_arduino_examples_categories()
+    endif ()
 
     set(ARDUINO_DEFAULT_BOARD uno CACHE STRING "Default Arduino Board ID when not specified.")
     set(ARDUINO_DEFAULT_PORT CACHE STRING "Default Arduino port when not specified.")
