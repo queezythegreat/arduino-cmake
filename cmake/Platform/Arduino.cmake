@@ -602,6 +602,68 @@ endfunction()
 function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
             ""                                       # Options
+            "CATEGORY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
+            "SERIAL;AFLAGS"                          # Multi Value Keywords
+            ${ARGN})
+
+
+    if (NOT INPUT_BOARD)
+        set(INPUT_BOARD ${ARDUINO_DEFAULT_BOARD})
+    endif ()
+    if (NOT INPUT_PORT)
+        set(INPUT_PORT ${ARDUINO_DEFAULT_PORT})
+    endif ()
+    if (NOT INPUT_SERIAL)
+        set(INPUT_SERIAL ${ARDUINO_DEFAULT_SERIAL})
+    endif ()
+    if (NOT INPUT_PROGRAMMER)
+        set(INPUT_PROGRAMMER ${ARDUINO_DEFAULT_PROGRAMMER})
+    endif ()
+    required_variables(VARS INPUT_EXAMPLE INPUT_BOARD
+            MSG "must define for target ${INPUT_NAME}")
+
+    message(STATUS "Generating ${INPUT_NAME}")
+
+    set(ALL_LIBS)
+    set(ALL_SRCS)
+
+    setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+
+    SETUP_ARDUINO_EXAMPLE("${INPUT_NAME}" "${INPUT_EXAMPLE}" ALL_SRCS "${INPUT_CATEGORY}")
+
+    if (NOT ALL_SRCS)
+        message(FATAL_ERROR "Missing sources for example, aborting!")
+    endif ()
+
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
+    set(LIB_DEP_INCLUDES)
+    foreach (LIB_DEP ${TARGET_LIBS})
+        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
+    endforeach ()
+
+    setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}" "" "${LIB_DEP_INCLUDES}" "")
+
+    list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
+
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" FALSE)
+
+    if (INPUT_PORT)
+        setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
+    endif ()
+
+    if (INPUT_SERIAL)
+        setup_serial_target(${INPUT_NAME} "${INPUT_SERIAL}" "${INPUT_PORT}")
+    endif ()
+endfunction()
+
+#=============================================================================#
+# GENERATE_ARDUINO_LIBRARY_EXAMPLE
+# [PUBLIC/USER]
+# see documentation at top
+#=============================================================================#
+function(GENERATE_ARDUINO_LIBRARY_EXAMPLE INPUT_NAME)
+    parse_generator_arguments(${INPUT_NAME} INPUT
+            ""                                       # Options
             "LIBRARY;EXAMPLE;BOARD;PORT;PROGRAMMER"  # One Value Keywords
             "SERIAL;AFLAGS"                          # Multi Value Keywords
             ${ARGN})
@@ -629,7 +691,7 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
 
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
-    setup_arduino_example("${INPUT_NAME}" "${INPUT_LIBRARY}" "${INPUT_EXAMPLE}" ALL_SRCS)
+    SETUP_ARDUINO_LIBRARY_EXAMPLE("${INPUT_NAME}" "${INPUT_LIBRARY}" "${INPUT_EXAMPLE}" ALL_SRCS)
 
     if (NOT ALL_SRCS)
         message(FATAL_ERROR "Missing sources for example, aborting!")
@@ -656,6 +718,10 @@ function(GENERATE_ARDUINO_EXAMPLE INPUT_NAME)
     endif ()
 endfunction()
 
+
+#=============================================================================#
+#                           Other Functions
+#=============================================================================#
 
 #=============================================================================#
 # REGISTER_HARDWARE_PLATFORM
@@ -780,8 +846,42 @@ macro(PARSE_GENERATOR_ARGUMENTS TARGET_NAME PREFIX OPTIONS ARGS MULTI_ARGS)
     load_generator_settings(${TARGET_NAME} ${PREFIX} ${OPTIONS} ${ARGS} ${MULTI_ARGS})
 endmacro()
 
+#=============================================================================#
+# get_mcu
+# [PRIVATE/INTERNAL]
+#
+# get_mcu(FULL_MCU_NAME, OUTPUT_VAR)
+#
+#         FULL_MCU_NAME - Board's full mcu name, including a trailing 'p' if present
+#         OUTPUT_VAR - String value in which a regex match will be stored
+#
+# Matches the board's mcu without leading or trailing characters that would rather mess
+# further processing that requires the board's mcu.
+#
+#=============================================================================#
 macro(GET_MCU FULL_MCU_NAME OUTPUT_VAR)
     string(REGEX MATCH "^.+[^p]" ${OUTPUT_VAR} "FULL_MCU_NAME" PARENT_SCOPE)
+endmacro()
+
+#=============================================================================#
+# increment_example_category_index
+# [PRIVATE/INTERNAL]
+#
+# increment_example_category_index(OUTPUT_VAR)
+#
+#         OUTPUT_VAR - A number representing an example's category prefix
+#
+# Increments the given number by one, taking into consideration the number notation
+# which is defined (Some SDK's or OSs use a leading '0' in single-digit numbers.
+#
+#=============================================================================#
+macro(INCREMENT_EXAMPLE_CATEGORY_INDEX OUTPUT_VAR)
+    math(EXPR INC_INDEX "${${OUTPUT_VAR}}+1")
+    if (EXAMPLE_CATEGORY_INDEX_LENGTH GREATER 1 AND INC_INDEX LESS 10)
+        set(${OUTPUT_VAR} "0${INC_INDEX}")
+    else ()
+        set(${OUTPUT_VAR} ${INC_INDEX})
+    endif ()
 endmacro()
 
 
@@ -964,6 +1064,33 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
                 CACHE STRING "List of detected Arduino Board configurations")
         mark_as_advanced(${SETTINGS_LIST})
     endif ()
+endfunction()
+
+#=============================================================================#
+# load_arduino_examples
+# [PRIVATE/INTERNAL]
+#
+# load_arduino_examples()
+#
+#  Loads all of Arduino's built-in examples categories, listing it by their names
+#  without the index prefix ('01.Basics' becomes 'Basics').
+#  This list is saved in a cached variable named 'ARDUINO_EXAMPLES_CATEGORIES'.
+#
+#=============================================================================#
+function(load_arduino_examples_categories)
+    file(GLOB EXAMPLE_CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
+    foreach (CATEGORY ${EXAMPLE_CATEGORIES})
+        if (NOT EXAMPLE_CATEGORY_INDEX_LENGTH)
+            string(REGEX MATCH "^[0-9]+" CATEGORY_INDEX ${CATEGORY})
+            string(LENGTH ${CATEGORY_INDEX} INDEX_LENGTH)
+            set(EXAMPLE_CATEGORY_INDEX_LENGTH ${INDEX_LENGTH} CACHE INTERNAL
+                    "Number of digits preceeding an example's category path")
+        endif ()
+        string(REGEX MATCH "[^0-9.]+$" PARSED_CATEGORY ${CATEGORY})
+        list(APPEND CATEGORIES "${PARSED_CATEGORY}")
+    endforeach ()
+    set(ARDUINO_EXAMPLES_CATEGORIES ${CATEGORIES} CACHE INTERNAL
+            "List of the categories of the built-in Arduino examples")
 endfunction()
 
 
@@ -1561,22 +1688,90 @@ endfunction()
 # setup_arduino_example
 # [PRIVATE/INTERNAL]
 #
-# setup_arduino_example(TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+# setup_arduino_example(TARGET_NAME EXAMPLE_NAME OUTPUT_VAR [CATEGORY_NAME])
+#
+#      TARGET_NAME  - Target name
+#      EXAMPLE_NAME - Example name
+#      OUTPUT_VAR   - Variable name to save sketch path.
+#      [CATEGORY_NAME] - Optional name of the example's parent category, such as 'Basics' is for 'Blink'.
+#
+# Creates an Arduino example from the built-in categories.
+#=============================================================================#
+function(SETUP_ARDUINO_EXAMPLE TARGET_NAME EXAMPLE_NAME OUTPUT_VAR)
+
+    set(OPTIONAL_ARGUMENTS ${ARGN})
+    list(LENGTH OPTIONAL_ARGUMENTS ARGC)
+    if (${ARGC} GREATER 0)
+        list(GET OPTIONAL_ARGUMENTS 0 CATEGORY_NAME)
+    endif ()
+
+    if (CATEGORY_NAME)
+
+        list(FIND ARDUINO_EXAMPLES_CATEGORIES ${CATEGORY_NAME} CATEGORY_INDEX)
+        if (${CATEGORY_INDEX} LESS 0)
+            message(SEND_ERROR "${CATEGORY_NAME} example category doesn't exist, please check your spelling")
+            return()
+        endif ()
+        INCREMENT_EXAMPLE_CATEGORY_INDEX(CATEGORY_INDEX)
+        set(CATEGORY_NAME ${CATEGORY_INDEX}.${CATEGORY_NAME})
+        file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}
+                ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/*)
+        foreach (EXAMPLE_PATH ${EXAMPLES})
+            if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
+                set(EXAMPLE_SKETCH_PATH
+                        "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_NAME}/${EXAMPLE_NAME}")
+                break()
+            endif ()
+        endforeach ()
+
+    else ()
+
+        file(GLOB CATEGORIES RELATIVE ${ARDUINO_EXAMPLES_PATH} ${ARDUINO_EXAMPLES_PATH}/*)
+        foreach (CATEGORY_PATH ${CATEGORIES})
+            file(GLOB EXAMPLES RELATIVE ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}
+                    ${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/*)
+            foreach (EXAMPLE_PATH ${EXAMPLES})
+                if (${EXAMPLE_PATH} STREQUAL ${EXAMPLE_NAME})
+                    set(EXAMPLE_SKETCH_PATH
+                            "${ARDUINO_EXAMPLES_PATH}/${CATEGORY_PATH}/${EXAMPLE_NAME}")
+                    break()
+                endif ()
+            endforeach ()
+        endforeach ()
+
+    endif ()
+
+    if (EXAMPLE_SKETCH_PATH)
+        setup_arduino_sketch(${TARGET_NAME} ${EXAMPLE_SKETCH_PATH} SKETCH_CPP)
+        set("${OUTPUT_VAR}" ${${OUTPUT_VAR}} ${SKETCH_CPP} PARENT_SCOPE)
+    else ()
+        message(FATAL_ERROR "Could not find example ${EXAMPLE_NAME}")
+    endif ()
+
+endfunction()
+
+#=============================================================================#
+# setup_arduino_library_example
+# [PRIVATE/INTERNAL]
+#
+# setup_arduino_library_example(TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
 #
 #      TARGET_NAME  - Target name
 #      LIBRARY_NAME - Library name
 #      EXAMPLE_NAME - Example name
 #      OUTPUT_VAR   - Variable name to save sketch path.
 #
-# Creates a Arduino example from a the specified library.
+# Creates a Arduino example from the specified library.
 #=============================================================================#
-function(SETUP_ARDUINO_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
+function(SETUP_ARDUINO_LIBRARY_EXAMPLE TARGET_NAME LIBRARY_NAME EXAMPLE_NAME OUTPUT_VAR)
     set(EXAMPLE_SKETCH_PATH)
 
     get_property(LIBRARY_SEARCH_PATH
             DIRECTORY     # Property Scope
             PROPERTY LINK_DIRECTORIES)
-    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+    foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH}
+            ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
         if (EXISTS "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             set(EXAMPLE_SKETCH_PATH "${LIB_SEARCH_PATH}/${LIBRARY_NAME}/examples/${EXAMPLE_NAME}")
             break()
@@ -2370,10 +2565,17 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
 
+    find_file(ARDUINO_EXAMPLES_PATH
+            NAMES examples
+            PATHS ${ARDUINO_SDK_PATH}
+            DOC "Path to directory containg the Arduino built-in examples."
+            NO_DEFAULT_PATH)
+
     find_file(ARDUINO_LIBRARIES_PATH
             NAMES libraries
             PATHS ${ARDUINO_SDK_PATH}
-            DOC "Path to directory containing the Arduino libraries.")
+            DOC "Path to directory containing the Arduino libraries."
+            NO_DEFAULT_PATH)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
             NAMES avrdude
@@ -2401,6 +2603,10 @@ if (NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         set(ADDITIONAL_REQUIRED_VARS AVROBJCOPY_PROGRAM)
         set(CMAKE_OBJCOPY ${AVROBJCOPY_PROGRAM})
     endif (NOT CMAKE_OBJCOPY)
+
+    if (EXISTS "${ARDUINO_EXAMPLES_PATH}")
+        load_arduino_examples_categories()
+    endif ()
 
     set(ARDUINO_DEFAULT_BOARD uno CACHE STRING "Default Arduino Board ID when not specified.")
     set(ARDUINO_DEFAULT_PORT CACHE STRING "Default Arduino port when not specified.")
