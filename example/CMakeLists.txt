@@ -4,7 +4,6 @@
 
 set(ARDUINO_DEFAULT_BOARD uno) # Default Board ID, when not specified
 set(ARDUINO_DEFAULT_PORT /dev/ttyUSB0) # Default Port, when not specified
-ARDUINO_DEBUG_ON()
 
 #====================================================================#
 # master_writer example from Wire library
@@ -17,7 +16,7 @@ GENERATE_ARDUINO_LIBRARY_EXAMPLE(wire_example
 # Alternative: by vairables
 #set(wire_example_LIBRARY Wire)
 #set(wire_example_EXAMPLE master_writer)
-#
+#set(blink_example_BOARD uno)
 #generate_arduino_example(wire_example)
 
 #====================================================================#
@@ -28,6 +27,13 @@ GENERATE_ARDUINO_EXAMPLE(blink_example
         EXAMPLE Blink
         BOARD uno)
 
+# Alternative: by variables
+#set(blink_example_CATEGORY Basics)
+#set(blink_example_EXAMPLE Blink)
+#set(blink_example_PORT  /dev/ttyACM)
+#set(blink_example_BOARD uno)
+#
+#generate_arduino_firmware(blink_original)
 
 #====================================================================#
 # Original blink sketch (from Arduino SDK examples)
