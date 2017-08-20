@@ -988,8 +988,12 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
 
             foreach(LIB_DEP ${LIB_DEPS})
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
-                list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
-                list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
+                # Do not link to this library. DEP_LIB_SRCS will always be only one entry
+                # if we are looking at the same library.
+                if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME)
+                    list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
+                    list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
+                endif()
             endforeach()
 
             if (LIB_INCLUDES)
@@ -1174,7 +1178,7 @@ function(setup_arduino_bootloader_upload TARGET_NAME BOARD_ID PORT AVRDUDE_FLAGS
     endif()
     set(TARGET_PATH ${EXECUTABLE_OUTPUT_PATH}/${TARGET_NAME})
 
-    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_PATH}.hex")
+    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_PATH}.hex:a")
     list(APPEND AVRDUDE_ARGS "-Ueeprom:w:${TARGET_PATH}.eep:i")
     add_custom_target(${UPLOAD_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
@@ -1222,7 +1226,7 @@ function(setup_arduino_programmer_burn TARGET_NAME BOARD_ID PROGRAMMER PORT AVRD
     endif()
     set(TARGET_PATH ${EXECUTABLE_OUTPUT_PATH}/${TARGET_NAME})
 
-    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_PATH}.hex")
+    list(APPEND AVRDUDE_ARGS "-Uflash:w:${TARGET_PATH}.hex:a")
 
     add_custom_target(${PROGRAMMER_TARGET}
                      ${ARDUINO_AVRDUDE_PROGRAM} 
