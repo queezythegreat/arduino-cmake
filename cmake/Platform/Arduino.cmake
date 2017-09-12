@@ -1034,7 +1034,7 @@ function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LI
     set(LIB_TARGETS)
     set(LIB_INCLUDES)
 
-    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
+    find_arduino_libraries(TARGET_LIBS "${SRCS}" "${ARDLIBS}")
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
