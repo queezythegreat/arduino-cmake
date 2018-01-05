@@ -426,6 +426,10 @@ The options are:
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **LIBS**           | Libraries to link *(sets up dependency tracking)*                    |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
+| **ARDLIBS**        | Manual list of Arduino type libraries, common use case is when the   |                                    |
+|                    | library header name does not match the librarie's directory name.    |                                    |
+|                    | **ADVANCED OPTION!** Can be used in conjuction with **NO_AUTOLIBS**. |                                    |
++--------------------+----------------------------------------------------------------------+------------------------------------+
 | **NO_AUTOLIBS**    | Disable Arduino library detection *(default On)*                     |                                    |
 +--------------------+----------------------------------------------------------------------+------------------------------------+
 | **MANUAL**         | Disable Arduino Core (enables pure AVR development)                  |                                    |
