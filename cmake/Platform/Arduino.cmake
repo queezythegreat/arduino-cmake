@@ -476,9 +476,21 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     endif()
     required_variables(VARS INPUT_BOARD MSG "must define for target ${INPUT_NAME}")
 
+    set(PLATFORM ${${INPUT_BOARD}.PLATFORM})
+
+
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
     set(LIB_DEP_INCLUDES)
+
+    # set predefined variable values
+
+    set(${INPUT_NAME}.build.path ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+    set(${INPUT_NAME}.build.project_name ${INPUT_NAME} CACHE INTERNAL "")
+
+    string(TOLOWER "${PLATFORM}" PLATFORM_LOWER)
+    set(${INPUT_BOARD}.build.arch "${PLATFORM_LOWER}" CACHE INTERNAL "")
+
 
     if(NOT INPUT_MANUAL)
       setup_arduino_core(CORE_LIB ${INPUT_BOARD})
@@ -654,6 +666,19 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
             set(${PLATFORM}_PLATFORM_PATH ${PLATFORM_PATH} CACHE INTERNAL "The path to ${PLATFORM}")
             set(ARDUINO_PLATFORMS ${ARDUINO_PLATFORMS} ${PLATFORM} CACHE INTERNAL "A list of registered platforms")
 
+
+            # Set some predefined variable values as defined in
+            # https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5-3rd-party-Hardware-specification
+
+            set(${PLATFORM}.runtime.platform.path ${PLATFORM_PATH}
+                CACHE INTERNAL "${PLATFORM} platform path")
+
+            GET_FILENAME_COMPONENT(HARDWARE_PATH ${PLATFORM_PATH} DIRECTORY)
+            set(${PLATFORM}.runtime.hardware.path ${HARDWARE_PATH}
+                CACHE INTERNAL "${PLATFORM} hardware path")
+
+
+
             find_file(${PLATFORM}_CORES_PATH
                   NAMES cores
                   PATHS ${PLATFORM_PATH}
@@ -690,12 +715,28 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
                 DOC "Path to Arduino boards definition file."
                 NO_SYSTEM_ENVIRONMENT_PATH)
 
+            find_file(${PLATFORM}_PLATFORM_PATH
+                NAMES platform.txt
+                PATHS ${PLATFORM_PATH}
+                DOC "Path to Arduino platform definition file."
+                NO_SYSTEM_ENVIRONMENT_PATH)
+
             if(${PLATFORM}_BOARDS_PATH)
-                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt")
+                load_arduino_style_settings(${PLATFORM}_BOARDS "${PLATFORM_PATH}/boards.txt" "")
+
+                # store the platform to which the board belongs
+                foreach(board IN LISTS ${PLATFORM}_BOARDS)
+                    set(${board}.PLATFORM ${PLATFORM} CACHE INTERNAL "")
+                endforeach()
+
             endif()
 
             if(${PLATFORM}_PROGRAMMERS_PATH)
-                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${ARDUINO_PROGRAMMERS_PATH}")
+                load_arduino_style_settings(${PLATFORM}_PROGRAMMERS "${PLATFORM_PATH}/programmers.txt" "")
+            endif()
+
+            if(${PLATFORM}_PLATFORM_PATH)
+                load_arduino_style_settings(${PLATFORM}_PLATFORM "${PLATFORM_PATH}/platform.txt" ${PLATFORM})
             endif()
 
             if(${PLATFORM}_VARIANTS_PATH)
@@ -797,26 +838,10 @@ endfunction()
 function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
 
     set(BOARD_CORE ${${BOARD_ID}.build.core})
+
+    set(PLATFORM ${${BOARD_ID}.PLATFORM})
+
     if(BOARD_CORE)
-        if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)[.]([0-9]+)")
-            string(REPLACE "." "" ARDUINO_VERSION_DEFINE "${ARDUINO_SDK_VERSION}") # Normalize version (remove all periods)
-            set(ARDUINO_VERSION_DEFINE "")
-            if(CMAKE_MATCH_1 GREATER 0)
-                set(ARDUINO_VERSION_DEFINE "${CMAKE_MATCH_1}")
-            endif()
-            if(CMAKE_MATCH_2 GREATER 10)
-                set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}${CMAKE_MATCH_2}")
-            else()
-                set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}0${CMAKE_MATCH_2}")
-            endif()
-            if(CMAKE_MATCH_3 GREATER 10)
-                set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}${CMAKE_MATCH_3}")
-            else()
-                set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}0${CMAKE_MATCH_3}")
-            endif()
-        else()
-            message("Invalid Arduino SDK Version (${ARDUINO_SDK_VERSION})")
-        endif()
 
         # output
         set(COMPILE_FLAGS "")
@@ -1035,9 +1060,9 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach(LIB_DEP ${LIB_DEPS})
-	        if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME AND DEP_LIB_SRCS)
-                  message(STATUS "Found library ${LIB_NAME} needs ${DEP_LIB_SRCS}")
-		endif()
+                if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME AND DEP_LIB_SRCS)
+                      message(STATUS "Found library ${LIB_NAME} needs ${DEP_LIB_SRCS}")
+                endif()
 
                 setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
                 # Do not link to this library. DEP_LIB_SRCS will always be only one entry
@@ -1569,9 +1594,9 @@ endfunction()
 #
 # Settings have to following format:
 #
-#      entry.setting[.subsetting] = value
+#      entry[.setting][.subsetting] = value
 #
-# where [.subsetting] is optional
+# where [.setting] and [.subsetting] is optional
 #
 # For example, the following settings:
 #
@@ -1590,89 +1615,174 @@ endfunction()
 #      set(uno.build.core "arduino")
 #
 #      set(uno.SETTINGS  name upload build)              # List of settings for uno
-#      set(uno.upload.SUBSETTINGS protocol maximum_size) # List of sub-settings for uno.upload
-#      set(uno.build.SUBSETTINGS mcu core)               # List of sub-settings for uno.build
+#      set(uno.upload.SETTINGS protocol maximum_size) # List of sub-settings for uno.upload
+#      set(uno.build.SETTINGS mcu core)               # List of sub-settings for uno.build
 #
-#  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry, while
-# ${ENTRY_NAME}.SUBSETTINGS variables lists all settings for a sub-setting of
-# a entry setting pair.
+#  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry
 #
 #  These variables are generated in order to be able to  programatically traverse
 # all settings (for a example see print_board_settings() function).
 #
 #=============================================================================#
-function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
+function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH SETTINGS_PREFIX)
 
     if(NOT ${SETTINGS_LIST} AND EXISTS ${SETTINGS_PATH})
-    file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
+        file(STRINGS ${SETTINGS_PATH} FILE_ENTRIES)  # Settings file split into lines
 
-    foreach(FILE_ENTRY ${FILE_ENTRIES})
-        if("${FILE_ENTRY}" MATCHES "^[^#]+=.*")
-            string(REGEX MATCH "^[^=]+" SETTING_NAME  ${FILE_ENTRY})
-            string(REGEX MATCH "[^=]+$" SETTING_VALUE ${FILE_ENTRY})
-            string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
-            string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
+        foreach(FILE_ENTRY ${FILE_ENTRIES})
+            if("${FILE_ENTRY}" MATCHES "^[^#]+=.*")
 
-            list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
-
-            # Add entry to settings list if it does not exist
-            list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
-            list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
-            if(ENTRY_NAME_INDEX LESS 0)
-                # Add entry to main list
-                list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
-            endif()
-
-            # Add entry setting to entry settings list if it does not exist
-            set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
-            list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
-	    set(PARAMETERS 2)
-	    if(ENTRY_SETTING STREQUAL "menu")
-		 list(GET ENTRY_NAME_TOKENS 3 CPUNAME)
-		 if(ENTRY_NAME_TOKENS_LEN GREATER 4)
-		   list(GET ENTRY_NAME_TOKENS 4 PROPERTYNAME)
-		   set(ENTRY_SETTING "menu.cpu.${CPUNAME}.${PROPERTYNAME}")
-		   set(PARAMETERS 5)
-		 else()
-   		   set(ENTRY_SETTING "menu.cpu.${CPUNAME}")
-		   set(PARAMETERS 4)
-		 endif()
-     		 list(APPEND ${ENTRY_SETTING_LIST} "${ENTRY_SETTING}")
-	    else()
-		    list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
-		    if(ENTRY_SETTING_INDEX LESS 0)
-		        # Add setting to entry
-		        list(APPEND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING})
-		        set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
-		            CACHE INTERNAL "Arduino ${ENTRY_NAME} Board settings list")
-		    endif()
-	    endif()
-
-            set(FULL_SETTING_NAME ${ENTRY_NAME}.${ENTRY_SETTING})
-
-            # Add entry sub-setting to entry sub-settings list if it does not exists
-            if(ENTRY_NAME_TOKENS_LEN GREATER ${PARAMETERS})
-                set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                list(GET ENTRY_NAME_TOKENS ${PARAMETERS} ENTRY_SUBSETTING)
-                list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
-                if(ENTRY_SUBSETTING_INDEX LESS 0)
-                    list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
-                    set(${ENTRY_SUBSETTING_LIST}  ${${ENTRY_SUBSETTING_LIST}}
-                        CACHE INTERNAL "Arduino ${ENTRY_NAME} Board sub-settings list")
+                string(REGEX MATCH "^([^=]*)=(.*)$" SETTING_SPLIT ${FILE_ENTRY})
+                if(NOT DEFINED CMAKE_MATCH_1 OR NOT DEFINED CMAKE_MATCH_2)
+                    MESSAGE(WARNING "Invalid setting: ${FILE_ENTRY}")
+                    continue()
                 endif()
-                set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${ENTRY_SUBSETTING})
+
+                set(SETTING_NAME ${CMAKE_MATCH_1})
+                set(SETTING_VALUE ${CMAKE_MATCH_2})
+                string(REPLACE "." ";" ENTRY_NAME_TOKENS ${SETTING_NAME})
+                string(STRIP "${SETTING_VALUE}" SETTING_VALUE)
+
+                list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
+
+                # Add entry to settings list if it does not exist
+                list(GET ENTRY_NAME_TOKENS 0 ENTRY_NAME)
+                list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
+                if(ENTRY_NAME_INDEX LESS 0)
+                    # Add entry to main list
+                    list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
+                endif()
+
+                set(FULL_SETTING_NAME "${SETTINGS_PREFIX}")
+
+                set(ENTRY_SETTING_LIST)
+
+                foreach(subsetting ${ENTRY_NAME_TOKENS})
+
+                    if (FULL_SETTING_NAME STREQUAL "")
+                        set(FULL_SETTING_NAME "${subsetting}")
+                    else()
+                        set(FULL_SETTING_NAME ${FULL_SETTING_NAME}.${subsetting})
+                    endif()
+
+                    if(ENTRY_SETTING_LIST)
+                        list(FIND ${ENTRY_SETTING_LIST} ${subsetting} ENTRY_SETTING_INDEX)
+                        if(ENTRY_SETTING_INDEX LESS 0)
+                            # Add setting to entry
+                            list(APPEND ${ENTRY_SETTING_LIST} ${subsetting})
+                            set(${ENTRY_SETTING_LIST} ${${ENTRY_SETTING_LIST}}
+                                CACHE INTERNAL "${PLATFORM} ${FULL_SETTING_NAME} Board settings list")
+                        endif()
+                    endif()
+
+                    set(ENTRY_SETTING_LIST ${FULL_SETTING_NAME}.SETTINGS)
+
+                endforeach()
+
+                # Save setting value
+                set(${FULL_SETTING_NAME} ${SETTING_VALUE}
+                    CACHE INTERNAL "${PLATFORM} ${ENTRY_NAME} Board setting")
+
             endif()
+        endforeach()
+        set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
+            CACHE STRING "List of detected ${PLATFORM} Board configurations")
+        mark_as_advanced(${SETTINGS_LIST})
+    endif()
+endfunction()
 
-            # Save setting value
-            set(${FULL_SETTING_NAME} ${SETTING_VALUE}
-                CACHE INTERNAL "Arduino ${ENTRY_NAME} Board setting")
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
+# GET_VARIABLE_VALUE_FILLED(SETTING_VALUE BOARD_ID)
+#
+#      VARIABLE_RETURN - The name of the return variable
+#      SETTING_VALUE - the value of the variable with placeholders
+#      BOARD_ID - the id of the board to identify the correct placeholder replacements
+#
+# Replace placeholders in the variable value with the defined values from
+# the cache.
+# E.g.
+# {runtime.tools.avrdude.path}
+# will be replaced accordingly
+#=============================================================================#
+function(GET_VARIABLE_VALUE_FILLED VARIABLE_RETURN SETTING_VALUE BOARD_ID)
+    set(PLATFORM ${${BOARD_ID}.PLATFORM})
+    set(VARIABLE_FILLED ${SETTING_VALUE} PARENT_SCOPE)
 
+    if (NOT SETTING_VALUE STREQUAL "")
+        string(REGEX MATCHALL "{([^}]+)}" VARS_REPLACE ${SETTING_VALUE})
+        LIST(LENGTH VARS_REPLACE MATCH_COUNT)
+        if(MATCH_COUNT GREATER 0)
+            FOREACH(i IN LISTS VARS_REPLACE)
+                string(REPLACE "}" "" i ${i})
+                string(REPLACE "{" "" i ${i})
 
+                unset(VAR_VALUE)
+                set(PREFIXED_NAME_PLATFORM "${PLATFORM}.${i}")
+                set(PREFIXED_NAME_BOARD "${BOARD_ID}.${i}")
+                if (DEFINED ${PREFIXED_NAME_BOARD})
+                    set(VAR_VALUE "${${PREFIXED_NAME_BOARD}}")
+                elseif(DEFINED ${PREFIXED_NAME_PLATFORM})
+                    set(VAR_VALUE "${${PREFIXED_NAME_PLATFORM}}")
+                elseif(DEFINED ${i})
+                    set(VAR_VALUE "${${i}}")
+                else()
+                    #MESSAGE(FATAL_ERROR "${i} not found in settings")
+                endif()
+
+                if(DEFINED VAR_VALUE)
+                    #recursively replace
+                    set(TMP_FILLED "")
+                    get_variable_value_filled(TMP_FILLED "${VAR_VALUE}" ${BOARD_ID})
+                    string(REPLACE "{${i}}" "${TMP_FILLED}" SETTING_VALUE ${SETTING_VALUE})
+                endif()
+            ENDFOREACH()
+            set(${VARIABLE_RETURN} ${SETTING_VALUE} PARENT_SCOPE)
         endif()
-    endforeach()
-    set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
-        CACHE STRING "List of detected Arduino Board configurations")
-    mark_as_advanced(${SETTINGS_LIST})
+    endif()
+endfunction()
+
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
+# GET_VARIABLE_FILLED(VARIABLE_NAME BOARD_ID)
+#
+#      VARIABLE_RETURN - The name of the return variable
+#      VARIABLE_NAME - the variable from which the value should be returned
+#      BOARD_ID - the id of the board to identify the correct placeholder replacements
+#
+# Replace placeholders in the variable value with the defined values from
+# the cache.
+# E.g.
+# GET_VARIABLE_FILLED(SOME_VAR "recipe.c.o.pattern" "${${PROJECT_NAME}_BOARD}")
+# MESSAGE(STATUS "Var = ${SOME_VAR}")
+#=============================================================================#
+function(GET_VARIABLE_FILLED VARIABLE_RETURN VARIABLE_NAME BOARD_ID)
+
+    set(PLATFORM ${${BOARD_ID}.PLATFORM})
+
+    set(PREFIXED_NAME_PLATFORM "${PLATFORM}.${VARIABLE_NAME}")
+    set(PREFIXED_NAME_BOARD "${BOARD_ID}.${VARIABLE_NAME}")
+    if (DEFINED ${PREFIXED_NAME_BOARD})
+        set(SETTING_VALUE "${${PREFIXED_NAME_BOARD}}")
+    elseif(DEFINED ${PREFIXED_NAME_PLATFORM})
+        set(SETTING_VALUE "${${PREFIXED_NAME_PLATFORM}}")
+    elseif(DEFINED ${VARIABLE_NAME})
+        set(SETTING_VALUE "${${VARIABLE_NAME}}")
+    endif()
+
+    if (NOT DEFINED SETTING_VALUE)
+        MESSAGE(WARNING "Variable ${VARIABLE_NAME} is not set")
+    endif()
+
+
+    if (NOT SETTING_VALUE STREQUAL "")
+        set(VARIABLE_FILLED "")
+        get_variable_value_filled("VARIABLE_FILLED" "${SETTING_VALUE}" "${BOARD_ID}")
+        set(${VARIABLE_RETURN} ${VARIABLE_FILLED} PARENT_SCOPE)
+    else()
+        set(${VARIABLE_RETURN} ${SETTING_VALUE} PARENT_SCOPE)
     endif()
 endfunction()
 
@@ -1688,17 +1798,10 @@ function(PRINT_SETTINGS ENTRY_NAME)
     if(${ENTRY_NAME}.SETTINGS)
 
         foreach(ENTRY_SETTING ${${ENTRY_NAME}.SETTINGS})
-            if(${ENTRY_NAME}.${ENTRY_SETTING})
+            if(DEFINED ${ENTRY_NAME}.${ENTRY_SETTING})
                 message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}}")
             endif()
-            if(${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                foreach(ENTRY_SUBSETTING ${${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS})
-                    if(${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING})
-                        message(STATUS "   ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}=${${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}}")
-                    endif()
-                endforeach()
-            endif()
-            message(STATUS "")
+            print_settings("${ENTRY_NAME}.${ENTRY_SETTING}")
         endforeach()
     endif()
 endfunction()
@@ -2313,6 +2416,45 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
         ARDUINO_OBJCOPY_HEX_FLAGS
         AVRSIZE_PROGRAM)
 endif()
+
+# Set some predefined variable values as defined in
+# https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5-3rd-party-Hardware-specification
+
+set(RUNTIME_IDE_PATH_VAR "runtime.ide.path")
+set(${RUNTIME_IDE_PATH_VAR} ${ARDUINO_SDK_PATH} CACHE INTERNAL "")
+
+
+
+if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)[.]([0-9]+)")
+    string(REPLACE "." "" ARDUINO_VERSION_DEFINE "${ARDUINO_SDK_VERSION}") # Normalize version (remove all periods)
+    set(ARDUINO_VERSION_DEFINE "")
+    if(CMAKE_MATCH_1 GREATER 0)
+        set(ARDUINO_VERSION_DEFINE "${CMAKE_MATCH_1}")
+    endif()
+    if(CMAKE_MATCH_2 GREATER 10)
+        set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}${CMAKE_MATCH_2}")
+    else()
+        set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}0${CMAKE_MATCH_2}")
+    endif()
+    if(CMAKE_MATCH_3 GREATER 10)
+        set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}${CMAKE_MATCH_3}")
+    else()
+        set(ARDUINO_VERSION_DEFINE "${ARDUINO_VERSION_DEFINE}0${CMAKE_MATCH_3}")
+    endif()
+else()
+    message("Invalid Arduino SDK Version (${ARDUINO_SDK_VERSION})")
+endif()
+
+set(runtime.ide.version ${ARDUINO_VERSION_DEFINE} CACHE INTERNAL "")
+
+if (WIN32)
+    set(runtime.os "windows" CACHE INTERNAL "")
+elseif(UNIX)
+    set(runtime.os "linux" CACHE INTERNAL "")
+elseif(APPLE)
+    set(runtime.os "macosx" CACHE INTERNAL "")
+endif()
+
 
 if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
 	set(ARDUINO_PLATFORM "AVR")
