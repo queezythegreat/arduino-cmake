@@ -29,3 +29,4 @@ link_directories(${ARDUINO_SDK}/libraries)
 
 # add the project directory into build
 add_subdirectory(example)
+#add_subdirectory(example_esp32)

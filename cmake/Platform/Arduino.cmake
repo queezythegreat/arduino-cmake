@@ -656,10 +656,14 @@ endfunction()
 #=============================================================================#
 function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
     string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
-    GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
+    if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+        SET(PLATFORM "AVR")
+    else()
+        GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
+        string(TOUPPER ${PLATFORM} PLATFORM)
+    endif()
 
     if(PLATFORM)
-        string(TOUPPER ${PLATFORM} PLATFORM)
         list(FIND ARDUINO_PLATFORMS ${PLATFORM} platform_exists)
 
         if (platform_exists EQUAL -1)
@@ -673,9 +677,14 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
             set(${PLATFORM}.runtime.platform.path ${PLATFORM_PATH}
                 CACHE INTERNAL "${PLATFORM} platform path")
 
-            GET_FILENAME_COMPONENT(HARDWARE_PATH ${PLATFORM_PATH} DIRECTORY)
-            set(${PLATFORM}.runtime.hardware.path ${HARDWARE_PATH}
-                CACHE INTERNAL "${PLATFORM} hardware path")
+            if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+                set(${PLATFORM}.runtime.hardware.path ${PLATFORM_PATH}
+                    CACHE INTERNAL "${PLATFORM} hardware path")
+            else()
+                GET_FILENAME_COMPONENT(HARDWARE_PATH ${PLATFORM_PATH} DIRECTORY)
+                set(${PLATFORM}.runtime.hardware.path ${HARDWARE_PATH}
+                    CACHE INTERNAL "${PLATFORM} hardware path")
+            endif()
 
 
 
@@ -769,6 +778,30 @@ endfunction()
 #=============================================================================#
 #                        Internal Functions
 #=============================================================================#
+
+
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
+# subdirlist(RESULT DIR)
+#
+#         RESULT - Variable name of list containing all the sub directories
+#         DIR    - Parent directory where to iterate over
+#
+# Gets a list of all the direct subdirectories of the given directory
+# see https://stackoverflow.com/a/7788165/869402
+#
+#=============================================================================#
+MACRO(SUBDIRLIST result curdir)
+    FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+    SET(dirlist "")
+    FOREACH(child ${children})
+        IF(IS_DIRECTORY ${curdir}/${child})
+            LIST(APPEND dirlist ${child})
+        ENDIF()
+    ENDFOREACH()
+    SET(${result} ${dirlist})
+ENDMACRO()
 
 #=============================================================================#
 # [PRIVATE/INTERNAL]
@@ -2319,19 +2352,49 @@ set(ARDUINO_AVRDUDE_FLAGS -V                              CACHE STRING "")
 #                          Initialization
 #=============================================================================#
 if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
-    register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/)
-
-    find_file(ARDUINO_LIBRARIES_PATH
-        NAMES libraries
-        PATHS ${ARDUINO_SDK_PATH}
-        DOC "Path to directory containing the Arduino libraries."
-        NO_SYSTEM_ENVIRONMENT_PATH)
 
     find_file(ARDUINO_VERSION_PATH
         NAMES lib/version.txt
         PATHS ${ARDUINO_SDK_PATH}
         DOC "Path to Arduino version file."
         NO_SYSTEM_ENVIRONMENT_PATH)
+
+
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
+    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
+    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
+    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
+
+    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
+        message(FATAL_ERROR "Unsupported Arduino SDK (require version 0.19 or higher)")
+    endif()
+
+    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+
+    SUBDIRLIST(HARDWARES ${ARDUINO_SDK_PATH}/hardware/)
+    FOREACH(hardware ${HARDWARES})
+        if("${hardware}" STREQUAL "tools")
+            continue()
+        endif()
+
+        if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
+            # SDK less than 1.5 does not have architecture subfolders
+            register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/${hardware})
+        else()
+            SUBDIRLIST(ARCHITECTURES ${ARDUINO_SDK_PATH}/hardware/${hardware})
+            FOREACH(architecture ${ARCHITECTURES})
+                register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/${hardware}/${architecture})
+            ENDFOREACH()
+        endif()
+
+    ENDFOREACH()
+
+    find_file(ARDUINO_LIBRARIES_PATH
+              NAMES libraries
+              PATHS ${ARDUINO_SDK_PATH}
+              DOC "Path to directory containing the Arduino libraries."
+              NO_SYSTEM_ENVIRONMENT_PATH)
 
     find_program(ARDUINO_AVRDUDE_PROGRAM
         NAMES avrdude
@@ -2368,31 +2431,19 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     # Ensure that all required paths are found
     required_variables(VARS
-        ARDUINO_PLATFORMS
-        ARDUINO_CORES_PATH
-        ARDUINO_BOOTLOADERS_PATH
-        ARDUINO_LIBRARIES_PATH
-        ARDUINO_BOARDS_PATH
-        ARDUINO_PROGRAMMERS_PATH
-        ARDUINO_VERSION_PATH
-        ARDUINO_AVRDUDE_FLAGS
-        ARDUINO_AVRDUDE_PROGRAM
-        ARDUINO_AVRDUDE_CONFIG_PATH
-        AVRSIZE_PROGRAM
-        ${ADDITIONAL_REQUIRED_VARS}
-        MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
-
-    detect_arduino_version(ARDUINO_SDK_VERSION)
-    set(ARDUINO_SDK_VERSION       ${ARDUINO_SDK_VERSION}       CACHE STRING "Arduino SDK Version")
-    set(ARDUINO_SDK_VERSION_MAJOR ${ARDUINO_SDK_VERSION_MAJOR} CACHE STRING "Arduino SDK Major Version")
-    set(ARDUINO_SDK_VERSION_MINOR ${ARDUINO_SDK_VERSION_MINOR} CACHE STRING "Arduino SDK Minor Version")
-    set(ARDUINO_SDK_VERSION_PATCH ${ARDUINO_SDK_VERSION_PATCH} CACHE STRING "Arduino SDK Patch Version")
-
-    if(ARDUINO_SDK_VERSION VERSION_LESS 0.19)
-         message(FATAL_ERROR "Unsupported Arduino SDK (require version 0.19 or higher)")
-    endif()
-
-    message(STATUS "Arduino SDK version ${ARDUINO_SDK_VERSION}: ${ARDUINO_SDK_PATH}")
+                       ARDUINO_PLATFORMS
+                       AVR_CORES_PATH
+                       AVR_BOOTLOADERS_PATH
+                       ARDUINO_LIBRARIES_PATH
+                       AVR_BOARDS_PATH
+                       AVR_PROGRAMMERS_PATH
+                       ARDUINO_VERSION_PATH
+                       ARDUINO_AVRDUDE_FLAGS
+                       ARDUINO_AVRDUDE_PROGRAM
+                       ARDUINO_AVRDUDE_CONFIG_PATH
+                       AVRSIZE_PROGRAM
+                       ${ADDITIONAL_REQUIRED_VARS}
+                       MSG "Invalid Arduino SDK path (${ARDUINO_SDK_PATH}).\n")
 
     setup_arduino_size_script(ARDUINO_SIZE_SCRIPT)
     set(ARDUINO_SIZE_SCRIPT ${ARDUINO_SIZE_SCRIPT} CACHE INTERNAL "Arduino Size Script")
@@ -2402,12 +2453,12 @@ if(NOT ARDUINO_FOUND AND ARDUINO_SDK_PATH)
 
     set(ARDUINO_FOUND True CACHE INTERNAL "Arduino Found")
     mark_as_advanced(
-        ARDUINO_CORES_PATH
-        ARDUINO_VARIANTS_PATH
-        ARDUINO_BOOTLOADERS_PATH
+        AVR_CORES_PATH
+        AVR_VARIANTS_PATH
+        AVR_BOOTLOADERS_PATH
         ARDUINO_LIBRARIES_PATH
-        ARDUINO_BOARDS_PATH
-        ARDUINO_PROGRAMMERS_PATH
+        AVR_BOARDS_PATH
+        AVR_PROGRAMMERS_PATH
         ARDUINO_VERSION_PATH
         ARDUINO_AVRDUDE_FLAGS
         ARDUINO_AVRDUDE_PROGRAM
@@ -2460,23 +2511,6 @@ if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
 	set(ARDUINO_PLATFORM "AVR")
 else()
 	if(NOT ARDUINO_PLATFORM)
-	   register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/avr)
-	   set(ARDUINO_PLATFORM "AVR")
-	else()
-	   string(TOLOWER ${ARDUINO_PLATFORM} _platform)
-   	   register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/${_platform})
+	    set(ARDUINO_PLATFORM "AVR")
 	endif()
 endif()
-
-if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)
-	set(ARDUINO_PLATFORM "AVR")
-else()
-	if(NOT ARDUINO_PLATFORM)
-	   register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/avr)
-	   set(ARDUINO_PLATFORM "AVR")
-	else()
-	   string(TOLOWER ${ARDUINO_PLATFORM} _platform)
-   	   register_hardware_platform(${ARDUINO_SDK_PATH}/hardware/arduino/${_platform})
-	endif()
-endif()
-
