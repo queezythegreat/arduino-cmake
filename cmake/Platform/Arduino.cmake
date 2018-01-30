@@ -379,6 +379,9 @@ function(GENERATE_ARDUINO_LIBRARY INPUT_NAME)
 
     if(NOT INPUT_MANUAL)
       setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+      set(BOARD_CORE ${${BOARD_ID}.build.core})
+      set(BOARD_CORE_PATH ${${BOARD_CORE}.path})
+      include_directories( ${BOARD_CORE_PATH})
     endif()
 
     find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "")
@@ -496,13 +499,21 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     set(${INPUT_NAME}.build.path ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
     set(${INPUT_NAME}.build.project_name ${INPUT_NAME} CACHE INTERNAL "")
 
-    string(TOLOWER "${PLATFORM}" PLATFORM_LOWER)
-    set(${INPUT_BOARD}.build.arch "${PLATFORM_LOWER}" CACHE INTERNAL "")
+    string(TOUPPER "${PLATFORM}" PLATFORM_UPPER)
+    set(${INPUT_BOARD}.build.arch "${PLATFORM_UPPER}" CACHE INTERNAL "")
 
 
     if(NOT INPUT_MANUAL)
       setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+
+      set(BOARD_CORE ${${INPUT_BOARD}.build.core})
+      set(BOARD_CORE_PATH ${${BOARD_CORE}.path})
+      include_directories( ${BOARD_CORE_PATH})
     endif()
+
+    # Set include dir for variant
+    set(BOARD_VARIANT ${${INPUT_BOARD}.build.variant})
+    include_directories( ${${BOARD_VARIANT}.path})
 
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
         get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
@@ -895,6 +906,7 @@ function(get_recipe_flags COMPILE_CMD_VAR COMPILE_FLAGS_VAR BOARD_ID RECIPE_TYPE
 
         # remove the files variables (this is a list of commonly used endings. It may be necessary to extend them
         string(REPLACE "{includes} \"{source_file}\" -o \"{object_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
+        string(REPLACE "-o \"{build.path}/{build.project_name}.elf\" {object_files} \"{build.path}/{archive_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
         string(REPLACE "\"{build.path}/arduino.ar\" \"{object_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
 
 
@@ -950,7 +962,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
             get_recipe_flags(ARDUINO_LINK_CMD ARDUINO_LINK_FLAGS ${BOARD_ID} "recipe.ar")
 
             if(NOT "${CMAKE_AR}" STREQUAL "${ARDUINO_LINK_CMD}")
-                MESSAGE(FATAL_ERROR "Your archiver needs to be manually set to\nCMAKE_AR=\"${ARDUINO_LINK_CMD}\"")
+                MESSAGE(FATAL_ERROR "Your archiver needs to be manually set. You then also need to update the CMAKE_RANLIB to point to the correct one.\nCMAKE_AR=\"${ARDUINO_LINK_CMD}\"")
             endif()
 
             set_target_properties(${CORE_LIB_NAME} PROPERTIES
@@ -1212,9 +1224,20 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
         MESSAGE(FATAL_ERROR "Could not get 'recipe.c.combine'")
     endif()
 
+
+    string(REPLACE "\"{build.path}/{archive_file}\"" "" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+    string(REPLACE "{object_files}" "" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+    string(REPLACE "{build.path}" "${EXECUTABLE_OUTPUT_PATH}" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+
+        message("Link flags = ${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
+
     set_target_properties(${TARGET_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
-                LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
+                LINK_FLAGS "${ARDUINO_LINK_FLAGS}"
+              ARCHIVE_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+              LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+              RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+                          )
     target_link_libraries(${TARGET_NAME} ${ALL_LIBS})
 
 
@@ -1223,6 +1246,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if(NOT DEFINED ARDUINO_OBJCOPY_EEP_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.objcopy.eep'")
     endif()
+    string(REPLACE "\"" "" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
     string(REPLACE " " ";" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${ARDUINO_OBJCOPY_EEP_CMD}
@@ -1235,6 +1259,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if(NOT DEFINED ARDUINO_OBJCOPY_HEX_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.objcopy.hex'")
     endif()
+    string(REPLACE "\"" "" ARDUINO_OBJCOPY_HEX_FLAGS ${ARDUINO_OBJCOPY_HEX_FLAGS})
     string(REPLACE " " ";" ARDUINO_OBJCOPY_HEX_FLAGS ${ARDUINO_OBJCOPY_HEX_FLAGS})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${ARDUINO_OBJCOPY_HEX_CMD}
@@ -1247,6 +1272,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if(NOT DEFINED ARDUINO_SIZE_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.size'")
     endif()
+    string(REPLACE "\"" "" ARDUINO_SIZE_FLAGS ${ARDUINO_SIZE_FLAGS})
     string(REPLACE " " ";" ARDUINO_SIZE_FLAGS ${ARDUINO_SIZE_FLAGS})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                         COMMAND ${ARDUINO_SIZE_CMD}
