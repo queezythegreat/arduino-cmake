@@ -900,14 +900,23 @@ function(get_recipe_flags COMPILE_CMD_VAR COMPILE_FLAGS_VAR BOARD_ID RECIPE_TYPE
     set(RECIPE_PATTERN ${${RECIPE_VAR_NAME}})
 
     # Split recipe into command part (first part in quotes or up to first space) and flags part
-    if("${RECIPE_PATTERN}" MATCHES "^[\"]*([^\"]+)[\"]*(.*)")
-        SET(RECPIE_CMD ${CMAKE_MATCH_1})
-        SET(RECPIE_FLAGS ${CMAKE_MATCH_2})
+    if("${RECIPE_PATTERN}" MATCHES "^\"([^\"]+)\"(.*)\$|^([^ ]+) (.*)\$")
+        if(CMAKE_MATCH_1)
+            SET(RECPIE_CMD ${CMAKE_MATCH_1})
+            SET(RECPIE_FLAGS ${CMAKE_MATCH_2})
+        else()
+            SET(RECPIE_CMD ${CMAKE_MATCH_3})
+            SET(RECPIE_FLAGS ${CMAKE_MATCH_4})
+        endif()
 
         # remove the files variables (this is a list of commonly used endings. It may be necessary to extend them
         string(REPLACE "{includes} \"{source_file}\" -o \"{object_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
         string(REPLACE "-o \"{build.path}/{build.project_name}.elf\" {object_files} \"{build.path}/{archive_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
         string(REPLACE "\"{build.path}/arduino.ar\" \"{object_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
+
+        # esp32 specific
+        string(REPLACE "\"{build.path}/arduino.ar\" \"{object_file}\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
+        string(REPLACE "{object_files} \"{build.path}/arduino.ar\"" "" RECPIE_FLAGS ${RECPIE_FLAGS})
 
 
         if("${RECPIE_FLAGS}" MATCHES ".*{build.path}/{build.project_name}.*")
@@ -953,16 +962,16 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
             list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
             add_library(${CORE_LIB_NAME} ${CORE_SRCS})
 
-            get_recipe_flags(ARDUINO_COMPILE_CMD ARDUINO_COMPILE_FLAGS ${BOARD_ID} "recipe.c.o")
+            get_recipe_flags(ARDUINO_COMPILE_CMD ARDUINO_COMPILE_FLAGS ${BOARD_ID} "recipe.cpp.o")
 
-            if(NOT "${CMAKE_C_COMPILER}" STREQUAL "${ARDUINO_COMPILE_CMD}")
-                MESSAGE(FATAL_ERROR "Your compiler needs to be manually set to\nCMAKE_C_COMPILER=\"${ARDUINO_COMPILE_CMD}\"")
+            if(NOT "${CMAKE_CXX_COMPILER}" STREQUAL "${ARDUINO_COMPILE_CMD}")
+                MESSAGE(WARNING "Your compiler needs to be manually set to\nCMAKE_CXX_COMPILER=\"${ARDUINO_COMPILE_CMD}\"")
             endif()
 
             get_recipe_flags(ARDUINO_LINK_CMD ARDUINO_LINK_FLAGS ${BOARD_ID} "recipe.ar")
 
             if(NOT "${CMAKE_AR}" STREQUAL "${ARDUINO_LINK_CMD}")
-                MESSAGE(FATAL_ERROR "Your archiver needs to be manually set. You then also need to update the CMAKE_RANLIB to point to the correct one.\nCMAKE_AR=\"${ARDUINO_LINK_CMD}\"")
+                MESSAGE(WARNING "Your archiver needs to be manually set. You then also need to update the CMAKE_RANLIB to point to the correct one.\nCMAKE_AR=\"${ARDUINO_LINK_CMD}\"")
             endif()
 
             set_target_properties(${CORE_LIB_NAME} PROPERTIES
@@ -1229,8 +1238,6 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     string(REPLACE "{object_files}" "" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
     string(REPLACE "{build.path}" "${EXECUTABLE_OUTPUT_PATH}" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
 
-        message("Link flags = ${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
-
     set_target_properties(${TARGET_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS}"
@@ -1246,6 +1253,12 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if(NOT DEFINED ARDUINO_OBJCOPY_EEP_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.objcopy.eep'")
     endif()
+
+    if ("${ARDUINO_OBJCOPY_EEP_CMD}" MATCHES "^python \"(.*)\"$")
+        set(ARDUINO_OBJCOPY_EEP_CMD ${CMAKE_MATCH_1})
+    endif()
+    string(REPLACE "\"" "" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
+
     string(REPLACE "\"" "" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
     string(REPLACE " " ";" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
@@ -1258,6 +1271,9 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     get_recipe_flags(ARDUINO_OBJCOPY_HEX_CMD ARDUINO_OBJCOPY_HEX_FLAGS ${BOARD_ID} "recipe.objcopy.hex")
     if(NOT DEFINED ARDUINO_OBJCOPY_HEX_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.objcopy.hex'")
+    endif()
+    if ("${ARDUINO_OBJCOPY_HEX_CMD}" MATCHES "^python \"(.*)\"$")
+        set(ARDUINO_OBJCOPY_HEX_CMD ${CMAKE_MATCH_1})
     endif()
     string(REPLACE "\"" "" ARDUINO_OBJCOPY_HEX_FLAGS ${ARDUINO_OBJCOPY_HEX_FLAGS})
     string(REPLACE " " ";" ARDUINO_OBJCOPY_HEX_FLAGS ${ARDUINO_OBJCOPY_HEX_FLAGS})
@@ -1779,24 +1795,24 @@ function(GET_VARIABLE_VALUE_FILLED VARIABLE_RETURN SETTING_VALUE BOARD_ID SETTIN
                 unset(VAR_VALUE)
                 unset(VAR_NAME)
 
-                set(PREFIXED_NAME_PLATFORM "${PLATFORM}.${i}")
-                set(PREFIXED_NAME_BOARD "${BOARD_ID}.${i}")
-                set(PREFIXED_CPU "${BOARD_ID}${ARDUINO_CPUMENU}.${i}")
-                if (DEFINED ${PREFIXED_NAME_BOARD})
-                    set(VAR_VALUE "${${PREFIXED_NAME_BOARD}}")
-                    set(VAR_NAME "${PREFIXED_NAME_BOARD}")
-                elseif(DEFINED ${PREFIXED_NAME_PLATFORM})
-                    set(VAR_VALUE "${${PREFIXED_NAME_PLATFORM}}")
-                    set(VAR_NAME "${PREFIXED_NAME_PLATFORM}")
-                elseif(DEFINED ${PREFIXED_CPU} )
-                    set(VAR_VALUE "${${PREFIXED_CPU}}")
-                    set(VAR_NAME "${PREFIXED_CPU}")
-                elseif(DEFINED ${i})
-                    set(VAR_VALUE "${${i}}")
-                    set(VAR_NAME "${i}")
-                else()
-                    #MESSAGE(FATAL_ERROR "${i} not found in settings")
-                endif()
+                set(VARIABLES_TO_CHECK
+                    "${BOARD_ID}${ARDUINO_CPUMENU}.${i}.${runtime.os}"
+                    "${BOARD_ID}${ARDUINO_CPUMENU}.${i}"
+                    "${BOARD_ID}.${i}.${runtime.os}"
+                    "${BOARD_ID}.${i}"
+                    "${PLATFORM}.${i}.${runtime.os}"
+                    "${PLATFORM}.${i}"
+                    "${i}.${runtime.os}"
+                    "${i}"
+                    )
+
+                foreach(VAR_CHECK ${VARIABLES_TO_CHECK})
+                    if (DEFINED ${VAR_CHECK})
+                        set(VAR_VALUE "${${VAR_CHECK}}")
+                        set(VAR_NAME "${VAR_CHECK}")
+                        break()
+                    endif()
+                endforeach()
 
                 if(NOT DEFINED VAR_VALUE AND SETTING_NAME)
                     # check if the value is somewhere available along the path leading to this setting
@@ -1808,7 +1824,11 @@ function(GET_VARIABLE_VALUE_FILLED VARIABLE_RETURN SETTING_VALUE BOARD_ID SETTIN
                         while (SETTING_NAME_BASE MATCHES "^(.+)\\.[^\\.]+\$")
                             set(SETTING_NAME_BASE "${CMAKE_MATCH_1}")
                             set(CUR_VAR_NAME "${SETTING_NAME_BASE}.${i}")
-                            if(DEFINED ${CUR_VAR_NAME})
+                            if(DEFINED ${CUR_VAR_NAME}.${runtime.os})
+                                set(VAR_VALUE "${${CUR_VAR_NAME}.${runtime.os}}")
+                                set(VAR_NAME "${CUR_VAR_NAME}.${runtime.os}")
+                                break()
+                            elseif(DEFINED ${CUR_VAR_NAME})
                                 set(VAR_VALUE "${${CUR_VAR_NAME}}")
                                 set(VAR_NAME "${CUR_VAR_NAME}")
                                 break()
@@ -2414,7 +2434,8 @@ set(runtime.tools.avr-gcc.path "${ARDUINO_SDK_PATH}/hardware/tools/avr" CACHE IN
 set(runtime.tools.avrdude.path "${ARDUINO_SDK_PATH}/hardware/tools/avr" CACHE INTERNAL "")
 set(runtime.tools.arduinoOTA.path "${ARDUINO_SDK_PATH}/hardware/tools/avr" CACHE INTERNAL "")
 
-
+#TODO Fixme for windows
+set(runtime.os "linux" CACHE INTERNAL "")
 
 if(ARDUINO_SDK_VERSION MATCHES "([0-9]+)[.]([0-9]+)[.]([0-9]+)")
     string(REPLACE "." "" ARDUINO_VERSION_DEFINE "${ARDUINO_SDK_VERSION}") # Normalize version (remove all periods)
@@ -2441,14 +2462,6 @@ set(upload.verbose "-V" CACHE INTERNAL "")
 set(program.verbose "-V" CACHE INTERNAL "")
 set(bootloader.verbose "-V" CACHE INTERNAL "")
 set(erase.verbose "-V" CACHE INTERNAL "")
-
-if (WIN32)
-    set(runtime.os "windows" CACHE INTERNAL "")
-elseif(UNIX)
-    set(runtime.os "linux" CACHE INTERNAL "")
-elseif(APPLE)
-    set(runtime.os "macosx" CACHE INTERNAL "")
-endif()
 
 
 if(ARDUINO_SDK_VERSION VERSION_LESS 1.5)

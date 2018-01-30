@@ -17,3 +17,4 @@ set(${PROJECT_NAME}_CPU 16MHzatmega328)
 
 # Command to generate code arduino firmware (.hex file)
 generate_arduino_firmware(${PROJECT_NAME})
+
