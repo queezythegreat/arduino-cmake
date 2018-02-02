@@ -459,7 +459,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
                               "NO_AUTOLIBS;MANUAL"                  # Options
                               "BOARD;PORT;SKETCH;PROGRAMMER;CPU"        # One Value Keywords
-                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS"  # Multi Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;ARDLIBS_PATH;AFLAGS"  # Multi Value Keywords
                               ${ARGN})
 
     if(NOT INPUT_BOARD)
@@ -528,14 +528,14 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     required_variables(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
+    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${INPUT_ARDLIBS_PATH}")
     foreach(LIB_DEP ${TARGET_LIBS})
         arduino_debug_msg("Arduino Library: ${LIB_DEP}")
         set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\" -I\"${LIB_DEP}/src\"")
     endforeach()
 
     if(NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_ARDLIBS_PATH}")
         foreach(LIB_INCLUDES ${ALL_LIBS_INCLUDES})
             arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
             set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
@@ -543,7 +543,6 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     endif()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-
     setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}")
 
     if(INPUT_PORT)
@@ -990,6 +989,8 @@ endfunction()
 #      VAR_NAME - Variable name which will hold the results
 #      SRCS     - Sources that will be analized
 #      ARDLIBS  - Arduino libraries identified by name (e.g., Wire, SPI, Servo)
+#      PATH_OVERRIDE - Optional override search path for library to have unique path for libs with the same name.
+#                       e.g. Arduino provides its WiFi lib, as well as ESP32
 #
 #     returns a list of paths to libraries found.
 #
@@ -1011,7 +1012,7 @@ endfunction()
 #  to be part of that Arduino library.
 #
 #=============================================================================#
-function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
+function(find_arduino_libraries VAR_NAME SRCS ARDLIBS PATH_OVERRIDE)
     get_property(include_dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
     
     set(ARDUINO_LIBS )
@@ -1036,13 +1037,20 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                 list(APPEND SRC_CONTENTS "#include <${LIBNAME}.h>")
             endforeach()
 
+            if(PATH_OVERRIDE)
+                set(LIB_SEARCH_PATHS ${PATH_OVERRIDE})
+            else()
+                set(LIB_SEARCH_PATHS ${include_dirs} ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${${ARDUINO_PLATFORM}_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+            endif()
+
+            get_property(LIBRARY_SEARCH_PATH
+                         DIRECTORY     # Property Scope
+                         PROPERTY LINK_DIRECTORIES)
+
             foreach(SRC_LINE ${SRC_CONTENTS})
                 if("#${SRC_LINE}#" MATCHES "^#[ \t]*#[ \t]*include[ \t]*[<\"]([^>\"]*)[>\"]#")
                     get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                    get_property(LIBRARY_SEARCH_PATH
-                                 DIRECTORY     # Property Scope
-                                 PROPERTY LINK_DIRECTORIES)
-                    foreach(LIB_SEARCH_PATH ${include_dirs} ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${${ARDUINO_PLATFORM}_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
+                    foreach(LIB_SEARCH_PATH ${LIB_SEARCH_PATHS})
                         if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                             list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                             break()
@@ -1097,12 +1105,19 @@ set(LiquidCrystal_RECURSE True)
 set(TFT_RECURSE True)
 set(WiFi_RECURSE True)
 set(Robot_Control_RECURSE True)
-function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
+function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS PATH_OVERRIDE)
     set(LIB_TARGETS)
     set(LIB_INCLUDES)
 
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
+
+
+    if(NOT EXECUTABLE_OUTPUT_PATH)
+        set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+    set(TARGET_PATH ${EXECUTABLE_OUTPUT_PATH}/${TARGET_LIB_NAME})
+
     if(NOT TARGET ${TARGET_LIB_NAME})
         string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
 
@@ -1120,16 +1135,42 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             include_directories(${LIB_PATH}/src)
             include_directories(${LIB_PATH}/utility)
 
-            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
 
-            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
+            get_recipe_flags(ARDUINO_COMPILE_CMD ARDUINO_COMPILE_FLAGS ${BOARD_ID} "recipe.cpp.o")
+            if(NOT DEFINED ARDUINO_COMPILE_FLAGS)
+                MESSAGE(FATAL_ERROR "Could not get 'recipe.cpp.o'")
+            endif()
+
+            if(NOT "${CMAKE_CXX_COMPILER}" STREQUAL "${ARDUINO_COMPILE_CMD}")
+                MESSAGE(WARNING "Your compiler needs to be manually set to\nCMAKE_CXX_COMPILER=\"${ARDUINO_COMPILE_CMD}\"")
+            endif()
+
+            get_recipe_flags(ARDUINO_LINK_CMD ARDUINO_LINK_FLAGS ${BOARD_ID} "recipe.c.combine")
+            if(NOT DEFINED ARDUINO_LINK_FLAGS)
+                MESSAGE(WARNING "Could not get 'recipe.c.combine'")
+            endif()
+
+
+            string(REPLACE "\"{build.path}/{archive_file}\"" "" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+            string(REPLACE "{object_files}" "" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+            string(REPLACE "{build.path}" "${EXECUTABLE_OUTPUT_PATH}" ARDUINO_LINK_FLAGS ${ARDUINO_LINK_FLAGS})
+
+            set_target_properties(${TARGET_NAME} PROPERTIES
+                                  COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
+                                  LINK_FLAGS "${ARDUINO_LINK_FLAGS}"
+                                  ARCHIVE_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+                                  LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+                                  RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+                                  )
+
+            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "" ${PATH_OVERRIDE})
 
             foreach(LIB_DEP ${LIB_DEPS})
                 if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME AND DEP_LIB_SRCS)
                       message(STATUS "Found library ${LIB_NAME} needs ${DEP_LIB_SRCS}")
                 endif()
 
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}" "${PATH_OVERRIDE}")
                 # Do not link to this library. DEP_LIB_SRCS will always be only one entry
                 # if we are looking at the same library.
                 if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME)
@@ -1176,14 +1217,14 @@ endfunction()
 # Finds and creates all dependency libraries based on sources.
 #
 #=============================================================================#
-function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
+function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS PATH_OVERRIDE)
     set(LIB_TARGETS)
     set(LIB_INCLUDES)
 
-    find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
+    find_arduino_libraries(TARGET_LIBS "${SRCS}" "${ARDLIBS}" "${PATH_OVERRIDE}")
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}" "${PATH_OVERRIDE}")
         list(APPEND LIB_TARGETS ${LIB_DEPS})
         list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
     endforeach()
@@ -1257,7 +1298,6 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if ("${ARDUINO_OBJCOPY_EEP_CMD}" MATCHES "^python \"(.*)\"$")
         set(ARDUINO_OBJCOPY_EEP_CMD ${CMAKE_MATCH_1})
     endif()
-    string(REPLACE "\"" "" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
 
     string(REPLACE "\"" "" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
     string(REPLACE " " ";" ARDUINO_OBJCOPY_EEP_FLAGS ${ARDUINO_OBJCOPY_EEP_FLAGS})
