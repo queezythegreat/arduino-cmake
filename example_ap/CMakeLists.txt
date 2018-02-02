@@ -18,9 +18,10 @@ set(${${PROJECT_NAME}_BOARD}.upload.speed 921600)
 # Select a specific flash frequence for the board
 set(${${PROJECT_NAME}_BOARD}.build.flash_freq 80m)
 
-set(${PROJECT_NAME}_LIBS   esp32  mbedtls wpa_supplicant)
-#set(${PROJECT_NAME}_ARDLIBS WiFi)
-#set(${PROJECT_NAME}_ARDLIBS_PATH ${ESP32_LIBRARIES_PATH})
+
+set(${PROJECT_NAME}_ARDLIBS WiFi)
+set(${PROJECT_NAME}_ARDLIBS_PATH ${ESP32_LIBRARIES_PATH})
+set(${PROJECT_NAME}_LIBS   esp32   wpa_supplicant lwip)
 
 # Command to generate code arduino firmware (.hex file)
 generate_arduino_firmware(${PROJECT_NAME})

@@ -1,83 +1,126 @@
+/*
+ WiFi Web Server LED Blink
 
-#include "Arduino.h"
-#include <esp_wifi_types.h>
-//#include "freertos/FreeRTOS.h"
-#include "esp_wifi.h"
-#include "esp_system.h"
-#include "esp_event.h"
-#include "esp_event_loop.h"
-#include "nvs_flash.h"
-#include "driver/gpio.h"
-#include <string>
+ A simple web server that lets you blink an LED via the web.
+ This sketch will print the IP address of your WiFi Shield (once connected)
+ to the Serial monitor. From there, you can open that address in a web browser
+ to turn on and off the LED on pin 5.
 
+ If the IP address of your shield is yourAddress:
+ http://yourAddress/H turns the LED on
+ http://yourAddress/L turns it off
 
-#define LED_PIN 5
+ This example is written for a network using WPA encryption. For
+ WEP or WPA, change the Wifi.begin() call accordingly.
 
-esp_err_t event_handler(void *ctx, system_event_t *event)
+ Circuit:
+ * WiFi shield attached
+ * LED attached to pin 5
+
+ created for arduino 25 Nov 2012
+ by Tom Igoe
+
+ported for sparkfun esp32
+31.01.2017 by Jan Hendrik Berlin
+
+ */
+
+#include "WiFi.h"
+
+const char* ssid     = "your_ssid";
+const char* password = "your_pwd";
+
+WiFiServer server(80);
+
+void setup()
 {
-	return ESP_OK;
-}
-
-
-void setup() {
-
-
-	pinMode(LED_PIN, OUTPUT);
-	digitalWrite(LED_PIN, LOW);
-
-	nvs_flash_init();
-	tcpip_adapter_init();
-	ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-	ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-	ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-	wifi_config_t sta_config;
-	sta_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
-	sta_config.ap.channel = 0;
-
-	sta_config.ap.ssid[0] = 'E';
-	sta_config.ap.ssid[1] = 'S';
-	sta_config.ap.ssid[2] = 'P';
-	sta_config.ap.ssid[3] = '3';
-	sta_config.ap.ssid[4] = '2';
-	sta_config.ap.ssid[5] = 'A';
-	sta_config.ap.ssid[6] = 'P';
-	sta_config.ap.ssid[7] = '0';
-	sta_config.ap.ssid_len = 7;
-
-	sta_config.ap.password[0] = 'f';
-	sta_config.ap.password[1] = 'o';
-	sta_config.ap.password[2] = 'r';
-	sta_config.ap.password[3] = 't';
-	sta_config.ap.password[4] = 'i';
-	sta_config.ap.password[5] = 's';
-	sta_config.ap.password[6] = 's';
-	sta_config.ap.password[7] = '1';
-	sta_config.ap.password[8] = '2';
-	sta_config.ap.password[9] = '3';
-	sta_config.ap.password[10] = 0;
-
-
-	sta_config.ap.ssid_hidden = 0;
-	sta_config.ap.max_connection = 1;
-	sta_config.ap.beacon_interval = 100;
-	ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &sta_config) );
-	ESP_ERROR_CHECK( esp_wifi_start() );
-	ESP_ERROR_CHECK( esp_wifi_connect() );
-
-	gpio_set_direction(GPIO_NUM_13, GPIO_MODE_OUTPUT);
-}
-
-void loop() {
-
-	for (int i = 0; i < 2; i++) {
-		digitalWrite(LED_PIN, HIGH);
+	Serial.begin(115200);
+	pinMode(5, OUTPUT);      // set the LED pin mode
+	for (int i = 0; i < 5; i++) {
+		digitalWrite(5, HIGH);
 		delay(1000);
-		digitalWrite(LED_PIN, LOW);
+		digitalWrite(5, LOW);
 		delay(1000);
 	}
 
-	//vTaskDelay(300 / portTICK_PERIOD_MS);
+	// We start by connecting to a WiFi network
 
+	Serial.println();
+	Serial.println();
+	Serial.print("Connecting to ");
+	Serial.println(ssid);
+
+	WiFi.begin(ssid, password);
+
+	while (WiFi.status() != WL_CONNECTED) {
+		delay(500);
+		Serial.print(".");
+	}
+
+	Serial.println("");
+	Serial.println("WiFi connected.");
+	Serial.println("IP address: ");
+	Serial.println(WiFi.localIP());
+
+	Serial.flush();
+
+	server.begin();
+
+}
+
+int value = 0;
+
+void loop(){
+
+
+	WiFiClient client = server.available();   // listen for incoming clients
+
+
+
+	if (client) {                             // if you get a client,
+		Serial.println("New Client.");           // print a message out the serial port
+		String currentLine = "";                // make a String to hold incoming data from the client
+		while (client.connected()) {            // loop while the client's connected
+			if (client.available()) {             // if there's bytes to read from the client,
+				char c = client.read();             // read a byte, then
+				Serial.write(c);                    // print it out the serial monitor
+				if (c == '\n') {                    // if the byte is a newline character
+
+					// if the current line is blank, you got two newline characters in a row.
+					// that's the end of the client HTTP request, so send a response:
+					if (currentLine.length() == 0) {
+						// HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+						// and a content-type so the client knows what's coming, then a blank line:
+						client.println("HTTP/1.1 200 OK");
+						client.println("Content-type:text/html");
+						client.println();
+
+						// the content of the HTTP response follows the header:
+						client.print("Click <a href=\"/H\">here</a> to turn the LED on pin 5 on.<br>");
+						client.print("Click <a href=\"/L\">here</a> to turn the LED on pin 5 off.<br>");
+
+						// The HTTP response ends with another blank line:
+						client.println();
+						// break out of the while loop:
+						break;
+					} else {    // if you got a newline, then clear currentLine:
+						currentLine = "";
+					}
+				} else if (c != '\r') {  // if you got anything else but a carriage return character,
+					currentLine += c;      // add it to the end of the currentLine
+				}
+
+				// Check to see if the client request was "GET /H" or "GET /L":
+				if (currentLine.endsWith("GET /H")) {
+					digitalWrite(5, HIGH);               // GET /H turns the LED on
+				}
+				if (currentLine.endsWith("GET /L")) {
+					digitalWrite(5, LOW);                // GET /L turns the LED off
+				}
+			}
+		}
+		// close the connection:
+		client.stop();
+		Serial.println("Client Disconnected.");
+	}
 }
