@@ -285,7 +285,7 @@
 cmake_minimum_required(VERSION 2.8.5)
 include(CMakeParseArguments)
 
-
+find_package(PythonInterp REQUIRED)
 
 
 
@@ -1252,6 +1252,9 @@ endfunction()
 #=============================================================================#
 function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLAGS LINK_FLAGS MANUAL)
 
+
+    set(PLATFORM ${${BOARD_ID}.PLATFORM})
+
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
@@ -1328,21 +1331,38 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     if(NOT DEFINED ARDUINO_SIZE_FLAGS)
         MESSAGE(FATAL_ERROR "Could not get 'recipe.size'")
     endif()
-    string(REPLACE "\"" "" ARDUINO_SIZE_FLAGS ${ARDUINO_SIZE_FLAGS})
-    string(REPLACE " " ";" ARDUINO_SIZE_FLAGS ${ARDUINO_SIZE_FLAGS})
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                        COMMAND ${ARDUINO_SIZE_CMD}
-                        ARGS    ${ARDUINO_SIZE_FLAGS}
-                        COMMENT "Calculating image size"
-                        VERBATIM)
+
+    get_variable_filled(REGEX_SIZE "recipe.size.regex" ${BOARD_ID})
+    get_variable_filled(REGEX_SIZE_DATA "recipe.size.regex.data" ${BOARD_ID})
+    get_variable_filled(REGEX_SIZE_EEPROM "recipe.size.regex.eeprom" ${BOARD_ID})
+    get_variable_filled(MAX_SIZE "upload.maximum_size" ${BOARD_ID})
+    get_variable_filled(MAX_SIZE_DATA "upload.maximum_data_size" ${BOARD_ID})
+    get_variable_filled(MAX_SIZE_FLASH "build.flash_size" ${BOARD_ID})
 
     # Create ${TARGET_NAME}-size target
     add_custom_target(${TARGET_NAME}-size
-                        COMMAND ${ARDUINO_SIZE_CMD}
-                        ARGS    ${ARDUINO_SIZE_FLAGS}
-                        DEPENDS ${TARGET_NAME}
-                        COMMENT "Calculating ${TARGET_NAME} image size")
+                      COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/Platform/size_script.py
+                      "-c" "\"${ARDUINO_SIZE_CMD}\""
+                      "-p" "\"${ARDUINO_SIZE_FLAGS}\""
+                      "-r" "\"${REGEX_SIZE}\""
+                      "-rd" "\"${REGEX_SIZE_DATA}\""
+                      "-re" "\"${REGEX_SIZE_EEPROM}\""
+                      "-s" "\"${MAX_SIZE}\""
+                      "-sd" "\"${MAX_SIZE_DATA}\""
+                      "-sf" "\"${MAX_SIZE_FLASH}\"")
 
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                       COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/Platform/size_script.py
+                       "-c" "${ARDUINO_SIZE_CMD}"
+                       "-p" "${ARDUINO_SIZE_FLAGS}"
+                       "-r" "${REGEX_SIZE}"
+                       "-rd" "${REGEX_SIZE_DATA}"
+                       "-re" "${REGEX_SIZE_EEPROM}"
+                       "-s" "${MAX_SIZE}"
+                       "-sd" "${MAX_SIZE_DATA}"
+                       "-sf" "${MAX_SIZE_FLASH}"
+                        COMMENT "Calculating image size"
+                        VERBATIM)
 endfunction()
 
 
@@ -1908,24 +1928,36 @@ function(GET_VARIABLE_FILLED VARIABLE_RETURN VARIABLE_NAME BOARD_ID)
 
     set(PLATFORM ${${BOARD_ID}.PLATFORM})
 
-    set(PREFIXED_NAME_PLATFORM "${PLATFORM}.${VARIABLE_NAME}")
-    set(PREFIXED_NAME_BOARD "${BOARD_ID}.${VARIABLE_NAME}")
-    if (DEFINED ${PREFIXED_NAME_BOARD})
-        set(SETTING_VALUE "${${PREFIXED_NAME_BOARD}}")
-    elseif(DEFINED ${PREFIXED_NAME_PLATFORM})
-        set(SETTING_VALUE "${${PREFIXED_NAME_PLATFORM}}")
-    elseif(DEFINED ${VARIABLE_NAME})
-        set(SETTING_VALUE "${${VARIABLE_NAME}}")
-    endif()
+    unset(VAR_VALUE)
+    unset(VAR_NAME)
 
-    if (NOT DEFINED SETTING_VALUE)
-        MESSAGE(WARNING "Variable ${VARIABLE_NAME} is not set")
-    endif()
+    set(VARIABLES_TO_CHECK
+        "${BOARD_ID}${ARDUINO_CPUMENU}.${VARIABLE_NAME}.${runtime.os}"
+        "${BOARD_ID}${ARDUINO_CPUMENU}.${VARIABLE_NAME}"
+        "${BOARD_ID}.${VARIABLE_NAME}.${runtime.os}"
+        "${BOARD_ID}.${VARIABLE_NAME}"
+        "${PLATFORM}.${VARIABLE_NAME}.${runtime.os}"
+        "${PLATFORM}.${VARIABLE_NAME}"
+        "${VARIABLE_NAME}.${runtime.os}"
+        "${VARIABLE_NAME}"
+        )
+
+    foreach(VAR_CHECK ${VARIABLES_TO_CHECK})
+        if (DEFINED ${VAR_CHECK})
+            set(VAR_VALUE "${${VAR_CHECK}}")
+            set(VAR_NAME "${VAR_CHECK}")
+            break()
+        endif()
+    endforeach()
+
+    #if (NOT DEFINED SETTING_VALUE)
+    #    MESSAGE(WARNING "Variable ${VARIABLE_NAME} is not set")
+    #endif()
 
 
-    if (NOT SETTING_VALUE STREQUAL "")
+    if (NOT VAR_VALUE STREQUAL "")
         set(VARIABLE_FILLED "")
-        get_variable_value_filled("VARIABLE_FILLED" "${SETTING_VALUE}" "${BOARD_ID}")
+        get_variable_value_filled("VARIABLE_FILLED" "${VAR_VALUE}" "${BOARD_ID}" "${VAR_NAME}")
         set(${VARIABLE_RETURN} ${VARIABLE_FILLED} PARENT_SCOPE)
     else()
         set(${VARIABLE_RETURN} ${SETTING_VALUE} PARENT_SCOPE)

@@ -1,3 +1,10 @@
+# ESP32 needs some special compilers. Set them here
+SET(CMAKE_C_COMPILER "${ARDUINO_SDK_PATH}/hardware/tools/avr/bin/avr-gcc")
+SET(CMAKE_CXX_COMPILER "${ARDUINO_SDK_PATH}/hardware/tools/avr/bin/avr-g++")
+SET(CMAKE_AR "${ARDUINO_SDK_PATH}/hardware/tools/avr/bin/avr-gcc-ar")
+SET(CMAKE_RANLIB "${ARDUINO_SDK_PATH}/hardware/tools/avr/bin/avr-gcc-ranlib")
+
+
 # Set a variable for commands below
 set(PROJECT_NAME example)
 
