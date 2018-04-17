@@ -1163,7 +1163,7 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
                                   RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
                                   )
 
-            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "" ${PATH_OVERRIDE})
+            find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "" "${PATH_OVERRIDE}")
 
             foreach(LIB_DEP ${LIB_DEPS})
                 if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME AND DEP_LIB_SRCS)
