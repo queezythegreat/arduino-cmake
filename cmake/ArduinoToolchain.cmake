@@ -40,6 +40,10 @@ endif()
 #=============================================================================#
 #                         Detect Arduino SDK                                  #
 #=============================================================================#
+if(NOT DEFINED ARDUINO_SDK_PATH AND DEFINED ENV{ARDUINO_SDK_PATH})
+    set(ARDUINO_SDK_PATH $ENV{ARDUINO_SDK_PATH})
+endif()
+
 if(NOT ARDUINO_SDK_PATH)
     set(ARDUINO_PATHS)
 

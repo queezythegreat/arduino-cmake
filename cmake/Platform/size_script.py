@@ -9,7 +9,7 @@ import argparse
 import subprocess
 import re
 
-print(sys.argv)
+#print(sys.argv)
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
