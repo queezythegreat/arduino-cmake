@@ -9,6 +9,7 @@
 #      [SERIAL serial_cmd]
 #      [PROGRAMMER programmer_id]
 #      [AFLAGS flags]
+#      [SETTINGS menu_settings]
 #      [NO_AUTOLIBS]
 #      [MANUAL])
 #
@@ -29,11 +30,12 @@
 #      SERIAL         # Serial command for serial target
 #      PROGRAMMER     # Programmer id (enables programmer support)
 #      AFLAGS         # Avrdude flags for target
+#      SETTINGS       # Menu settings (e.g. usb=serial speed=24)
 #      NO_AUTOLIBS    # Disables Arduino library detection
 #      MANUAL         # (Advanced) Only use AVR Libc/Includes
 #
 # Here is a short example for a target named test:
-#    
+#
 #       generate_arduino_firmware(
 #           NAME test
 #           SRCS test.cpp 
@@ -204,6 +206,12 @@
 # Print list of detected Arduino Boards.
 #
 #=============================================================================#
+# print_menu_list()
+#=============================================================================#
+#
+# Print list of detected menu settings.
+#
+#=============================================================================#
 # print_programmer_list()
 #=============================================================================#
 #
@@ -224,6 +232,15 @@
 #        ARDUINO_BOARD - Board id
 #
 # Print the detected Arduino board settings.
+#
+#=============================================================================#
+# print_menu_settings(BOARD_ID [MENUS])
+#=============================================================================#
+#
+#        BOARD_ID     - Board ID                               [REQUIRED]
+#        MENUS        - List of menus
+#
+# Print the possible menu settings for the given board (and menus, if given)
 #
 #=============================================================================#
 # register_hardware_platform(HARDWARE_PLATFORM_PATH)
@@ -314,6 +331,23 @@ endfunction()
 #=============================================================================#
 # [PUBLIC/USER]
 #
+# print_menu_list()
+#
+# see documentation at top
+#=============================================================================#
+function(PRINT_MENU_LIST)
+    foreach(PLATFORM ${ARDUINO_PLATFORMS})
+        if(${PLATFORM}_MENUS)
+            message(STATUS "${PLATFORM} menu settings:")
+            print_list(${PLATFORM}_MENUS "menu.SETTING")
+            message(STATUS "")
+        endif()
+    endforeach()
+endfunction()
+
+#=============================================================================#
+# [PUBLIC/USER]
+#
 # print_programmer_list()
 #
 # see documentation at top
@@ -352,6 +386,33 @@ function(PRINT_BOARD_SETTINGS ARDUINO_BOARD)
         message(STATUS "Arduino ${ARDUINO_BOARD} Board:")
         print_settings(${ARDUINO_BOARD})
     endif()
+endfunction()
+
+# [PUBLIC/USER]
+#
+# print_menu_settings(BOARD_ID [MENUS])
+#
+# see documentation at top
+function(PRINT_MENU_SETTINGS ARDUINO_BOARD)
+    if(NOT ${ARDUINO_BOARD}.menu.SETTINGS)
+        return()
+    elseif(${ARGC} LESS 2)
+        print_menu_settings(${ARDUINO_BOARD} ${${ARDUINO_BOARD}.menu.SETTINGS})
+        return()
+    endif()
+
+    foreach(MENU ${ARGN})
+        string(TOLOWER ${MENU} MENU)
+        list(FIND ${ARDUINO_BOARD}.menu.SETTINGS ${MENU} MENU_INDEX)
+        if(MENU_INDEX LESS 0)
+            continue()
+        endif()
+        message(STATUS "Arduino ${ARDUINO_BOARD} ${MENU} menu settings:")
+        foreach(MENU_SETTING ${${ARDUINO_BOARD}.menu.${MENU}.SUBSETTINGS})
+            message(STATUS "   ${MENU}.${MENU_SETTING}=${${ARDUINO_BOARD}.menu.${MENU}.${MENU_SETTING}}")
+        endforeach()
+        message(STATUS "")
+    endforeach()
 endfunction()
 
 #=============================================================================#
@@ -457,7 +518,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     parse_generator_arguments(${INPUT_NAME} INPUT
                               "NO_AUTOLIBS;MANUAL"                  # Options
                               "BOARD;PORT;SKETCH;PROGRAMMER"        # One Value Keywords
-                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS"  # Multi Value Keywords
+                              "SERIAL;SRCS;HDRS;LIBS;ARDLIBS;AFLAGS;SETTINGS"  # Multi Value Keywords
                               ${ARGN})
 
     if(NOT INPUT_BOARD)
@@ -482,7 +543,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     set(LIB_DEP_INCLUDES)
 
     if(NOT INPUT_MANUAL)
-      setup_arduino_core(CORE_LIB ${INPUT_BOARD})
+      setup_arduino_core(CORE_LIB ${INPUT_BOARD} ${INPUT_SETTINGS})
     endif()
     
     if(NOT "${INPUT_SKETCH}" STREQUAL "")
@@ -505,7 +566,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     endforeach()
 
     if(NOT INPUT_NO_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "")
+        setup_arduino_libraries(ALL_LIBS  ${INPUT_BOARD} "${ALL_SRCS}" "${INPUT_ARDLIBS}" "${LIB_DEP_INCLUDES}" "" ${INPUT_SETTINGS})
         foreach(LIB_INCLUDES ${ALL_LIBS_INCLUDES})
             arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
             set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
@@ -514,7 +575,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
 
-    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}")
+    setup_arduino_target(${INPUT_NAME} ${INPUT_BOARD} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}" ${INPUT_SETTINGS})
 
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
@@ -686,7 +747,7 @@ function(REGISTER_HARDWARE_PLATFORM PLATFORM_PATH)
                 DOC "Path to Arduino boards definition file.")
 
             if(${PLATFORM}_BOARDS_PATH)
-                load_arduino_style_settings(${PLATFORM}_BOARDS "${${PLATFORM}_BOARDS_PATH}")
+                load_arduino_style_settings(${PLATFORM}_BOARDS "${${PLATFORM}_BOARDS_PATH}" ${PLATFORM}_MENUS)
             endif()
 
             if(${PLATFORM}_PROGRAMMERS_PATH)
@@ -778,6 +839,51 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
+# update_board_settings(BOARD_ID MENUS)
+#
+#       BOARD_ID - The board id name
+#       MENUS    - Menus to update from
+#
+# Sets board setting variables from menu settings for the given menus.
+# For example, with board settings
+#
+# mega.menu.cpu.atmega2560=ATmega2560 (Mega 2560)
+#
+# mega.menu.cpu.atmega2560.upload.protocol=wiring
+# mega.menu.cpu.atmega2560.upload.maximum_size=253952
+# mega.menu.cpu.atmega2560.upload.speed=115200
+#
+# mega.menu.cpu.atmega1280=ATmega1280
+#
+# mega.menu.cpu.atmega1280.upload.protocol=arduino
+# mega.menu.cpu.atmega1280.upload.maximum_size=126976
+# mega.menu.cpu.atmega1280.upload.speed=57600
+#
+#
+# if mega.menu.cpu was set to atmega2560, then update_board_settings(mega cpu)
+# would create the following variables:
+#
+# set(mega.upload.protocol "wiring" PARENT_SCOPE)
+# set(mega.upload.maximum_size "253952" PARENT_SCOPE)
+# set(mega.upload.speed "115200" PARENT_SCOPE)
+#
+#=============================================================================#
+function(update_board_settings BOARD_ID)
+    foreach(MENU ${ARGN})
+        set(MENU_SETTING "${${BOARD_ID}.menu.${MENU}}")
+        if(NOT MENU_SETTING)
+            message(FATAL_ERROR "Failed to get settings for ${BOARD_ID}.menu.${MENU}")
+        endif()
+        foreach(SETTING ${${BOARD_ID}.menu.${MENU}.${MENU_SETTING}.SUBSUBSETTINGS})
+            set(${BOARD_ID}.${SETTING} "${${BOARD_ID}.menu.${MENU}.${MENU_SETTING}.${SETTING}}"
+                PARENT_SCOPE)
+        endforeach()
+    endforeach()
+endfunction()
+
+#=============================================================================#
+# [PRIVATE/INTERNAL]
+#
 # get_arduino_flags(COMPILE_FLAGS LINK_FLAGS BOARD_ID MANUAL)
 #
 #       COMPILE_FLAGS_VAR -Variable holding compiler flags
@@ -805,6 +911,26 @@ function(get_arduino_flags COMPILE_FLAGS_VAR LINK_FLAGS_VAR BOARD_ID MANUAL)
             endif()
         else()
             message("Invalid Arduino SDK Version (${ARDUINO_SDK_VERSION})")
+        endif()
+
+        set(MENUS)
+
+        # Update board settings from user menu settings
+        foreach(MENU_SETTING ${ARGN})
+            if(MENU_SETTING MATCHES "^([a-z]+)=([a-z]+)$")
+                set(${BOARD_ID}.menu.${CMAKE_MATCH_1} ${CMAKE_MATCH_2} CACHE INTERNAL "")
+                list(APPEND MENUS ${CMAKE_MATCH_1})
+            endif()
+        endforeach()
+
+        if(DEFINED TEENSY)
+            list(APPEND MENUS usb speed keys)
+        endif()
+
+        update_board_settings(${BOARD_ID} ${MENUS})
+
+        if(NOT ${BOARD_ID}.build.f_cpu)
+            set(${BOARD_ID}.build.f_cpu ${${BOARD_ID}.build.fcpu})
         endif()
 
         # output
@@ -906,7 +1032,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
             # Debian/Ubuntu fix
             list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
             add_library(${CORE_LIB_NAME} ${CORE_SRCS})
-            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
+            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE ${ARGN})
             set_target_properties(${CORE_LIB_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS}"
                 LINK_FLAGS "${ARDUINO_LINK_FLAGS}")
@@ -1035,14 +1161,18 @@ function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLA
             arduino_debug_msg("Generating Arduino ${LIB_NAME} library")
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
-            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
+            get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE ${ARGN})
 
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach(LIB_DEP ${LIB_DEPS})
-                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
-                list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
-                list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
+                setup_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${COMPILE_FLAGS}" "${LINK_FLAGS}" ${ARGN})
+                # Do not link to this library. DEP_LIB_SRCS will always be only one entry
+                # if we are looking at the same library.
+                if(NOT DEP_LIB_SRCS STREQUAL TARGET_LIB_NAME)
+                    list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
+                    list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
+                endif()
             endforeach()
 
             if (LIB_INCLUDES)
@@ -1090,7 +1220,7 @@ function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LI
     find_arduino_libraries(TARGET_LIBS "${SRCS}" ARDLIBS)
     foreach(TARGET_LIB ${TARGET_LIBS})
         # Create static library instead of returning sources
-        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+        setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${COMPILE_FLAGS}" "${LINK_FLAGS}" ${ARGN})
         list(APPEND LIB_TARGETS ${LIB_DEPS})
         list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
     endforeach()
@@ -1121,7 +1251,7 @@ function(setup_arduino_target TARGET_NAME BOARD_ID ALL_SRCS ALL_LIBS COMPILE_FLA
     add_executable(${TARGET_NAME} ${ALL_SRCS})
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
-    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${BOARD_ID} ${MANUAL})
+    get_arduino_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS  ${BOARD_ID} ${MANUAL} ${ARGN})
 
     set_target_properties(${TARGET_NAME} PROPERTIES
                 COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${COMPILE_FLAGS}"
@@ -1561,7 +1691,6 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH)
 # detect_teensyduino_version(VAR_NAME)
 #
 #       VAR_NAME - Variable name where the detected version will be saved
@@ -1597,40 +1726,68 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
+# load_arduino_style_settings(SETTINGS_LIST SETTINGS_PATH [MENUS_LIST])
 #
 #      SETTINGS_LIST - Variable name of settings list
 #      SETTINGS_PATH - File path of settings file to load.
+#      MENUS_LIST    - Variable name of menus list (optional)
 #
 # Load a Arduino style settings file into the cache.
 # 
 #  Examples of this type of settings file is the boards.txt and
 # programmers.txt files located in ${ARDUINO_SDK}/hardware/arduino.
 #
-# Settings have to following format:
+# Settings have one of the following formats:
 #
 #      entry.setting[[.subsetting].subsubsetting] = value
+#      entry.menu.setting[[.subsetting].subsubsetting] = value
 #
 # where [[.subsetting].subsubsetting] is optional
 #
 # For example, the following settings:
 #
-#      uno.name=Arduino Uno
-#      uno.upload.protocol=stk500
-#      uno.upload.maximum_size=32256
-#      uno.build.mcu=atmega328p
-#      uno.build.core=arduino
+#      menu.cpu=Processor
 #
-# will generate the follwoing equivalent CMake variables:
+#      nano.name=Arduino Nano
+#      nano.upload.tool=avrdude
+#      nano.upload.protocol=arduino
+#      nano.build.f_cpu=16000000L
+#      nano.build.board=AVR_NANO
+#      nano.build.core=arduino
 #
-#      set(uno.name "Arduino Uno")
-#      set(uno.upload.protocol     "stk500")
-#      set(uno.upload.maximum_size "32256")
-#      set(uno.build.mcu  "atmega328p")
-#      set(uno.build.core "arduino")
+#      nano.menu.cpu.atmega328=ATmega328P
 #
-#      set(uno.SETTINGS  name upload build)              # List of settings for uno
-#      set(uno.upload.SUBSETTINGS protocol maximum_size) # List of sub-settings for uno.upload
-#      set(uno.build.SUBSETTINGS mcu core)               # List of sub-settings for uno.build
+#      nano.menu.cpu.atmega328.upload.maximum_size=30720
+#      nano.menu.cpu.atmega328.upload.maximum_data_size=2048
+#      nano.menu.cpu.atmega328.upload.speed=115200
+#
+#      nano.menu.cpu.atmega328old=ATmega328P (Old Bootloader)
+#
+#      nano.menu.cpu.atmega328old.upload.maximum_size=30720
+#      nano.menu.cpu.atmega328old.upload.maximum_data_size=2048
+#      nano.menu.cpu.atmega328old.upload.speed=57600
+#
+# will generate the following equivalent CMake variables:
+#
+#      set(menu.cpu "Processor")
+#
+#      set(nano.name "Arduino Nano")
+#      set(nano.upload.tool     "avrdude")
+#      set(nano.upload.protocol "arduino")
+#      set(nano.build.f_cpu     "16000000L")
+#      set(nano.build.board     "AVR_NANO")
+#      set(nano.build.core      "arduino")
+#
+#      set(nano.SETTINGS name upload build)         # List of settings for nano
+#      set(nano.upload.SUBSETTINGS tool protocol)   # List of sub-settings for nano.upload
+#      set(nano.build.SUBSETTINGS f_cpu board core) # List of sub-settings for nano.build
+#
+#      set(nano.menu.SETTINGS cpu)
+#      set(nano.menu.cpu.SUBSETTINGS atmega328 atmega328old)
+#      set(nano.menu.cpu.atmega328.SUBSUBSETTINGS
+#          upload.maximum_size upload.maximum_data_size upload.speed)
+#      set(nano.menu.cpu.atmega328old.SUBSUBSETTINGS
+#          upload.maximum_size upload.maximum_data_size upload.speed)
 # 
 #  The ${ENTRY_NAME}.SETTINGS variable lists all settings for the entry, while
 # ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS variables list all settings for a
@@ -1656,11 +1813,28 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
             list(LENGTH ENTRY_NAME_TOKENS ENTRY_NAME_TOKENS_LEN)
 
             # Add entry to settings list if it does not exist
+            list(POP_FRONT ENTRY_NAME_TOKENS ENTRY_NAME)
+            if(NOT (ENTRY_NAME STREQUAL "menu"))
+                list(FIND ${SETTINGS_LIST} ${ENTRY_NAME} ENTRY_NAME_INDEX)
+                if(ENTRY_NAME_INDEX LESS 0)
+                    # Add entry to main list
+                    list(APPEND ${SETTINGS_LIST} ${ENTRY_NAME})
+                endif()
+            elseif(ARGC GREATER 2)
+                list(JOIN ENTRY_NAME_TOKENS "." MENU_SETTING)
+                list(APPEND ${ARGN} ${MENU_SETTING})
+            endif()
+
+            # Handle menu settings separately
+            list(POP_FRONT ENTRY_NAME_TOKENS ENTRY_SETTING)
+            if(ENTRY_SETTING STREQUAL "menu")
+                set(ENTRY_NAME "${ENTRY_NAME}.menu")
+                list(POP_FRONT ENTRY_NAME_TOKENS ENTRY_SETTING)
+                math(EXPR ENTRY_NAME_TOKENS_LEN "${ENTRY_NAME_TOKENS_LEN}-1")
             endif()
 
             # Add entry setting to entry settings list if it does not exist
             set(ENTRY_SETTING_LIST ${ENTRY_NAME}.SETTINGS)
-            list(GET ENTRY_NAME_TOKENS 1 ENTRY_SETTING)
             list(FIND ${ENTRY_SETTING_LIST} ${ENTRY_SETTING} ENTRY_SETTING_INDEX)
             if(ENTRY_SETTING_INDEX LESS 0)
                 # Add setting to entry
@@ -1674,7 +1848,7 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
             # Add entry sub-setting to entry sub-settings list if it does not exist
             if(ENTRY_NAME_TOKENS_LEN GREATER 2)
                 set(ENTRY_SUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.SUBSETTINGS)
-                list(GET ENTRY_NAME_TOKENS 2 ENTRY_SUBSETTING)
+                list(POP_FRONT ENTRY_NAME_TOKENS ENTRY_SUBSETTING)
                 list(FIND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING} ENTRY_SUBSETTING_INDEX)
                 if(ENTRY_SUBSETTING_INDEX LESS 0)
                     list(APPEND ${ENTRY_SUBSETTING_LIST} ${ENTRY_SUBSETTING})
@@ -1687,7 +1861,6 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
             # Add entry sub-sub-setting to entry sub-sub-settings list if it does not exist
             if(ENTRY_NAME_TOKENS_LEN GREATER 3)
                 set(ENTRY_SUBSUBSETTING_LIST ${ENTRY_NAME}.${ENTRY_SETTING}.${ENTRY_SUBSETTING}.SUBSUBSETTINGS)
-                list(REMOVE_AT ENTRY_NAME_TOKENS 0 1 2)
                 list(JOIN ENTRY_NAME_TOKENS "." ENTRY_SUBSUBSETTING)
                 list(FIND ${ENTRY_SUBSUBSETTING_LIST} ${ENTRY_SUBSUBSETTING} ENTRY_SUBSUBSETTING_INDEX)
                 if(ENTRY_SUBSUBSETTING_INDEX LESS 0)
@@ -1708,6 +1881,10 @@ function(LOAD_ARDUINO_STYLE_SETTINGS SETTINGS_LIST SETTINGS_PATH)
     set(${SETTINGS_LIST} ${${SETTINGS_LIST}}
         CACHE STRING "List of detected Arduino Board configurations")
     mark_as_advanced(${SETTINGS_LIST})
+    if(ARGC GREATER 2)
+        set(${ARGN} ${${ARGN}} CACHE STRING "List of detected menu settings")
+        mark_as_advanced(${ARGN})
+    endif()
     endif()
 endfunction()
 
@@ -1746,14 +1923,19 @@ endfunction()
 #=============================================================================#
 # [PRIVATE/INTERNAL]
 #
-# print_list(SETTINGS_LIST)
+# print_list(SETTINGS_LIST [PATTERN])
 #
-#      SETTINGS_LIST - Variables name of settings list
+#      SETTINGS_LIST - Variables name of settings list [REQUIRED]
+#      PATTERN       - Print values from pattern (default "SETTING.name")
 #
-# Print list settings and names (see load_arduino_syle_settings()).
+# Print list settings and names (values) (see load_arduino_syle_settings()).
 #=============================================================================#
 function(PRINT_LIST SETTINGS_LIST)
     if(${SETTINGS_LIST})
+        set(ENTRY_PATTERN "SETTING.name")
+        if(${ARGC} GREATER 1)
+            set(ENTRY_PATTERN "${ARGN}")
+        endif()
         set(MAX_LENGTH 0)
         foreach(ENTRY_NAME ${${SETTINGS_LIST}})
             string(LENGTH "${ENTRY_NAME}" CURRENT_LENGTH)
@@ -1768,7 +1950,8 @@ function(PRINT_LIST SETTINGS_LIST)
             foreach(X RANGE ${PADDING_LENGTH})
                 set(PADDING "${PADDING} ")
             endforeach()
-            message(STATUS "   ${PADDING}${ENTRY_NAME}: ${${ENTRY_NAME}.name}")
+            string(REPLACE "SETTING" "${ENTRY_NAME}" ENTRY_VALUE_NAME "${ENTRY_PATTERN}")
+            message(STATUS "   ${PADDING}${ENTRY_NAME}: ${${ENTRY_VALUE_NAME}}")
         endforeach()
     endif()
 endfunction()
